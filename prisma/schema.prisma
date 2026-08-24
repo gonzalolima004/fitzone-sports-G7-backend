@@ -11,3 +11,254 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model usuario_tipo {
+  id          Int        @id @default(autoincrement())
+  descripcion String     @unique // Ej: "SOCIO", "CLIENTE_EXTERNO", "INSTRUCTOR", "GERENTE_CENTRAL", "RECEPCIONISTA"
+  usuarios    usuarios[]
+}
+
+model membresias_planes {
+  id          Int          @id @default(autoincrement())
+  descripcion String       @unique // Ej: "MENSUAL", "TRIMESTRAL", "ANUAL"
+  membresias  membresias[]
+}
+
+model membresias_estados {
+  id          Int          @id @default(autoincrement())
+  descripcion String       @unique // Ej: "ACTIVO", "VENCIDO", "SUSPENDIDO"
+  membresias  membresias[]
+}
+
+model cancha_tipo {
+  id          Int       @id @default(autoincrement())
+  descripcion String    @unique // Ej: "FUTBOL_5", "PADDLE"
+  canchas     canchas[]
+}
+
+model reservas_clases_estados {
+  id          Int               @id @default(autoincrement())
+  descripcion String            @unique // Ej: "CONFIRMADA", "CANCELADA"
+  reservas    reservas_clases[]
+}
+
+model reservas_canchas_estados {
+  id          Int                @id @default(autoincrement())
+  descripcion String             @unique // Ej: "RESERVADA", "CANCELADA", "COMPLETADA"
+  reservas    reservas_canchas[]
+}
+
+model pagos_estados {
+  id               Int                @id @default(autoincrement())
+  descripcion      String             @unique // Ej: "PENDIENTE", "APROBADO", "RECHAZADO"
+  pagos_membresias pagos_membresias[]
+  pagos_canchas    pagos_canchas[]
+}
+
+model ciudades {
+  id     Int     @id @default(autoincrement())
+  nombre String  @unique // Ej: "Concordia", "Paraná", "Gualeguaychú"
+  sedes  sedes[]
+}
+
+
+// ==========================================
+// ENTIDADES PRINCIPALES
+// ==========================================
+
+model usuarios {
+  id              String         @id @default(uuid())
+  dni             String         @unique
+  email           String         @unique
+  contrasenia     String         
+  nombre          String
+  apellido        String
+  telefono        String?
+  foto            String?        // Enlace o path a la foto del usuario
+  usuario_tipo_id Int
+  sede_id         String         // Sede de registro original
+  creacion        DateTime       @default(now())
+  modificacion    DateTime       @updatedAt
+
+  // Relaciones
+  usuario_tipo          usuario_tipo        @relation(fields: [usuario_tipo_id], references: [id])
+  sede_registro         sedes               @relation("sede_registro", fields: [sede_id], references: [id])
+  membresia             membresias?
+  registros_accesos     registros_accesos[]
+  clases_instruidas     clases_agendadas[]  @relation("instructor_clases")
+  reservas_clases       reservas_clases[]
+  listas_espera         listas_espera[]
+  reservas_canchas      reservas_canchas[]
+  pagos_membresias_realizados pagos_membresias[]
+  pagos_canchas_realizados    pagos_canchas[]
+}
+
+model membresias {
+  id                   String             @id @default(uuid())
+  usuario_id           String             @unique
+  membresias_planes_id Int
+  membresias_estado_id Int
+  fecha_inicio         DateTime
+  fecha_fin            DateTime
+  token_pasarela       String?            
+
+  // Relaciones
+  usuario           usuarios           @relation(fields: [usuario_id], references: [id])
+  membresia_plan    membresias_planes  @relation(fields: [membresias_planes_id], references: [id])
+  membresia_estado  membresias_estados @relation(fields: [membresias_estado_id], references: [id])
+  pagos_membresias  pagos_membresias[]
+}
+
+model sedes {
+  id           String   @id @default(uuid())
+  nombre       String   @unique
+  direccion    String
+  aforo_maximo Int
+  ciudad_id    Int
+
+  // Relaciones
+  ciudad            ciudades            @relation(fields: [ciudad_id], references: [id])
+  usuarios_registro usuarios[]          @relation("sede_registro")
+  registros_accesos registros_accesos[]
+  clases_agendadas  clases_agendadas[]
+  canchas           canchas[]
+}
+
+model registros_accesos {
+  id            String    @id @default(uuid())
+  usuario_id    String
+  sede_id       String
+  fecha_ingreso DateTime  @default(now())
+  fecha_egreso  DateTime?
+
+  // Relaciones
+  usuario usuarios @relation(fields: [usuario_id], references: [id])
+  sede    sedes    @relation(fields: [sede_id], references: [id])
+}
+
+// ==========================================
+// MÓDULO DE CLASES GRUPALES (M3)
+// ==========================================
+
+model clases_grupales {
+  id          String   @id @default(uuid())
+  nombre      String   @unique // Ej: "Spinning", "Yoga"
+  descripcion String?
+
+  // Relaciones
+  clases_agendadas clases_agendadas[]
+}
+
+model clases_agendadas {
+  id              String   @id @default(uuid())
+  clase_grupal_id String
+  sede_id         String
+  instructor_id   String   
+  fecha_inicio    DateTime
+  fecha_fin       DateTime
+  capacidad_max   Int
+
+  // Relaciones
+  clase_grupal    clases_grupales   @relation(fields: [clase_grupal_id], references: [id])
+  sede            sedes             @relation(fields: [sede_id], references: [id])
+  instructor      usuarios          @relation("instructor_clases", fields: [instructor_id], references: [id])
+  reservas_clases reservas_clases[]
+  listas_espera   listas_espera[]
+}
+
+model reservas_clases {
+  id                      String   @id @default(uuid())
+  usuario_id              String
+  clase_agendada_id       String
+  fecha_reserva           DateTime @default(now())
+  reserva_clase_estado_id Int
+
+  // Relaciones
+  usuario              usuarios                @relation(fields: [usuario_id], references: [id])
+  clase_agendada       clases_agendadas        @relation(fields: [clase_agendada_id], references: [id])
+  reserva_clase_estado reservas_clases_estados @relation(fields: [reserva_clase_estado_id], references: [id])
+}
+
+model listas_espera {
+  id                String   @id @default(uuid())
+  clase_agendada_id String
+  usuario_id        String
+  posicion          Int      // Para mantener orden FIFO
+  fecha_en_listado  DateTime @default(now())
+
+  // Relaciones
+  clase_agendada clases_agendadas @relation(fields: [clase_agendada_id], references: [id])
+  usuario        usuarios         @relation(fields: [usuario_id], references: [id])
+}
+
+// ==========================================
+// MÓDULO DE CANCHAS DEPORTIVAS (M4)
+// ==========================================
+
+model canchas {
+  id               String   @id @default(uuid())
+  sede_id          String
+  nombre           String   // Ej: "Cancha Techada 1"
+  cancha_tipo_id   Int
+  costo_base       Decimal  @db.Decimal(10, 2)
+  en_mantenimiento Boolean  @default(false)
+
+  // Relaciones
+  sede             sedes              @relation(fields: [sede_id], references: [id])
+  cancha_tipo      cancha_tipo        @relation(fields: [cancha_tipo_id], references: [id])
+  reservas_canchas reservas_canchas[]
+}
+
+model reservas_canchas {
+  id                       String   @id @default(uuid())
+  cancha_id                String
+  usuario_id               String
+  reserva_cancha_estado_id Int
+  fecha_inicio             DateTime
+  fecha_fin                DateTime
+
+  // Relaciones
+  cancha                 canchas                  @relation(fields: [cancha_id], references: [id])
+  usuario                usuarios                 @relation(fields: [usuario_id], references: [id])
+  reserva_cancha_estado  reservas_canchas_estados @relation(fields: [reserva_cancha_estado_id], references: [id])
+  pagos                  pagos_canchas[]
+
+  // RN-02: Para evitar ventas duplicadas
+  @@unique([cancha_id, fecha_inicio])
+}
+
+// ==========================================
+// MÓDULO DE PAGOS Y FACTURACIÓN (M5)
+// ==========================================
+
+model pagos_membresias {
+  id                 String   @id @default(uuid())
+  usuario_id         String
+  membresia_id       String
+  pago_estado_id     Int
+  monto              Decimal  @db.Decimal(10, 2)
+  fecha_pago         DateTime @default(now())
+  token_transaccion  String   @unique
+  comprobante_pdf_url String?
+
+  // Relaciones
+  usuario      usuarios      @relation(fields: [usuario_id], references: [id])
+  membresia    membresias    @relation(fields: [membresia_id], references: [id])
+  pago_estado  pagos_estados @relation(fields: [pago_estado_id], references: [id])
+}
+
+model pagos_canchas {
+  id                 String   @id @default(uuid())
+  usuario_id         String
+  reserva_cancha_id  String
+  pago_estado_id     Int
+  monto              Decimal  @db.Decimal(10, 2)
+  fecha_pago         DateTime @default(now())
+  token_transaccion  String   @unique
+  comprobante_pdf_url String?
+
+  // Relaciones
+  usuario         usuarios         @relation(fields: [usuario_id], references: [id])
+  reserva_cancha  reservas_canchas @relation(fields: [reserva_cancha_id], references: [id])
+  pago_estado     pagos_estados    @relation(fields: [pago_estado_id], references: [id])
+}
