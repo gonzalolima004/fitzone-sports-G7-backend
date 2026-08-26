@@ -11,253 +11,389 @@ datasource db {
   provider = "postgresql"
 }
 
-model usuario_tipo {
-  id          Int        @id @default(autoincrement())
-  descripcion String     @unique // Ej: "SOCIO", "CLIENTE_EXTERNO", "INSTRUCTOR", "GERENTE_CENTRAL", "RECEPCIONISTA"
-  usuarios    usuarios[]
+// ==========================================
+// Módulo 1: Usuarios y Membresías (M1)
+// ==========================================
+
+model Usuario {
+  id             String   @id @default(uuid())
+  dni            String   @unique
+  email          String   @unique
+  contrasenia    String
+  nombre         String
+  apellido       String
+  telefono       String?
+  foto           String
+  usuarioEstado  Int      @map("usuario_estado")
+  sedeId         String   @map("sede_id")
+  creacion       DateTime @default(now())
+  modificacion   DateTime @updatedAt
+
+  estado UsuarioEstado @relation(fields: [usuarioEstado], references: [id])
+  sede   Sede          @relation(fields: [sedeId], references: [id])
+
+  socio    Socio?
+  empleado Empleado?
+
+  @@map("usuarios")
 }
 
-model membresias_planes {
-  id          Int          @id @default(autoincrement())
-  descripcion String       @unique // Ej: "MENSUAL", "TRIMESTRAL", "ANUAL"
-  membresias  membresias[]
-}
-
-model membresias_estados {
-  id          Int          @id @default(autoincrement())
-  descripcion String       @unique // Ej: "ACTIVO", "VENCIDO", "SUSPENDIDO"
-  membresias  membresias[]
-}
-
-model cancha_tipo {
+model UsuarioEstado {
   id          Int       @id @default(autoincrement())
-  descripcion String    @unique // Ej: "FUTBOL_5", "PADDLE"
-  canchas     canchas[]
+  descripcion String
+  usuarios    Usuario[]
+
+  @@map("usuarios_estados")
 }
 
-model reservas_clases_estados {
-  id          Int               @id @default(autoincrement())
-  descripcion String            @unique // Ej: "CONFIRMADA", "CANCELADA"
-  reservas    reservas_clases[]
+model Socio {
+  id              String @id
+  qrSecret        String @unique @map("qr_secret")
+  socioEstadoId   Int @map("socio_estado_id")
+
+  usuario Usuario     @relation(fields: [id], references: [id])
+  estado  SocioEstado @relation(fields: [socioEstadoId], references: [id])
+
+  registrosAccesos RegistroAcceso[]
+  membresia         Membresia[]
+  reservasClases   ReservaClase[]
+  sociosEspera     SocioEspera[]
+  reservasCanchas  ReservaCancha[]
+  pagosMembresias  PagoMembresia[]
+  pagosCanchas     PagoCancha[]
+
+  @@map("socios")
 }
 
-model reservas_canchas_estados {
-  id          Int                @id @default(autoincrement())
-  descripcion String             @unique // Ej: "RESERVADA", "CANCELADA", "COMPLETADA"
-  reservas    reservas_canchas[]
+model SocioEstado {
+  id          Int     @id @default(autoincrement())
+  descripcion String
+  socios      Socio[]
+
+  @@map("socios_estados")
 }
 
-model pagos_estados {
-  id               Int                @id @default(autoincrement())
-  descripcion      String             @unique // Ej: "PENDIENTE", "APROBADO", "RECHAZADO"
-  pagos_membresias pagos_membresias[]
-  pagos_canchas    pagos_canchas[]
+model Empleado {
+  id                 String @id
+  empleadoEstadoId Int  @map("empleado_estado_id")
+  empleadoRolId    Int  @map("empleado_rol_id")
+
+  usuario Usuario        @relation(fields: [id], references: [id])
+  estado  EmpleadoEstado   @relation(fields: [empleadoEstadoId], references: [id])
+  rol     EmpleadoRol    @relation(fields: [empleadoRolId], references: [id])
+  clases  ClaseAgendada[]
+
+  @@map("empleados")
 }
 
-model ciudades {
-  id     Int     @id @default(autoincrement())
-  nombre String  @unique // Ej: "Concordia", "Paraná", "Gualeguaychú"
-  sedes  sedes[]
+model EmpleadoRol {
+  id          Int        @id @default(autoincrement())
+  descripcion String
+  empleados   Empleado[]
+
+  @@map("empleados_roles")
 }
 
+model EmpleadoEstado {
+  id          Int        @id @default(autoincrement())
+  descripcion String
+  empleados   Empleado[]
+
+  @@map("empleados_estados")
+}
+
+model Membresia {
+  id                    String    @id @default(uuid())
+  usuarioId            String    @map("usuario_id") 
+  membresiasPlanesId  Int @map("membresias_planes_id")
+  membresiasEstadoId  Int @map("membresias_estado_id")
+  fechaInicio          DateTime  @map("fecha_inicio")
+  fechaFin             DateTime  @map("fecha_fin")
+  tokenPasarela        String? @map("token_pasarela")
+  renovacionAutomatica Boolean   @default(false) @map("renovacion_automatica") 
+
+  socio   Socio           @relation(fields: [usuarioId], references: [id])
+  plan    MembresiaPlan   @relation(fields: [membresiasPlanesId], references: [id])
+  estado  MembresiaEstado @relation(fields: [membresiasEstadoId], references: [id])
+  pagos   PagoMembresia[]
+
+  @@map("membresias")
+}
+
+model MembresiaPlan {
+  id          Int         @id @default(autoincrement())
+  descripcion String
+  membresias  Membresia[]
+
+  @@map("membresias_planes")
+}
+
+model MembresiaEstado {
+  id          Int         @id @default(autoincrement())
+  descripcion String
+  membresias  Membresia[]
+
+  @@map("membresias_estados")
+}
 
 // ==========================================
-// ENTIDADES PRINCIPALES
+// Módulo 2: Gimnasio y Acceso (M2)
 // ==========================================
 
-model usuarios {
-  id              String         @id @default(uuid())
-  dni             String         @unique
-  email           String         @unique
-  contrasenia     String         
-  nombre          String
-  apellido        String
-  telefono        String?
-  foto            String?        // Enlace o path a la foto del usuario
-  usuario_tipo_id Int
-  sede_id         String         // Sede de registro original
-  creacion        DateTime       @default(now())
-  modificacion    DateTime       @updatedAt
+model Sede {
+  id             String @id @default(uuid())
+  nombre         String
+  direccion      String
+  aforoMaximo   Int  @map("aforo_maximo")
+  ciudadId      Int  @map("ciudad_id")
+  sedeEstadoId Int  @map("sede_estado_id")
 
-  // Relaciones
-  usuario_tipo          usuario_tipo        @relation(fields: [usuario_tipo_id], references: [id])
-  sede_registro         sedes               @relation("sede_registro", fields: [sede_id], references: [id])
-  membresia             membresias?
-  registros_accesos     registros_accesos[]
-  clases_instruidas     clases_agendadas[]  @relation("instructor_clases")
-  reservas_clases       reservas_clases[]
-  listas_espera         listas_espera[]
-  reservas_canchas      reservas_canchas[]
-  pagos_membresias_realizados pagos_membresias[]
-  pagos_canchas_realizados    pagos_canchas[]
+  ciudad Ciudad     @relation(fields: [ciudadId], references: [id])
+  estado SedeEstado @relation(fields: [sedeEstadoId], references: [id])
+
+  usuarios          Usuario[]
+  registrosAccesos RegistroAcceso[]
+  clasesAgendadas  ClaseAgendada[]
+  canchas           Cancha[]
+
+  @@map("sedes")
 }
 
-model membresias {
-  id                   String             @id @default(uuid())
-  usuario_id           String             @unique
-  membresias_planes_id Int
-  membresias_estado_id Int
-  fecha_inicio         DateTime
-  fecha_fin            DateTime
-  token_pasarela       String?            
+model SedeEstado {
+  id          Int    @id @default(autoincrement())
+  descripcion String
+  sedes       Sede[]
 
-  // Relaciones
-  usuario           usuarios           @relation(fields: [usuario_id], references: [id])
-  membresia_plan    membresias_planes  @relation(fields: [membresias_planes_id], references: [id])
-  membresia_estado  membresias_estados @relation(fields: [membresias_estado_id], references: [id])
-  pagos_membresias  pagos_membresias[]
+  @@map("sedes_estados")
 }
 
-model sedes {
-  id           String   @id @default(uuid())
-  nombre       String   @unique
-  direccion    String
-  aforo_maximo Int
-  ciudad_id    Int
+model Ciudad {
+  id               Int    @id @default(autoincrement())
+  ciudadEstadoId Int  @map("ciudad_estado_id")
+  nombre           String
 
-  // Relaciones
-  ciudad            ciudades            @relation(fields: [ciudad_id], references: [id])
-  usuarios_registro usuarios[]          @relation("sede_registro")
-  registros_accesos registros_accesos[]
-  clases_agendadas  clases_agendadas[]
-  canchas           canchas[]
+  estado CiudadEstado @relation(fields: [ciudadEstadoId], references: [id])
+  sedes  Sede[]
+
+  @@map("ciudades")
 }
 
-model registros_accesos {
+model CiudadEstado {
+  id          Int      @id @default(autoincrement())
+  descripcion String
+  ciudades    Ciudad[]
+
+  @@map("ciudades_estados")
+}
+
+model RegistroAcceso {
   id            String    @id @default(uuid())
-  usuario_id    String
-  sede_id       String
-  fecha_ingreso DateTime  @default(now())
-  fecha_egreso  DateTime?
+  fechaIngreso DateTime  @default(now()) @map("fecha_ingreso")
+  fechaEgreso  DateTime? @map("fecha_egreso")
+  usuarioId    String  @map("usuario_id")
+  sedeId       String  @map("sede_id")
 
-  // Relaciones
-  usuario usuarios @relation(fields: [usuario_id], references: [id])
-  sede    sedes    @relation(fields: [sede_id], references: [id])
+  socio Socio @relation(fields: [usuarioId], references: [id])
+  sede  Sede  @relation(fields: [sedeId], references: [id])
+
+  @@map("registros_accesos")
 }
 
 // ==========================================
-// MÓDULO DE CLASES GRUPALES (M3)
+// Módulo 3: Clases Grupales (M3)
 // ==========================================
 
-model clases_grupales {
-  id          String   @id @default(uuid())
-  nombre      String   @unique // Ej: "Spinning", "Yoga"
-  descripcion String?
+model ClaseGrupal {
+  id                     String  @id @default(uuid())
+  nombre                 String
+  descripcion            String?
+  claseGrupalEstadoId Int  @map("clase_grupal_estado_id")
 
-  // Relaciones
-  clases_agendadas clases_agendadas[]
+  estado ClaseGrupalEstado @relation(fields: [claseGrupalEstadoId], references: [id])
+  clases ClaseAgendada[]
+
+  @@map("clases_grupales")
 }
 
-model clases_agendadas {
-  id              String   @id @default(uuid())
-  clase_grupal_id String
-  sede_id         String
-  instructor_id   String   
-  fecha_inicio    DateTime
-  fecha_fin       DateTime
-  capacidad_max   Int
+model ClaseGrupalEstado {
+  id              Int           @id @default(autoincrement())
+  descripcion     String
+  clasesGrupales  ClaseGrupal[]
 
-  // Relaciones
-  clase_grupal    clases_grupales   @relation(fields: [clase_grupal_id], references: [id])
-  sede            sedes             @relation(fields: [sede_id], references: [id])
-  instructor      usuarios          @relation("instructor_clases", fields: [instructor_id], references: [id])
-  reservas_clases reservas_clases[]
-  listas_espera   listas_espera[]
+  @@map("clases_grupales_estados")
 }
 
-model reservas_clases {
-  id                      String   @id @default(uuid())
-  usuario_id              String
-  clase_agendada_id       String
-  fecha_reserva           DateTime @default(now())
-  reserva_clase_estado_id Int
-
-  // Relaciones
-  usuario              usuarios                @relation(fields: [usuario_id], references: [id])
-  clase_agendada       clases_agendadas        @relation(fields: [clase_agendada_id], references: [id])
-  reserva_clase_estado reservas_clases_estados @relation(fields: [reserva_clase_estado_id], references: [id])
-}
-
-model listas_espera {
-  id                String   @id @default(uuid())
-  clase_agendada_id String
-  usuario_id        String
-  posicion          Int      // Para mantener orden FIFO
-  fecha_en_listado  DateTime @default(now())
-
-  // Relaciones
-  clase_agendada clases_agendadas @relation(fields: [clase_agendada_id], references: [id])
-  usuario        usuarios         @relation(fields: [usuario_id], references: [id])
-}
-
-// ==========================================
-// MÓDULO DE CANCHAS DEPORTIVAS (M4)
-// ==========================================
-
-model canchas {
-  id               String   @id @default(uuid())
-  sede_id          String
-  nombre           String   // Ej: "Cancha Techada 1"
-  cancha_tipo_id   Int
-  costo_base       Decimal  @db.Decimal(10, 2)
-  en_mantenimiento Boolean  @default(false)
-
-  // Relaciones
-  sede             sedes              @relation(fields: [sede_id], references: [id])
-  cancha_tipo      cancha_tipo        @relation(fields: [cancha_tipo_id], references: [id])
-  reservas_canchas reservas_canchas[]
-}
-
-model reservas_canchas {
+model ClaseAgendada {
   id                       String   @id @default(uuid())
-  cancha_id                String
-  usuario_id               String
-  reserva_cancha_estado_id Int
-  fecha_inicio             DateTime
-  fecha_fin                DateTime
+  fechaInicio              DateTime  @map("fecha_inicio")
+  fechaFin                 DateTime  @map("fecha_fin")
+  capacidadMaxima          Int @map("capacidad_maxima")
+  claseGrupalId            String  @map("clase_grupal_id")
+  sedeId                   String  @map("sede_id")
+  usuarioId                String  @map("usuario_id")
+  claseAgendadaEstadoId    Int @map("clase_agendada_estado_id")
 
-  // Relaciones
-  cancha                 canchas                  @relation(fields: [cancha_id], references: [id])
-  usuario                usuarios                 @relation(fields: [usuario_id], references: [id])
-  reserva_cancha_estado  reservas_canchas_estados @relation(fields: [reserva_cancha_estado_id], references: [id])
-  pagos                  pagos_canchas[]
+  clase_grupal ClaseGrupal          @relation(fields: [claseGrupalId], references: [id])
+  sede         Sede                 @relation(fields: [sedeId], references: [id])
+  instructor   Empleado             @relation(fields: [usuarioId], references: [id])
+  estado       ClaseAgendadaEstado  @relation(fields: [claseAgendadaEstadoId], references: [id])
 
-  // RN-02: Para evitar ventas duplicadas
-  @@unique([cancha_id, fecha_inicio])
+  reservasClases ReservaClase[]
+  sociosEspera   SocioEspera[]
+
+  @@map("clases_agendadas")
+}
+
+model ClaseAgendadaEstado {
+  id               Int             @id @default(autoincrement())
+  descripcion      String
+  clasesAgendadas ClaseAgendada[]
+
+  @@map("clases_agendadas_estados")
+}
+
+model ReservaClase {
+  id                      String    @id @default(uuid())
+  fechaReserva            DateTime  @default(now())  @map("fecha_reserva")
+  usuarioId               String    @map("usuario_id")
+  claseAgendadaId         String    @map("clase_agendada_id")
+  reservaClaseEstadoId    Int       @map("reserva_clase_estado_id")
+
+  socio          Socio              @relation(fields: [usuarioId], references: [id])
+  claseAgendada  ClaseAgendada      @relation(fields: [claseAgendadaId], references: [id])
+  estado         ReservaClaseEstado @relation(fields: [reservaClaseEstadoId], references: [id])
+
+  @@map("reservas_clases")
+}
+
+model ReservaClaseEstado {
+  id              Int            @id @default(autoincrement())
+  descripcion     String
+  reservasClases ReservaClase[]
+
+  @@map("reservas_clases_estados")
+}
+
+model SocioEspera {
+  id                String   @id @default(uuid())
+  claseAgendadaId   String   @map("clase_agendada_id")
+  usuarioId         String   @map("usuario_id")
+  posicion          Int
+  fechaEnEspera     DateTime @default(now())  @map("fecha_en_espera")
+
+  claseAgendada ClaseAgendada @relation(fields: [claseAgendadaId], references: [id])
+  socio          Socio         @relation(fields: [usuarioId], references: [id])
+
+  @@map("socios_espera")
 }
 
 // ==========================================
-// MÓDULO DE PAGOS Y FACTURACIÓN (M5)
+// Módulo 4: Canchas Deportivas (M4)
 // ==========================================
 
-model pagos_membresias {
-  id                 String   @id @default(uuid())
-  usuario_id         String
-  membresia_id       String
-  pago_estado_id     Int
-  monto              Decimal  @db.Decimal(10, 2)
-  fecha_pago         DateTime @default(now())
-  token_transaccion  String   @unique
-  comprobante_pdf_url String?
+model Cancha {
+  id                String  @id @default(uuid())
+  nombre            String
+  costoBase         Decimal @db.Decimal(10,2)  @map("costo_base")
+  sedeId            String  @map("sede_id")
+  canchaEstadoId    Int     @map("cancha_estado_id")
+  canchaTipoId      Int     @map("cancha_tipo_id")
 
-  // Relaciones
-  usuario      usuarios      @relation(fields: [usuario_id], references: [id])
-  membresia    membresias    @relation(fields: [membresia_id], references: [id])
-  pago_estado  pagos_estados @relation(fields: [pago_estado_id], references: [id])
+  sede   Sede         @relation(fields: [sedeId], references: [id])
+  tipo   CanchaTipo   @relation(fields: [canchaTipoId], references: [id])
+  estado CanchaEstado @relation(fields: [canchaEstadoId], references: [id])
+
+  reservasCanchas ReservaCancha[]
+
+  @@map("canchas")
 }
 
-model pagos_canchas {
-  id                 String   @id @default(uuid())
-  usuario_id         String
-  reserva_cancha_id  String
-  pago_estado_id     Int
-  monto              Decimal  @db.Decimal(10, 2)
-  fecha_pago         DateTime @default(now())
-  token_transaccion  String   @unique
-  comprobante_pdf_url String?
+model CanchaEstado {
+  id          Int      @id @default(autoincrement())
+  descripcion String
+  canchas     Cancha[]
 
-  // Relaciones
-  usuario         usuarios         @relation(fields: [usuario_id], references: [id])
-  reserva_cancha  reservas_canchas @relation(fields: [reserva_cancha_id], references: [id])
-  pago_estado     pagos_estados    @relation(fields: [pago_estado_id], references: [id])
+  @@map("canchas_estados")
+}
+
+model CanchaTipo {
+  id          Int      @id @default(autoincrement())
+  descripcion String
+  canchas     Cancha[]
+
+  @@map("canchas_tipos")
+}
+
+model ReservaCancha {
+  id                          String    @id @default(uuid())
+  canchaId                    String    @map("cancha_id")
+  usuarioId                   String    @map("usuario_id")
+  reservaCanchaEstadoId       Int       @map("reserva_cancha_estado_id")
+  fechaInicio                 DateTime  @map("fecha_inicio")
+  fechaFin                    DateTime  @map("fecha_fin")
+  descuentoAplicadoPorcentaje Decimal   @db.Decimal(5,2) @map("descuento_aplicado_porcentaje")
+  esHorarioPico               Boolean   @map("es_horario_pico") 
+  precioCongelado             Decimal   @db.Decimal(10,2) @map("precio_congelado")
+
+  cancha Cancha              @relation(fields: [canchaId], references: [id])
+  socio  Socio               @relation(fields: [usuarioId], references: [id])
+  estado ReservaCanchaEstado @relation(fields: [reservaCanchaEstadoId], references: [id])
+  
+  pagosCanchas PagoCancha[]
+
+  @@map("reservas_canchas")
+}
+
+model ReservaCanchaEstado {
+  id               Int             @id @default(autoincrement())
+  descripcion      String
+  reservasCanchas  ReservaCancha[]
+
+  @@map("reservas_canchas_estados")
+}
+
+// ==========================================
+// Módulo 5: Pagos y Facturación (M5)
+// ==========================================
+
+model PagoMembresia {
+  id                  String   @id @default(uuid())
+  usuarioId           String  @map("usuario_id")
+  membresiaId         String  @map("membresia_id")
+  pagoEstadoId        Int @map("pago_estado_id")
+  urlComprobante      String? @map("url_comprobante")
+  fechaPago           DateTime @default(now()) @map("fecha_pago")
+  tokenTransaccion    String?  @unique  @map("token_transaccion")
+
+  socio     Socio      @relation(fields: [usuarioId], references: [id])
+  membresia Membresia  @relation(fields: [membresiaId], references: [id])
+  estado    PagoEstado @relation(fields: [pagoEstadoId], references: [id])
+
+  @@map("pagos_membresias")
+}
+
+model PagoCancha {
+  id                String    @id @default(uuid())
+  usuarioId         String    @map("usuario_id")
+  reservaCanchaId   String    @map("reserva_cancha_id")
+  pagoEstadoId      Int       @map("pago_estado_id")
+  monto             Decimal   @db.Decimal(10,2)
+  fechaPago         DateTime  @default(now()) @map("fecha_pago")
+  tokenTransaccion  String?   @unique  @map("token_transaccion")
+  urlComprobante    String?   @map("url_comprobante")
+
+  socio          Socio         @relation(fields: [usuarioId], references: [id])
+  reservaCancha ReservaCancha  @relation(fields: [reservaCanchaId], references: [id])
+  estado         PagoEstado    @relation(fields: [pagoEstadoId], references: [id])
+
+  @@map("pagos_canchas")
+}
+
+model PagoEstado {
+  id               Int             @id @default(autoincrement())
+  descripcion      String
+  pagosMembresias PagoMembresia[]
+  pagosCanchas    PagoCancha[]
+
+  @@map("pagos_estados")
 }
