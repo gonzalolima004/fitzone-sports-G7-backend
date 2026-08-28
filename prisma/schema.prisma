@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,29 +6,23 @@ datasource db {
   provider = "postgresql"
 }
 
-// ==========================================
-// Módulo 1: Usuarios y Membresías (M1)
-// ==========================================
-
 model Usuario {
-  id             String   @id @default(uuid())
-  dni            String   @unique
-  email          String   @unique
-  contrasenia    String
-  nombre         String
-  apellido       String
-  telefono       String?
-  foto           String
-  usuarioEstado  Int      @map("usuario_estado")
-  sedeId         String   @map("sede_id")
-  creacion       DateTime @default(now())
-  modificacion   DateTime @updatedAt
-
-  estado UsuarioEstado @relation(fields: [usuarioEstado], references: [id])
-  sede   Sede          @relation(fields: [sedeId], references: [id])
-
-  socio    Socio?
-  empleado Empleado?
+  id            String        @id @default(uuid())
+  dni           String        @unique
+  email         String        @unique
+  contrasenia   String
+  nombre        String
+  apellido      String
+  telefono      String?
+  foto          String
+  usuarioEstado Int           @map("usuario_estado")
+  sedeId        String        @map("sede_id")
+  creacion      DateTime      @default(now())
+  modificacion  DateTime      @updatedAt
+  empleado      Empleado?
+  socio         Socio?
+  sede          Sede          @relation(fields: [sedeId], references: [id])
+  estado        UsuarioEstado @relation(fields: [usuarioEstado], references: [id])
 
   @@map("usuarios")
 }
@@ -47,20 +36,18 @@ model UsuarioEstado {
 }
 
 model Socio {
-  id              String @id
-  qrSecret        String @unique @map("qr_secret")
-  socioEstadoId   Int @map("socio_estado_id")
-
-  usuario Usuario     @relation(fields: [id], references: [id])
-  estado  SocioEstado @relation(fields: [socioEstadoId], references: [id])
-
-  registrosAccesos RegistroAcceso[]
-  membresia         Membresia[]
-  reservasClases   ReservaClase[]
-  sociosEspera     SocioEspera[]
-  reservasCanchas  ReservaCancha[]
-  pagosMembresias  PagoMembresia[]
+  id               String           @id
+  qrSecret         String           @unique @map("qr_secret")
+  socioEstadoId    Int              @map("socio_estado_id")
+  membresia        Membresia[]
   pagosCanchas     PagoCancha[]
+  pagosMembresias  PagoMembresia[]
+  registrosAccesos RegistroAcceso[]
+  reservasCanchas  ReservaCancha[]
+  reservasClases   ReservaClase[]
+  usuario          Usuario          @relation(fields: [id], references: [id])
+  estado           SocioEstado      @relation(fields: [socioEstadoId], references: [id])
+  sociosEspera     SocioEspera[]
 
   @@map("socios")
 }
@@ -74,14 +61,13 @@ model SocioEstado {
 }
 
 model Empleado {
-  id                 String @id
-  empleadoEstadoId Int  @map("empleado_estado_id")
-  empleadoRolId    Int  @map("empleado_rol_id")
-
-  usuario Usuario        @relation(fields: [id], references: [id])
-  estado  EmpleadoEstado   @relation(fields: [empleadoEstadoId], references: [id])
-  rol     EmpleadoRol    @relation(fields: [empleadoRolId], references: [id])
-  clases  ClaseAgendada[]
+  id               String          @id
+  empleadoEstadoId Int             @map("empleado_estado_id")
+  empleadoRolId    Int             @map("empleado_rol_id")
+  clases           ClaseAgendada[]
+  estado           EmpleadoEstado  @relation(fields: [empleadoEstadoId], references: [id])
+  rol              EmpleadoRol     @relation(fields: [empleadoRolId], references: [id])
+  usuario          Usuario         @relation(fields: [id], references: [id])
 
   @@map("empleados")
 }
@@ -103,19 +89,18 @@ model EmpleadoEstado {
 }
 
 model Membresia {
-  id                    String    @id @default(uuid())
-  usuarioId            String    @map("usuario_id") 
-  membresiasPlanesId  Int @map("membresias_planes_id")
-  membresiasEstadoId  Int @map("membresias_estado_id")
-  fechaInicio          DateTime  @map("fecha_inicio")
-  fechaFin             DateTime  @map("fecha_fin")
-  tokenPasarela        String? @map("token_pasarela")
-  renovacionAutomatica Boolean   @default(false) @map("renovacion_automatica") 
-
-  socio   Socio           @relation(fields: [usuarioId], references: [id])
-  plan    MembresiaPlan   @relation(fields: [membresiasPlanesId], references: [id])
-  estado  MembresiaEstado @relation(fields: [membresiasEstadoId], references: [id])
-  pagos   PagoMembresia[]
+  id                   String          @id @default(uuid())
+  usuarioId            String          @map("usuario_id")
+  membresiasPlanesId   Int             @map("membresias_planes_id")
+  membresiasEstadoId   Int             @map("membresias_estado_id")
+  fechaInicio          DateTime        @map("fecha_inicio")
+  fechaFin             DateTime        @map("fecha_fin")
+  tokenPasarela        String?         @map("token_pasarela")
+  renovacionAutomatica Boolean         @default(false) @map("renovacion_automatica")
+  estado               MembresiaEstado @relation(fields: [membresiasEstadoId], references: [id])
+  plan                 MembresiaPlan   @relation(fields: [membresiasPlanesId], references: [id])
+  socio                Socio           @relation(fields: [usuarioId], references: [id])
+  pagos                PagoMembresia[]
 
   @@map("membresias")
 }
@@ -136,25 +121,19 @@ model MembresiaEstado {
   @@map("membresias_estados")
 }
 
-// ==========================================
-// Módulo 2: Gimnasio y Acceso (M2)
-// ==========================================
-
 model Sede {
-  id             String @id @default(uuid())
-  nombre         String
-  direccion      String
-  aforoMaximo   Int  @map("aforo_maximo")
-  ciudadId      Int  @map("ciudad_id")
-  sedeEstadoId Int  @map("sede_estado_id")
-
-  ciudad Ciudad     @relation(fields: [ciudadId], references: [id])
-  estado SedeEstado @relation(fields: [sedeEstadoId], references: [id])
-
-  usuarios          Usuario[]
-  registrosAccesos RegistroAcceso[]
+  id               String           @id @default(uuid())
+  nombre           String
+  direccion        String
+  aforoMaximo      Int              @map("aforo_maximo")
+  ciudadId         Int              @map("ciudad_id")
+  sedeEstadoId     Int              @map("sede_estado_id")
+  canchas          Cancha[]
   clasesAgendadas  ClaseAgendada[]
-  canchas           Cancha[]
+  registrosAccesos RegistroAcceso[]
+  ciudad           Ciudad           @relation(fields: [ciudadId], references: [id])
+  estado           SedeEstado       @relation(fields: [sedeEstadoId], references: [id])
+  usuarios         Usuario[]
 
   @@map("sedes")
 }
@@ -168,12 +147,11 @@ model SedeEstado {
 }
 
 model Ciudad {
-  id               Int    @id @default(autoincrement())
-  ciudadEstadoId Int  @map("ciudad_estado_id")
-  nombre           String
-
-  estado CiudadEstado @relation(fields: [ciudadEstadoId], references: [id])
-  sedes  Sede[]
+  id             Int          @id @default(autoincrement())
+  ciudadEstadoId Int          @map("ciudad_estado_id")
+  nombre         String
+  estado         CiudadEstado @relation(fields: [ciudadEstadoId], references: [id])
+  sedes          Sede[]
 
   @@map("ciudades")
 }
@@ -187,122 +165,106 @@ model CiudadEstado {
 }
 
 model RegistroAcceso {
-  id            String    @id @default(uuid())
+  id           String    @id @default(uuid())
   fechaIngreso DateTime  @default(now()) @map("fecha_ingreso")
   fechaEgreso  DateTime? @map("fecha_egreso")
-  usuarioId    String  @map("usuario_id")
-  sedeId       String  @map("sede_id")
-
-  socio Socio @relation(fields: [usuarioId], references: [id])
-  sede  Sede  @relation(fields: [sedeId], references: [id])
+  usuarioId    String    @map("usuario_id")
+  sedeId       String    @map("sede_id")
+  sede         Sede      @relation(fields: [sedeId], references: [id])
+  socio        Socio     @relation(fields: [usuarioId], references: [id])
 
   @@map("registros_accesos")
 }
 
-// ==========================================
-// Módulo 3: Clases Grupales (M3)
-// ==========================================
-
 model ClaseGrupal {
-  id                     String  @id @default(uuid())
-  nombre                 String
-  descripcion            String?
-  claseGrupalEstadoId Int  @map("clase_grupal_estado_id")
-
-  estado ClaseGrupalEstado @relation(fields: [claseGrupalEstadoId], references: [id])
-  clases ClaseAgendada[]
+  id                  String            @id @default(uuid())
+  nombre              String
+  descripcion         String?
+  claseGrupalEstadoId Int               @map("clase_grupal_estado_id")
+  clases              ClaseAgendada[]
+  estado              ClaseGrupalEstado @relation(fields: [claseGrupalEstadoId], references: [id])
 
   @@map("clases_grupales")
 }
 
 model ClaseGrupalEstado {
-  id              Int           @id @default(autoincrement())
-  descripcion     String
-  clasesGrupales  ClaseGrupal[]
+  id             Int           @id @default(autoincrement())
+  descripcion    String
+  clasesGrupales ClaseGrupal[]
 
   @@map("clases_grupales_estados")
 }
 
 model ClaseAgendada {
-  id                       String   @id @default(uuid())
-  fechaInicio              DateTime  @map("fecha_inicio")
-  fechaFin                 DateTime  @map("fecha_fin")
-  capacidadMaxima          Int @map("capacidad_maxima")
-  claseGrupalId            String  @map("clase_grupal_id")
-  sedeId                   String  @map("sede_id")
-  usuarioId                String  @map("usuario_id")
-  claseAgendadaEstadoId    Int @map("clase_agendada_estado_id")
-
-  clase_grupal ClaseGrupal          @relation(fields: [claseGrupalId], references: [id])
-  sede         Sede                 @relation(fields: [sedeId], references: [id])
-  instructor   Empleado             @relation(fields: [usuarioId], references: [id])
-  estado       ClaseAgendadaEstado  @relation(fields: [claseAgendadaEstadoId], references: [id])
-
-  reservasClases ReservaClase[]
-  sociosEspera   SocioEspera[]
+  id                    String              @id @default(uuid())
+  fechaInicio           DateTime            @map("fecha_inicio")
+  fechaFin              DateTime            @map("fecha_fin")
+  capacidadMaxima       Int                 @map("capacidad_maxima")
+  claseGrupalId         String              @map("clase_grupal_id")
+  sedeId                String              @map("sede_id")
+  usuarioId             String              @map("usuario_id")
+  claseAgendadaEstadoId Int                 @map("clase_agendada_estado_id")
+  estado                ClaseAgendadaEstado @relation(fields: [claseAgendadaEstadoId], references: [id])
+  claseGrupal           ClaseGrupal         @relation(fields: [claseGrupalId], references: [id])
+  sede                  Sede                @relation(fields: [sedeId], references: [id])
+  instructor            Empleado            @relation(fields: [usuarioId], references: [id])
+  reservasClases        ReservaClase[]
+  sociosEspera          SocioEspera[]
 
   @@map("clases_agendadas")
 }
 
 model ClaseAgendadaEstado {
-  id               Int             @id @default(autoincrement())
-  descripcion      String
+  id              Int             @id @default(autoincrement())
+  descripcion     String
   clasesAgendadas ClaseAgendada[]
 
   @@map("clases_agendadas_estados")
 }
 
 model ReservaClase {
-  id                      String    @id @default(uuid())
-  fechaReserva            DateTime  @default(now())  @map("fecha_reserva")
-  usuarioId               String    @map("usuario_id")
-  claseAgendadaId         String    @map("clase_agendada_id")
-  reservaClaseEstadoId    Int       @map("reserva_clase_estado_id")
-
-  socio          Socio              @relation(fields: [usuarioId], references: [id])
-  claseAgendada  ClaseAgendada      @relation(fields: [claseAgendadaId], references: [id])
-  estado         ReservaClaseEstado @relation(fields: [reservaClaseEstadoId], references: [id])
+  id                   String             @id @default(uuid())
+  fechaReserva         DateTime           @default(now()) @map("fecha_reserva")
+  usuarioId            String             @map("usuario_id")
+  claseAgendadaId      String             @map("clase_agendada_id")
+  reservaClaseEstadoId Int                @map("reserva_clase_estado_id")
+  claseAgendada        ClaseAgendada      @relation(fields: [claseAgendadaId], references: [id])
+  estado               ReservaClaseEstado @relation(fields: [reservaClaseEstadoId], references: [id])
+  socio                Socio              @relation(fields: [usuarioId], references: [id])
 
   @@map("reservas_clases")
 }
 
 model ReservaClaseEstado {
-  id              Int            @id @default(autoincrement())
-  descripcion     String
+  id             Int            @id @default(autoincrement())
+  descripcion    String
   reservasClases ReservaClase[]
 
   @@map("reservas_clases_estados")
 }
 
 model SocioEspera {
-  id                String   @id @default(uuid())
-  claseAgendadaId   String   @map("clase_agendada_id")
-  usuarioId         String   @map("usuario_id")
-  posicion          Int
-  fechaEnEspera     DateTime @default(now())  @map("fecha_en_espera")
-
-  claseAgendada ClaseAgendada @relation(fields: [claseAgendadaId], references: [id])
-  socio          Socio         @relation(fields: [usuarioId], references: [id])
+  id              String        @id @default(uuid())
+  claseAgendadaId String        @map("clase_agendada_id")
+  usuarioId       String        @map("usuario_id")
+  posicion        Int
+  fechaEnEspera   DateTime      @default(now()) @map("fecha_en_espera")
+  claseAgendada   ClaseAgendada @relation(fields: [claseAgendadaId], references: [id])
+  socio           Socio         @relation(fields: [usuarioId], references: [id])
 
   @@map("socios_espera")
 }
 
-// ==========================================
-// Módulo 4: Canchas Deportivas (M4)
-// ==========================================
-
 model Cancha {
-  id                String  @id @default(uuid())
-  nombre            String
-  costoBase         Decimal @db.Decimal(10,2)  @map("costo_base")
-  sedeId            String  @map("sede_id")
-  canchaEstadoId    Int     @map("cancha_estado_id")
-  canchaTipoId      Int     @map("cancha_tipo_id")
-
-  sede   Sede         @relation(fields: [sedeId], references: [id])
-  tipo   CanchaTipo   @relation(fields: [canchaTipoId], references: [id])
-  estado CanchaEstado @relation(fields: [canchaEstadoId], references: [id])
-
+  id              String          @id @default(uuid())
+  nombre          String
+  costoBase       Decimal         @map("costo_base") @db.Decimal(10, 2)
+  sedeId          String          @map("sede_id")
+  canchaEstadoId  Int             @map("cancha_estado_id")
+  canchaTipoId    Int             @map("cancha_tipo_id")
+  estado          CanchaEstado    @relation(fields: [canchaEstadoId], references: [id])
+  tipo            CanchaTipo      @relation(fields: [canchaTipoId], references: [id])
+  sede            Sede            @relation(fields: [sedeId], references: [id])
   reservasCanchas ReservaCancha[]
 
   @@map("canchas")
@@ -325,75 +287,67 @@ model CanchaTipo {
 }
 
 model ReservaCancha {
-  id                          String    @id @default(uuid())
-  canchaId                    String    @map("cancha_id")
-  usuarioId                   String    @map("usuario_id")
-  reservaCanchaEstadoId       Int       @map("reserva_cancha_estado_id")
-  fechaInicio                 DateTime  @map("fecha_inicio")
-  fechaFin                    DateTime  @map("fecha_fin")
-  descuentoAplicadoPorcentaje Decimal   @db.Decimal(5,2) @map("descuento_aplicado_porcentaje")
-  esHorarioPico               Boolean   @map("es_horario_pico") 
-  precioCongelado             Decimal   @db.Decimal(10,2) @map("precio_congelado")
-
-  cancha Cancha              @relation(fields: [canchaId], references: [id])
-  socio  Socio               @relation(fields: [usuarioId], references: [id])
-  estado ReservaCanchaEstado @relation(fields: [reservaCanchaEstadoId], references: [id])
-  
-  pagosCanchas PagoCancha[]
+  id                          String              @id @default(uuid())
+  canchaId                    String              @map("cancha_id")
+  usuarioId                   String              @map("usuario_id")
+  reservaCanchaEstadoId       Int                 @map("reserva_cancha_estado_id")
+  fechaInicio                 DateTime            @map("fecha_inicio")
+  fechaFin                    DateTime            @map("fecha_fin")
+  descuentoAplicadoPorcentaje Decimal             @map("descuento_aplicado_porcentaje") @db.Decimal(5, 2)
+  esHorarioPico               Boolean             @map("es_horario_pico")
+  precioCongelado             Decimal             @map("precio_congelado") @db.Decimal(10, 2)
+  pagosCanchas                PagoCancha[]
+  cancha                      Cancha              @relation(fields: [canchaId], references: [id])
+  estado                      ReservaCanchaEstado @relation(fields: [reservaCanchaEstadoId], references: [id])
+  socio                       Socio               @relation(fields: [usuarioId], references: [id])
 
   @@map("reservas_canchas")
 }
 
 model ReservaCanchaEstado {
-  id               Int             @id @default(autoincrement())
-  descripcion      String
-  reservasCanchas  ReservaCancha[]
+  id              Int             @id @default(autoincrement())
+  descripcion     String
+  reservasCanchas ReservaCancha[]
 
   @@map("reservas_canchas_estados")
 }
 
-// ==========================================
-// Módulo 5: Pagos y Facturación (M5)
-// ==========================================
-
 model PagoMembresia {
-  id                  String   @id @default(uuid())
-  usuarioId           String  @map("usuario_id")
-  membresiaId         String  @map("membresia_id")
-  pagoEstadoId        Int @map("pago_estado_id")
-  urlComprobante      String? @map("url_comprobante")
-  fechaPago           DateTime @default(now()) @map("fecha_pago")
-  tokenTransaccion    String?  @unique  @map("token_transaccion")
-
-  socio     Socio      @relation(fields: [usuarioId], references: [id])
-  membresia Membresia  @relation(fields: [membresiaId], references: [id])
-  estado    PagoEstado @relation(fields: [pagoEstadoId], references: [id])
+  id               String     @id @default(uuid())
+  usuarioId        String     @map("usuario_id")
+  membresiaId      String     @map("membresia_id")
+  pagoEstadoId     Int        @map("pago_estado_id")
+  urlComprobante   String?    @map("url_comprobante")
+  fechaPago        DateTime   @default(now()) @map("fecha_pago")
+  tokenTransaccion String?    @unique @map("token_transaccion")
+  membresia        Membresia  @relation(fields: [membresiaId], references: [id])
+  estado           PagoEstado @relation(fields: [pagoEstadoId], references: [id])
+  socio            Socio      @relation(fields: [usuarioId], references: [id])
 
   @@map("pagos_membresias")
 }
 
 model PagoCancha {
-  id                String    @id @default(uuid())
-  usuarioId         String    @map("usuario_id")
-  reservaCanchaId   String    @map("reserva_cancha_id")
-  pagoEstadoId      Int       @map("pago_estado_id")
-  monto             Decimal   @db.Decimal(10,2)
-  fechaPago         DateTime  @default(now()) @map("fecha_pago")
-  tokenTransaccion  String?   @unique  @map("token_transaccion")
-  urlComprobante    String?   @map("url_comprobante")
-
-  socio          Socio         @relation(fields: [usuarioId], references: [id])
-  reservaCancha ReservaCancha  @relation(fields: [reservaCanchaId], references: [id])
-  estado         PagoEstado    @relation(fields: [pagoEstadoId], references: [id])
+  id               String        @id @default(uuid())
+  usuarioId        String        @map("usuario_id")
+  reservaCanchaId  String        @map("reserva_cancha_id")
+  pagoEstadoId     Int           @map("pago_estado_id")
+  monto            Decimal       @db.Decimal(10, 2)
+  fechaPago        DateTime      @default(now()) @map("fecha_pago")
+  tokenTransaccion String?       @unique @map("token_transaccion")
+  urlComprobante   String?       @map("url_comprobante")
+  estado           PagoEstado    @relation(fields: [pagoEstadoId], references: [id])
+  reservaCancha    ReservaCancha @relation(fields: [reservaCanchaId], references: [id])
+  socio            Socio         @relation(fields: [usuarioId], references: [id])
 
   @@map("pagos_canchas")
 }
 
 model PagoEstado {
-  id               Int             @id @default(autoincrement())
-  descripcion      String
-  pagosMembresias PagoMembresia[]
+  id              Int             @id @default(autoincrement())
+  descripcion     String
   pagosCanchas    PagoCancha[]
+  pagosMembresias PagoMembresia[]
 
   @@map("pagos_estados")
 }
