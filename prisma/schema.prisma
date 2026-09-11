@@ -1,13 +1,298 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ------------------------------------------------------
+// 1. CIUDAD Y SEDE
+// ------------------------------------------------------
+
+model Ciudad {
+  id_ciudad Int     @id @default(autoincrement())
+  nombre    String  @db.VarChar(100)
+  activo    Boolean @default(true)
+
+  sedes Sede[]
+
+  @@map("ciudad")
+}
+
+model Sede {
+  id_sede      Int     @id @default(autoincrement())
+  nombre       String  @db.VarChar(50)
+  direccion    String  @db.VarChar(50)
+  aforo_maximo Int
+  activo       Boolean @default(true)
+  id_ciudad    Int
+
+  ciudad           Ciudad           @relation(fields: [id_ciudad], references: [id_ciudad])
+  usuarios         Usuario[]
+  registro_accesos RegistroAcceso[]
+  canchas          Cancha[]
+  clases           Clase[]
+
+  @@map("sede")
+}
+
+// ------------------------------------------------------
+// 2. ROLES, ESTADOS Y USUARIO
+// ------------------------------------------------------
+
+model Rol {
+  id_rol Int    @id @default(autoincrement())
+  nombre String @db.VarChar(50)
+
+  usuario_rol UsuarioRol[]
+
+  @@map("rol")
+}
+
+model UsuarioRol {
+  id_usuario       Int
+  id_rol           Int
+  fecha_asignacion DateTime @default(now())
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id_usuario])
+  rol     Rol     @relation(fields: [id_rol], references: [id_rol])
+
+  @@id([id_usuario, id_rol])
+  @@map("usuario_rol")
+}
+
+model UsuarioEstado {
+  id_usuario_estado Int    @id @default(autoincrement())
+  descripcion       String @db.VarChar(50)
+
+  usuarios Usuario[]
+
+  @@map("usuario_estado")
+}
+
+model Usuario {
+  id_usuario        Int      @id @default(autoincrement())
+  dni               String   @unique @db.VarChar(20)
+  email             String   @unique @db.VarChar(100)
+  password          String   @db.VarChar(100)
+  nombre            String   @db.VarChar(50)
+  apellido          String   @db.VarChar(50)
+  telefono          String?  @db.VarChar(30)
+  foto_url          String?  @db.VarChar(255)
+  modificado        DateTime @updatedAt
+  creacion          DateTime @default(now())
+  qr_url            String?  @db.VarChar(255)
+  id_sede           Int
+  id_usuario_estado Int
+
+  sede             Sede             @relation(fields: [id_sede], references: [id_sede])
+  usuario_estado   UsuarioEstado    @relation(fields: [id_usuario_estado], references: [id_usuario_estado])
+  usuario_rol      UsuarioRol[]
+  registro_accesos RegistroAcceso[]
+  cancha_reserva   CanchaReserva[]
+  clase_reserva    ClaseReserva[]
+  membresia        Membresia[]
+
+  @@map("usuario")
+}
+
+// ------------------------------------------------------
+// 3. REGISTRO ACCESOS
+// ------------------------------------------------------
+
+model RegistroAcceso {
+  id_registro_acceso Int       @id @default(autoincrement())
+  fecha_ingreso      DateTime  @default(now())
+  fecha_egreso       DateTime?
+  id_usuario         Int
+  id_sede            Int
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id_usuario])
+  sede    Sede    @relation(fields: [id_sede], references: [id_sede])
+
+  @@map("registro_accesos")
+}
+
+// ------------------------------------------------------
+// 4. CANCHAS, MANTENIMIENTO Y RESERVAS
+// ------------------------------------------------------
+
+model CanchaTipo {
+  id_cancha_tipo Int    @id @default(autoincrement())
+  descripcion    String @db.VarChar(50)
+
+  canchas Cancha[]
+
+  @@map("cancha_tipo")
+}
+
+model Cancha {
+  id_cancha      Int     @id @default(autoincrement())
+  nombre         String  @db.VarChar(50)
+  costo_base     Decimal @db.Decimal(10, 2)
+  activo         Boolean @default(true)
+  disponible     Boolean @default(true)
+  id_cancha_tipo Int
+  id_sede        Int
+
+  cancha_tipo          CanchaTipo            @relation(fields: [id_cancha_tipo], references: [id_cancha_tipo])
+  sede                 Sede                  @relation(fields: [id_sede], references: [id_sede])
+  cancha_mantenimiento CanchaMantenimiento[]
+  cancha_reserva       CanchaReserva[]
+
+  @@map("cancha")
+}
+
+model CanchaMantenimiento {
+  id_cancha_mantenimiento Int      @id @default(autoincrement())
+  id_cancha               Int
+  fecha_inicio            DateTime
+  fecha_fin               DateTime
+  motivo                  String   @db.VarChar(255)
+
+  cancha Cancha @relation(fields: [id_cancha], references: [id_cancha])
+
+  @@map("cancha_mantenimiento")
+}
+
+model CanchaReservaEstado {
+  id_cancha_reserva_estado Int    @id @default(autoincrement())
+  descripcion              String @db.VarChar(50)
+
+  cancha_reserva CanchaReserva[]
+
+  @@map("cancha_reserva_estado")
+}
+
+model CanchaReserva {
+  id_cancha_reserva        Int      @id @default(autoincrement())
+  id_cancha                Int
+  id_usuario               Int
+  id_cancha_reserva_estado Int
+  fecha_inicio             DateTime
+  fecha_fin                DateTime
+  descuento_porcentaje     Decimal  @db.Decimal(5, 2)
+  es_horario_pico          Boolean
+  precio_congelado         Decimal  @db.Decimal(10, 2)
+
+  cancha                Cancha              @relation(fields: [id_cancha], references: [id_cancha])
+  usuario               Usuario             @relation(fields: [id_usuario], references: [id_usuario])
+  cancha_reserva_estado CanchaReservaEstado @relation(fields: [id_cancha_reserva_estado], references: [id_cancha_reserva_estado])
+  pagos                 Pago[]
+
+  @@map("cancha_reserva")
+}
+
+// ------------------------------------------------------
+// 5. CLASES Y RESERVAS DE CLASES
+// ------------------------------------------------------
+
+model Clase {
+  id_clase         Int     @id @default(autoincrement())
+  id_sede          Int
+  capacidad_maxima Int
+  nombre           String  @db.VarChar(100)
+  descripcion      String? @db.VarChar(255)
+  activo           Boolean @default(true)
+
+  sede          Sede           @relation(fields: [id_sede], references: [id_sede])
+  clase_reserva ClaseReserva[]
+
+  @@map("clase")
+}
+
+model ClaseReservaEstado {
+  id_clase_reserva_estado Int    @id @default(autoincrement())
+  descripcion             String @db.VarChar(50)
+
+  clase_reserva ClaseReserva[]
+
+  @@map("clase_reserva_estado")
+}
+
+model ClaseReserva {
+  id_clase_reserva        Int      @id @default(autoincrement())
+  id_clase                Int
+  id_usuario              Int
+  id_clase_reserva_estado Int
+  fecha_inicio            DateTime
+  fecha_fin               DateTime
+
+  clase                Clase              @relation(fields: [id_clase], references: [id_clase])
+  usuario              Usuario            @relation(fields: [id_usuario], references: [id_usuario])
+  clase_reserva_estado ClaseReservaEstado @relation(fields: [id_clase_reserva_estado], references: [id_clase_reserva_estado])
+
+  @@map("clase_reserva")
+}
+
+// ------------------------------------------------------
+// 6. MEMBRESÍAS Y PLANES
+// ------------------------------------------------------
+
+model MembresiaPlan {
+  id_membresia_plan Int     @id @default(autoincrement())
+  nombre            String  @db.VarChar(50)
+  duracion_dias     Int
+  precio            Decimal @db.Decimal(10, 2)
+
+  membresias Membresia[]
+
+  @@map("membresia_plan")
+}
+
+model MembresiaEstado {
+  id_membresia_estado Int    @id @default(autoincrement())
+  descripcion         String @db.VarChar(50)
+
+  membresias Membresia[]
+
+  @@map("membresia_estado")
+}
+
+model Membresia {
+  id_membresia          Int      @id @default(autoincrement())
+  id_usuario            Int
+  id_membresia_plan     Int
+  id_membresia_estado   Int
+  fecha_inicio          DateTime @db.Date
+  fecha_fin             DateTime @db.Date
+  renovacion_automatica Boolean  @default(false)
+
+  usuario          Usuario         @relation(fields: [id_usuario], references: [id_usuario])
+  membresia_plan   MembresiaPlan   @relation(fields: [id_membresia_plan], references: [id_membresia_plan])
+  membresia_estado MembresiaEstado @relation(fields: [id_membresia_estado], references: [id_membresia_estado])
+  pagos            Pago[]
+
+  @@map("membresia")
+}
+
+// ------------------------------------------------------
+// 7. PAGOS
+// ------------------------------------------------------
+
+model PagoEstado {
+  id_pago_estado Int    @id @default(autoincrement())
+  descripcion    String @db.VarChar(50)
+
+  pagos Pago[]
+
+  @@map("pago_estado")
+}
+
+model Pago {
+  id_pago           Int      @id @default(autoincrement())
+  id_pago_estado    Int
+  id_cancha_reserva Int?
+  id_membresia      Int?
+  monto             Decimal  @db.Decimal(10, 2)
+  fecha_pago        DateTime @default(now())
+  token_transaccion String?  @db.VarChar(255)
+  comprobante_url   String?  @db.VarChar(255)
+
+  pago_estado    PagoEstado     @relation(fields: [id_pago_estado], references: [id_pago_estado])
+  cancha_reserva CanchaReserva? @relation(fields: [id_cancha_reserva], references: [id_cancha_reserva])
+  membresia      Membresia?     @relation(fields: [id_membresia], references: [id_membresia])
+
+  @@map("pago")
 }
