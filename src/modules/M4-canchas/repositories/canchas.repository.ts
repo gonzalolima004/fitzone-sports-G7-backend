@@ -8,7 +8,7 @@ import { Prisma, Cancha } from '@prisma/client';
  */
 @Injectable()
 export class CanchasRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async crear(data: Prisma.CanchaUncheckedCreateInput): Promise<Cancha> {
     return this.prisma.cancha.create({
@@ -52,5 +52,19 @@ export class CanchasRepository {
       where: { id_cancha },
       data: { activo: false, disponible: false },
     });
+  }
+
+  async existeSede(id_sede: number): Promise<boolean> {
+    const sede = await this.prisma.sede.findUnique({
+      where: { id_sede },
+    });
+    return !!sede;
+  }
+
+  async existeTipoCancha(id_cancha_tipo: number): Promise<boolean> {
+    const tipo = await this.prisma.canchaTipo.findUnique({
+      where: { id_cancha_tipo },
+    });
+    return !!tipo;
   }
 }
