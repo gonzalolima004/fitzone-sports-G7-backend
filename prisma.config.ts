@@ -10,5 +10,7 @@ export default defineConfig({
   },
   datasource: {
     url: process.env["DATABASE_URL"],
+    // @ts-ignore: Requerido por el CLI 7.9.1 aunque falte en la definicion de tipos
+    directUrl: process.env["DIRECT_URL"],
   },
 });
