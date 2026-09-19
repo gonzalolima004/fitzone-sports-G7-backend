@@ -8,6 +8,8 @@ import { Prisma, Usuario } from '@prisma/client';
 import { ActualizarUsuarioDto } from '../dto/actualizar-usuario.dto';
 import { CreateUsuarioDto } from '../dto/crear-usuario.dto';
 import * as bcrypt from 'bcryptjs';
+import { plainToInstance } from 'class-transformer';
+import { UsuarioResponseDto } from '../dto/usuario-response.dto';
 
 @Injectable()
 export class UsuariosService {
@@ -15,7 +17,7 @@ export class UsuariosService {
 
   constructor(private readonly repository: UsuariosRepository) {}
 
-  async create(dto: CreateUsuarioDto): Promise<Usuario> {
+  async create(dto: CreateUsuarioDto): Promise<UsuarioResponseDto> {
     const existeDni = await this.repository.findByDni(dto.dni);
     if (existeDni) {
       throw new ConflictException(
@@ -60,20 +62,25 @@ export class UsuariosService {
       usuario_estado: { connect: { id_usuario_estado: ID_ESTADO_ACTIVO } },
     };
 
-    return this.repository.create(usuarioData);
+    const usuario = this.repository.create(usuarioData);
+    return plainToInstance(UsuarioResponseDto, usuario);
   }
 
-  async findAll(id_sede?: number): Promise<Usuario[]> {
-    return this.repository.findAll(id_sede);
+  async findAll(id_sede?: number): Promise<UsuarioResponseDto[]> {
+    const usuarios = await this.repository.findAll(id_sede);
+    return plainToInstance(UsuarioResponseDto, usuarios);
   }
-  async findById(id: number): Promise<Usuario> {
+  async findById(id: number): Promise<UsuarioResponseDto> {
     const user = await this.repository.findById(id);
     if (!user)
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
-    return user;
+    return plainToInstance(UsuarioResponseDto, user);
   }
 
-  async update(id: number, dto: ActualizarUsuarioDto): Promise<Usuario> {
+  async update(
+    id: number,
+    dto: ActualizarUsuarioDto,
+  ): Promise<UsuarioResponseDto> {
     await this.findById(id); // Verifica que exista
 
     const { contrasenia, ...restoDatos } = dto;
@@ -90,8 +97,10 @@ export class UsuariosService {
     //NOTA: Queda pendiente la modificación de roles por complejidad
     // y porque falta actualizar el esquema de la base de datos.
 
-    return this.repository.update(id, datosAActualizar);
+    const usuario = await this.repository.update(id, datosAActualizar);
+    return plainToInstance(UsuarioResponseDto, usuario);
   }
+
   async remove(id: number): Promise<Usuario> {
     await this.findById(id); // Verifica que exista
     return this.repository.softDelete(id);

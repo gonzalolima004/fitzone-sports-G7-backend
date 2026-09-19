@@ -8,22 +8,28 @@ import {
   Delete,
   Query,
   ParseIntPipe,
+  UseInterceptors,
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
 import { UsuariosService } from '../services/usuarios.service';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateUsuarioDto } from '../dto/crear-usuario.dto';
 import { ActualizarUsuarioDto } from '../dto/actualizar-usuario.dto';
 import { Usuario } from '@prisma/client';
+import { UsuarioResponseDto } from '../dto/usuario-response.dto';
 
 @ApiTags('Usuarios')
 @Controller('usuarios')
+@UseInterceptors(ClassSerializerInterceptor)
 export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
   @Post()
   @ApiOperation({ summary: 'Crear un nuevo usuario' })
   @ApiResponse({ status: 201, description: 'Usuario creado exitosamente.' })
-  async create(@Body() createUsuarioDto: CreateUsuarioDto): Promise<Usuario> {
+  async create(
+    @Body() createUsuarioDto: CreateUsuarioDto,
+  ): Promise<UsuarioResponseDto> {
     return this.usuariosService.create(createUsuarioDto);
   }
 
@@ -40,20 +46,25 @@ export class UsuariosController {
   @ApiResponse({
     status: 200,
     description: 'Lista de usuarios obtenida correctamente.',
+    type: [UsuarioResponseDto],
   })
   async findAll(
     @Query('id_sede', new ParseIntPipe({ optional: true })) id_sede?: number,
-  ): Promise<Usuario[]> {
+  ): Promise<UsuarioResponseDto[]> {
     return this.usuariosService.findAll(id_sede);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener usuario por ID' })
-  @ApiResponse({ status: 200, description: 'Usuario obtenido correctamente.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Usuario obtenido correctamente.',
+    type: UsuarioResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado.' })
   async findById(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<Usuario | null> {
+  ): Promise<UsuarioResponseDto | null> {
     return this.usuariosService.findById(id);
   }
 
@@ -67,7 +78,7 @@ export class UsuariosController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUsuarioDto: ActualizarUsuarioDto,
-  ): Promise<Usuario> {
+  ): Promise<UsuarioResponseDto> {
     return this.usuariosService.update(id, updateUsuarioDto);
   }
 
