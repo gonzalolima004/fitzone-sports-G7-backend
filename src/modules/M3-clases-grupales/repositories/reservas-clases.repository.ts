@@ -35,6 +35,7 @@ export class ReservasClasesRepository {
    */
   async crearReserva(
     data: CrearReservaClaseDto,
+    id_usuario: number,
     id_estado: number = 1,
     tx?: Prisma.TransactionClient,
   ) {
@@ -43,7 +44,7 @@ export class ReservasClasesRepository {
     return await prismaClient.claseReserva.create({
       data: {
         id_clase: data.id_clase,
-        id_usuario: data.id_usuario,
+        id_usuario: id_usuario,
         id_clase_reserva_estado: id_estado,
         fecha_inicio: new Date(data.fecha_inicio),
         fecha_fin: new Date(data.fecha_fin),

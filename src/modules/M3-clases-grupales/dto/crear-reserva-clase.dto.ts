@@ -8,14 +8,6 @@ export class CrearReservaClaseDto {
   id_clase: number;
 
   @ApiProperty({
-    description: 'ID del usuario que realiza la reserva',
-    example: 1,
-  })
-  @IsInt()
-  @IsNotEmpty()
-  id_usuario: number;
-
-  @ApiProperty({
     description: 'Fecha y hora de inicio de la reserva',
     example: '2026-09-22T10:00:00Z',
   })

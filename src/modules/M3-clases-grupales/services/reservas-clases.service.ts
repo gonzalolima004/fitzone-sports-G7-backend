@@ -16,7 +16,7 @@ export class ReservasClasesService {
     private readonly reservasRepository: ReservasClasesRepository,
   ) {}
 
-  async crearReserva(data: CrearReservaClaseDto) {
+  async crearReserva(data: CrearReservaClaseDto, id_usuario: number) {
     const fechaInicio = new Date(data.fecha_inicio);
     const fechaFin = new Date(data.fecha_fin);
     const ahora = new Date();
@@ -39,7 +39,7 @@ export class ReservasClasesService {
     // Asumimos que tener una membresía activa (estado 1) y no vencida significa no tener mora.
     const membresiaActiva = await this.prisma.membresia.findFirst({
       where: {
-        id_usuario: data.id_usuario,
+        id_usuario: id_usuario,
         id_membresia_estado: 1,
         fecha_fin: { gte: ahora },
       },
@@ -54,7 +54,7 @@ export class ReservasClasesService {
     // 3. Verificación de no superposición horaria
     const superposicion = await this.prisma.claseReserva.findFirst({
       where: {
-        id_usuario: data.id_usuario,
+        id_usuario: id_usuario,
         id_clase_reserva_estado: 1, // 1 = Confirmada
         OR: [
           {
@@ -103,7 +103,12 @@ export class ReservasClasesService {
       }
 
       // 4.4. Crear reserva
-      return await this.reservasRepository.crearReserva(data, 1, tx);
+      return await this.reservasRepository.crearReserva(
+        data,
+        id_usuario,
+        1,
+        tx,
+      );
     });
   }
 }
