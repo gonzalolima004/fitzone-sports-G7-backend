@@ -172,3 +172,23 @@
 - _Decisiones_ Integrar los decoradores de `@nestjs/swagger` en la misma capa de los DTOs junto con `class-validator` para garantizar que la documentación coincida siempre con las reglas de validación.
 - _Dificultades_ Ninguna.
 - _Commits:_ `feat(clases): agrega DTOs documentados y ClasesRepository con Prisma`
+
+---
+
+#### 21/09/2026
+
+#### Gonzalo Lima | Rol: Desarrolador Backend
+
+- **Actividades:** Implementar el flujo de inicio de pagos para canchas y membresías con Checkout Pro de Mercado Pago, creando los DTOs con validaciones, el repository para registrar la intención en estado "Pendiente" y el endpoint en el controlador documentado con Swagger.
+- **Decisiones:**
+  - Validar si es un pago de membresía o reserva de cancha, nunca de ambos.
+  - Almacenar solo el token devuelto por Mercado Pago sin guardar datos de tarjetas.
+  - Dejar el controlador preparado para conectar el guard de autenticación sin generar conflictos.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat: dtos de creación de preferencia de pago`
+  - `feat: patrón repository de pagos`
+  - `feat: creación de preferencia de pago`
+  - `feat: controller de pagos`
+
+---
