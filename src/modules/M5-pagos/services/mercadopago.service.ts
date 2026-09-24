@@ -39,7 +39,7 @@ export class MercadoPagoService {
   /**
    * Consulta el estado oficial de una transacción directamente en los servidores
    * de Mercado Pago (Payment.get) para certificar su estado real (approved, rejected, pending, etc.)
-   * y prevenir falsificaciones en webhooks (RF-13).
+   * y prevenir falsificaciones en webhooks.
    */
   async consultarPago(id: string | number): Promise<PaymentResponse> {
     try {
