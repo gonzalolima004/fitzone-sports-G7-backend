@@ -51,4 +51,35 @@ export class ReservasClasesRepository {
       },
     });
   }
+  async actualizarEstadoReserva(
+    id_clase_reserva: number,
+    id_estado: number,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseReserva.update({
+      where: { id_clase_reserva },
+      data: { id_clase_reserva_estado: id_estado },
+    });
+  }
+
+  async obtenerPrimerEnEspera(
+    id_clase: number,
+    fecha_inicio: Date,
+    fecha_fin: Date,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseReserva.findFirst({
+      where: {
+        id_clase,
+        fecha_inicio,
+        fecha_fin,
+        id_clase_reserva_estado: 2, // 2 = En Espera
+      },
+      orderBy: {
+        id_clase_reserva: 'asc', // El primero que llegó (auto-incremental)
+      },
+    });
+  }
 }

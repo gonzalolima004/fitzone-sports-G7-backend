@@ -8,12 +8,14 @@ import {
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
+import { ListaEsperaSubject } from '../patterns/observer/lista-espera.subject';
 
 @Injectable()
 export class ReservasClasesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly reservasRepository: ReservasClasesRepository,
+    private readonly listaEsperaSubject: ListaEsperaSubject,
   ) {}
 
   async crearReserva(data: CrearReservaClaseDto, id_usuario: number) {
@@ -109,6 +111,70 @@ export class ReservasClasesService {
         1,
         tx,
       );
+    });
+  }
+
+  async cancelarReserva(id_clase_reserva: number, id_usuario: number) {
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Obtener la reserva original
+      const reserva = await tx.claseReserva.findUnique({
+        where: { id_clase_reserva },
+      });
+
+      if (!reserva) {
+        throw new NotFoundException('Reserva no encontrada');
+      }
+
+      if (reserva.id_usuario !== id_usuario) {
+        throw new ForbiddenException(
+          'No puedes cancelar una reserva que no es tuya',
+        );
+      }
+
+      if (reserva.id_clase_reserva_estado !== 1) {
+        throw new BadRequestException(
+          'La reserva no está en estado confirmada',
+        );
+      }
+
+      // 2. Marcar como cancelada (ej. estado 4)
+      await this.reservasRepository.actualizarEstadoReserva(
+        id_clase_reserva,
+        4, // Cancelada
+        tx,
+      );
+
+      // 3. Buscar si hay alguien en lista de espera (estado 2) para esa clase y horario exacto
+      const primerEnEspera =
+        await this.reservasRepository.obtenerPrimerEnEspera(
+          reserva.id_clase,
+          reserva.fecha_inicio,
+          reserva.fecha_fin,
+          tx,
+        );
+
+      // 4. Si hay alguien, se promueve y se notifica
+      if (primerEnEspera) {
+        // Promover a Confirmada (estado 1)
+        await this.reservasRepository.actualizarEstadoReserva(
+          primerEnEspera.id_clase_reserva,
+          1,
+          tx,
+        );
+
+        // Disparar evento a los observadores
+        await this.listaEsperaSubject.notify({
+          id_clase: reserva.id_clase,
+          fecha_inicio: reserva.fecha_inicio,
+          fecha_fin: reserva.fecha_fin,
+          id_usuario_promovido: primerEnEspera.id_usuario,
+        });
+      }
+
+      return {
+        message: 'Reserva cancelada exitosamente',
+        cupo_reasignado: !!primerEnEspera,
+      };
     });
   }
 }

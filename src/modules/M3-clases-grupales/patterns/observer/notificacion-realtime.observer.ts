@@ -1,15 +1,26 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import {
   ListaEsperaObserver,
   VacanteLiberadaEvento,
 } from './lista-espera-observer.interface';
 import { SupabaseService } from '../../services/supabase.service';
+import { ListaEsperaSubject } from './lista-espera.subject';
 
 @Injectable()
-export class NotificacionRealtimeObserver implements ListaEsperaObserver {
+export class NotificacionRealtimeObserver
+  implements ListaEsperaObserver, OnModuleInit
+{
   private readonly logger = new Logger(NotificacionRealtimeObserver.name);
 
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly subject: ListaEsperaSubject,
+  ) {}
+
+  onModuleInit() {
+    this.subject.attach(this);
+    this.logger.log('Observer de Supabase adjuntado a la Lista de Espera');
+  }
 
   async update(evento: VacanteLiberadaEvento): Promise<void> {
     this.logger.log(

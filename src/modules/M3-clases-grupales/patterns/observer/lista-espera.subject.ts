@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { ListaEsperaSubject } from './lista-espera-subject.interface';
+import { ListaEsperaSubjectInterface } from './lista-espera-subject.interface';
 import {
   ListaEsperaObserver,
   VacanteLiberadaEvento,
 } from './lista-espera-observer.interface';
 
 @Injectable()
-export class ConcretoListaEsperaSubject implements ListaEsperaSubject {
+export class ListaEsperaSubject implements ListaEsperaSubjectInterface {
   private observers: ListaEsperaObserver[] = [];
 
   attach(observer: ListaEsperaObserver): void {
