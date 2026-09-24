@@ -98,6 +98,11 @@ export class PagosService {
             : undefined,
           auto_return: backUrls?.success ? 'approved' : undefined,
           notification_url: notificationUrl || undefined,
+          external_reference: itemId,
+          metadata: {
+            id_cancha_reserva: dto.id_cancha_reserva ?? null,
+            id_membresia: dto.id_membresia ?? null,
+          },
         },
       })
       .catch((error: unknown) => {
