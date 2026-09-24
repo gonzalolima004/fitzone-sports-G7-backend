@@ -16,7 +16,7 @@ import { ActualizarCanchaDto } from '../dto/actualizar-cancha.dto';
 @ApiTags('Canchas Deportivas')
 @Controller('canchas')
 export class CanchasController {
-  constructor(private readonly canchasService: CanchasService) { }
+  constructor(private readonly canchasService: CanchasService) {}
 
   @Post()
   @ApiOperation({ summary: 'Dar de alta una nueva cancha' })

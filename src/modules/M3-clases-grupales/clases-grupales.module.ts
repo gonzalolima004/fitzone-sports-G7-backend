@@ -12,7 +12,11 @@ import { ListaEsperaRepository } from './repositories/lista-espera.repository';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [ClasesController, ReservasClasesController, ListaEsperaController],
+  controllers: [
+    ClasesController,
+    ReservasClasesController,
+    ListaEsperaController,
+  ],
   providers: [
     ClasesService,
     ReservasClasesService,
