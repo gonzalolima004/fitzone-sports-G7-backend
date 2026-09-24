@@ -213,3 +213,22 @@
   - `feat(pagos): verificación del estado del pago vía api de mp`
   - `feat(pagos): confirmación del pago atómica y control de idempotencia`
   - `feat(pagos): controller público de webhooks`
+
+---
+
+#### 24/09/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Estructuración de los datos necesarios para armar los recibos y facturas de los pagos realizados.
+  - Creación del servicio para generar automáticamente los comprobantes en PDF y sin guardarlos.
+  - Implementación del endpoint para que los usuarios puedan ver o imprimir su comprobante desde el navegador, guardando el enlace en la base de datos.
+- **Decisiones:**
+  - Hacer que toda la información sea 100% dinámica.
+  - Configurar la respuesta en modo visualización para que se pueda abrir o mandar a imprimir.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(pagos): dto de comprobantes`
+  - `feat(pagos): generador de pdfs con pdfkit`
+  - `feat(pagos): controller de comprobantes`

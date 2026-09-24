@@ -6,12 +6,17 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { MercadoPagoService } from './mercadopago.service';
+import { GeneradorPdfService } from './generador-pdf.service';
 import {
   PagosRepository,
   PagoConRelaciones,
 } from '../repositories/pagos.repository';
 import { IniciarPagoDto } from '../dto/iniciar-pago.dto';
 import { PreferenciaPagoResponseDto } from '../dto/preferencia-pago-response.dto';
+import {
+  ComprobanteItemDto,
+  ComprobanteResponseDto,
+} from '../dto/comprobante-response.dto';
 
 @Injectable()
 export class PagosService {
@@ -20,6 +25,7 @@ export class PagosService {
   constructor(
     private readonly mercadopagoService: MercadoPagoService,
     private readonly pagosRepository: PagosRepository,
+    private readonly generadorPdfService: GeneradorPdfService,
   ) {}
 
   /**
@@ -309,5 +315,130 @@ export class PagosService {
       status: 'pending',
       message: `Pago #${pago.id_pago} en estado '${payment.status}'`,
     };
+  }
+
+  /**
+   * Obtiene y estructura los datos completos del comprobante de un pago
+   * asegurando la persistencia de comprobante_url en la base de datos si no existía.
+   */
+  async obtenerDatosComprobante(
+    id_pago: number,
+  ): Promise<ComprobanteResponseDto> {
+    const pago =
+      await this.pagosRepository.obtenerPagoCompletoParaComprobante(id_pago);
+
+    if (!pago) {
+      throw new NotFoundException(`El pago #${id_pago} no fue encontrado.`);
+    }
+
+    // Actualizar comprobante_url en BD si estaba nulo o desactualizado
+    const comprobanteUrl = `/pagos/${id_pago}/comprobante`;
+    if (pago.comprobante_url !== comprobanteUrl) {
+      await this.pagosRepository.actualizarComprobanteUrl(
+        id_pago,
+        comprobanteUrl,
+      );
+      pago.comprobante_url = comprobanteUrl;
+    }
+
+    // Estructurar emisor institucional
+    const emisor = {
+      nombre: 'FitZone Sports Club',
+      subtitulo: 'Comprobante de Pago Electrónico (RF-14)',
+      descripcion: 'Gestión integral de canchas, socios y membresías',
+      contacto: 'soporte@fitzone.com',
+    };
+
+    // Estructurar cliente / socio
+    const usuario = pago.cancha_reserva?.usuario || pago.membresia?.usuario;
+    const cliente = {
+      nombre: usuario?.nombre || 'Cliente',
+      apellido: usuario?.apellido || 'FitZone',
+      dni: usuario?.dni || '-',
+      email: usuario?.email || 'cliente@fitzone.com',
+    };
+
+    // Estructurar conceptos e ítems
+    const items: ComprobanteItemDto[] = [];
+    if (pago.cancha_reserva) {
+      const r = pago.cancha_reserva;
+      const nombreCancha = r.cancha?.nombre || 'Cancha Deportiva';
+      const nombreSede = r.cancha?.sede?.nombre || 'Sede Central';
+      const fechaStr = new Date(r.fecha_inicio).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+      const horaInicio = new Date(r.fecha_inicio).toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const horaFin = new Date(r.fecha_fin).toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      items.push({
+        concepto: `Reserva ${nombreCancha}`,
+        detalle: `Sede ${nombreSede} - Horario: ${fechaStr} ${horaInicio} a ${horaFin} hs`,
+        cantidad: 1,
+        precio_unitario: Number(pago.monto),
+        subtotal: Number(pago.monto),
+      });
+    } else if (pago.membresia) {
+      const m = pago.membresia;
+      const nombrePlan = m.membresia_plan?.nombre || 'Plan FitZone';
+      const dias = m.membresia_plan?.duracion_dias || 30;
+      const inicioStr = new Date(m.fecha_inicio).toLocaleDateString('es-AR');
+      const finStr = new Date(m.fecha_fin).toLocaleDateString('es-AR');
+
+      items.push({
+        concepto: `Membresía ${nombrePlan}`,
+        detalle: `Vigencia: ${inicioStr} al ${finStr} (${dias} días)`,
+        cantidad: 1,
+        precio_unitario: Number(pago.monto),
+        subtotal: Number(pago.monto),
+      });
+    } else {
+      items.push({
+        concepto: 'Servicio Deportivo FitZone',
+        detalle: 'Abono general registrado',
+        cantidad: 1,
+        precio_unitario: Number(pago.monto),
+        subtotal: Number(pago.monto),
+      });
+    }
+
+    const nroTicket = `FZ-PAGO-${String(pago.id_pago).padStart(8, '0')}`;
+    const montoTotal = Number(pago.monto);
+
+    return {
+      id_pago: pago.id_pago,
+      nro_ticket: nroTicket,
+      fecha_emision: pago.fecha_pago,
+      emisor,
+      cliente,
+      items,
+      subtotal: montoTotal,
+      descuento: 0,
+      total: montoTotal,
+      moneda: 'ARS',
+      metodo_pago: 'Mercado Pago (Checkout Pro)',
+      token_transaccion: pago.token_transaccion,
+      estado: pago.pago_estado?.descripcion || 'Aprobado',
+      nota_seguridad:
+        'Transacción validada según norma RNF-02 (PCI-DSS). FitZone Sports no almacena datos sensibles de tarjetas bancarias.',
+      leyenda_pie:
+        'FitZone Sports Club • Comprobante emitido electrónicamente on-the-fly sin persistencia en disco (RF-14).',
+      comprobante_url: comprobanteUrl,
+    };
+  }
+
+  /**
+   * Genera el buffer binario del comprobante PDF en memoria para descarga o visualización inline.
+   */
+  async generarComprobantePdf(id_pago: number): Promise<Buffer> {
+    const datos = await this.obtenerDatosComprobante(id_pago);
+    return this.generadorPdfService.generarComprobante(datos);
   }
 }
