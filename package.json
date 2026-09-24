@@ -39,6 +39,7 @@
     "class-validator": "^0.15.1",
     "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
+    "jsonwebtoken": "^9.0.3",
     "mercadopago": "^3.6.1",
     "otplib": "^13.5.0",
     "pdfkit": "^0.20.2",
