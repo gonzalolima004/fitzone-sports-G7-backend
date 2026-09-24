@@ -192,3 +192,25 @@
   - `feat: controller de pagos`
 
 ---
+
+#### 24/09/2026
+
+#### Joaquín Ribarola | Rol: Team Leader - Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del Patrón Observer (US-04-05) para notificaciones de vacantes en clases grupales.
+  - Creación de las interfaces y clases concretas del Patrón (`ListaEsperaSubjectInterface`, `ListaEsperaSubject`, `NotificacionRealtimeObserver`).
+  - Integración del patrón con Supabase para la emisión de eventos en tiempo real.
+  - Modificación de `ReservasClasesService` y `ReservasClasesRepository` para incorporar la lógica de cancelación de reserva, promoción automática del primer usuario en espera y disparo de la notificación.
+  - Ensamblado del `ClasesGrupalesModule` y su registro en la aplicación principal (`AppModule`).
+- **Decisiones:**
+  - Utilizar el ciclo de vida de NestJS (`OnModuleInit`) para suscribir el observador al sujeto de forma limpia.
+  - Utilizar el campo auto-incremental `id_clase_reserva` para determinar quién llegó primero a la lista de espera, evitando alterar el modelo de base de datos.
+  - Mantener estricto aislamiento de código, resolviendo errores de validación sin afectar módulos (`M2` o `M4`) de otros integrantes.
+- **Dificultades:** 
+  - Conflictos en el pipeline de CI local por dependencias y tipos faltantes en módulos en desarrollo por otros compañeros, mitigados corriendo las validaciones localizadas (`/validacion m3`).
+  - Un error temporal de tipeo en el `package.json` de la rama dev, que fue diagnosticado y reparado mediante Self-Healing QA.
+- **Commits:**
+  - `feat(clases): agrega observer de realtime para notificar vacantes (Tarea 4.5.3)`
+  - `feat(clases): agrega cancelacion, promocion de cupo y conecta observer (Tarea 4.5.4)`
+  - `feat(clases): ensambla modulo clases grupales y lo registra en app (Tarea 4.5.5)`
