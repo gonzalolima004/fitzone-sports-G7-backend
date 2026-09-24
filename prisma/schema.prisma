@@ -72,11 +72,12 @@ model Usuario {
   qr_url            String?          @db.VarChar(255)
   id_sede           Int
   id_usuario_estado Int
-  cancha_reserva    CanchaReserva[]
-  clase_reserva     ClaseReserva[]
-  membresia         Membresia[]
-  registro_accesos  RegistroAcceso[]
-  sede              Sede             @relation(fields: [id_sede], references: [id_sede])
+  cancha_reserva     CanchaReserva[]
+  clase_reserva      ClaseReserva[]
+  clase_lista_espera ClaseListaEspera[]
+  membresia          Membresia[]
+  registro_accesos   RegistroAcceso[]
+  sede               Sede             @relation(fields: [id_sede], references: [id_sede])
   usuario_estado    UsuarioEstado    @relation(fields: [id_usuario_estado], references: [id_usuario_estado])
   usuario_rol       UsuarioRol[]
 
@@ -163,8 +164,9 @@ model Clase {
   nombre           String         @db.VarChar(100)
   descripcion      String?        @db.VarChar(255)
   activo           Boolean        @default(true)
-  sede             Sede           @relation(fields: [id_sede], references: [id_sede])
-  clase_reserva    ClaseReserva[]
+  sede               Sede               @relation(fields: [id_sede], references: [id_sede])
+  clase_reserva      ClaseReserva[]
+  clase_lista_espera ClaseListaEspera[]
 
   @@map("clase")
 }
@@ -189,6 +191,29 @@ model ClaseReserva {
   usuario                 Usuario            @relation(fields: [id_usuario], references: [id_usuario])
 
   @@map("clase_reserva")
+}
+
+model ClaseListaEsperaEstado {
+  id_clase_lista_espera_estado Int                @id @default(autoincrement())
+  descripcion                  String             @db.VarChar(50)
+  clase_lista_espera           ClaseListaEspera[]
+
+  @@map("clase_lista_espera_estado")
+}
+
+model ClaseListaEspera {
+  id_clase_lista_espera        Int                    @id @default(autoincrement())
+  id_clase                     Int
+  id_usuario                   Int
+  id_clase_lista_espera_estado Int
+  fecha_inicio                 DateTime
+  fecha_fin                    DateTime
+  fecha_solicitud              DateTime               @default(now())
+  clase                        Clase                  @relation(fields: [id_clase], references: [id_clase])
+  clase_lista_espera_estado    ClaseListaEsperaEstado @relation(fields: [id_clase_lista_espera_estado], references: [id_clase_lista_espera_estado])
+  usuario                      Usuario                @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@map("clase_lista_espera")
 }
 
 model MembresiaPlan {
