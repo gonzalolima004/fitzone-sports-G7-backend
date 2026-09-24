@@ -5,15 +5,14 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import type { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { CurrentUserId } from '../../../common/decorators/current-user.decorator';
 import { QrService } from '../services/qr.service';
 import { QrDinamicoResponseDto } from '../dto/qr-dinamico-response.dto';
 
 @ApiTags('Control de Acceso')
 @ApiBearerAuth()
-@UseGuards(SupabaseAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('access/qr')
 export class QrController {
   constructor(private readonly qrService: QrService) {}
@@ -40,8 +39,8 @@ export class QrController {
       'Error interno del servidor durante la generación del token o guardado de perfil.',
   })
   async generarQr(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUserId() id_usuario: number,
   ): Promise<QrDinamicoResponseDto> {
-    return await this.qrService.generarQrDinamico(user.id_usuario);
+    return await this.qrService.generarQrDinamico(id_usuario);
   }
 }
