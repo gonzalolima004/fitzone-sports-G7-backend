@@ -3,7 +3,7 @@ import {
   ListaEsperaObserver,
   VacanteLiberadaEvento,
 } from './lista-espera-observer.interface';
-import { SupabaseService } from '../../../../common/services/supabase.service';
+import { SupabaseService } from '../../services/supabase.service';
 
 @Injectable()
 export class NotificacionRealtimeObserver implements ListaEsperaObserver {
