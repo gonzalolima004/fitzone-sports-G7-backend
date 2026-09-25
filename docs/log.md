@@ -192,3 +192,40 @@
   - `feat: controller de pagos`
 
 ---
+
+#### 17/09/2026 - 21/09/2026
+
+#### Facundo Agüero | Rol: Backend Developer
+
+- **Actividades:**
+  - Configuración de Swagger para generar la documentación inicial de la API y poder visualizar los endpoints desde `/api/docs`.
+  - Configuración global de `ValidationPipe` para validar los datos recibidos por la API y rechazar propiedades no definidas en los DTOs.
+  - Creación de los DTOs de Ciudad y Sede para las operaciones de alta y actualización, utilizando `class-validator` y `PartialType`.
+  - Implementación de los repositorios de Ciudad y Sede utilizando Prisma y el patrón Repository.
+  - Implementación de operaciones de consulta, creación, actualización y borrado lógico de ciudades y sedes.
+  - Implementación de los servicios de Ciudad y Sede, incorporando validaciones de existencia y de la relación entre Sede y Ciudad.
+  - Implementación de los controladores REST para Ciudad y Sede con endpoints GET, POST, PATCH y DELETE.
+  - Documentación de los endpoints mediante Swagger, incluyendo operaciones, parámetros y posibles respuestas HTTP.
+  - Creación de `SedesModule` y registro de controladores, servicios y repositorios.
+  - Integración de `SedesModule` en `AppModule`.
+  - Verificación de los archivos implementados mediante ESLint y Prettier.
+
+- **Decisiones:**
+  - Configurar `ValidationPipe` de forma global para mantener un mismo criterio de validación en todos los módulos.
+  - Utilizar `PartialType` en los DTOs de actualización para reutilizar las validaciones de los DTOs de creación y permitir modificaciones parciales.
+  - Mantener Ciudad y Sede dentro del módulo `M0-sedes`, ya que ambas entidades forman parte de la gestión de sedes.
+  - Utilizar borrado lógico para Ciudad y Sede mediante el campo `activo`, evitando eliminar físicamente los registros.
+  - Mantener la validación de existencia de recursos en la capa Service y el acceso a datos encapsulado en los Repositories.
+  - Validar la existencia de la Ciudad asociada antes de crear una Sede o modificar su `id_ciudad`.
+- **Dificultades:**
+  - Durante la configuración de Swagger se realizaron cambios accidentales en `main.ts`. Se utilizó Git para restaurar el archivo al último estado confirmado y continuar desde una versión estable.
+  - Se realizaron algunas correcciones menores de sintaxis y formato en los DTOs antes de realizar el commit.
+  - La verificación global mediante `npm run start:dev` quedó bloqueada por errores de compilación pertenecientes a los módulos `M2-accesos` y `M5-pagos`, ajenos a `M0-sedes`. Los archivos implementados en `M0-sedes` fueron verificados con ESLint y Prettier sin errores.
+
+- **Commits:**
+  - `feat(api): configure Swagger and global validation`
+  - `feat(sedes): add ciudad and sede DTOs`
+  - `e9b9081 feat(sedes): agregar ciudad y sede repositories`
+  - `a545e72 feat(sedes): agregar servicios de ciudad y sede`
+  - `699c7ad feat(sedes): agregar controllers y módulo de sedes`
+  - `a87c4e6 docs(sedes): documentar endpoints con Swagger`
