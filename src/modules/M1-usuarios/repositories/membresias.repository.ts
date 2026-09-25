@@ -14,22 +14,22 @@ export class MembresiasRepository {
   /**
    * Crea un nuevo plan de membresía en el catálogo
    */
-  create(data: CrearPlanDto) {
-    return this.prisma.membresiaPlan.create({ data });
+  async create(data: CrearPlanDto) {
+    return await this.prisma.membresiaPlan.create({ data });
   }
 
   /**
    * Obtiene la lista de planes de membresía
    */
-  findAll() {
-    return this.prisma.membresiaPlan.findMany();
+  async findAll() {
+    return await this.prisma.membresiaPlan.findMany();
   }
 
   /**
    * Obtiene un plan de membresía por su ID
    */
-  findOne(id: number) {
-    return this.prisma.membresiaPlan.findUnique({
+  async findOne(id: number) {
+    return await this.prisma.membresiaPlan.findUnique({
       where: { id_membresia_plan: id },
     });
   }
@@ -37,8 +37,8 @@ export class MembresiasRepository {
   /**
    * Actualiza un plan de membresía por su ID
    */
-  update(id: number, updatePlanDto: ActualizarPlanDto) {
-    return this.prisma.membresiaPlan.update({
+  async update(id: number, updatePlanDto: ActualizarPlanDto) {
+    return await this.prisma.membresiaPlan.update({
       where: { id_membresia_plan: id },
       data: updatePlanDto,
     });
@@ -47,17 +47,27 @@ export class MembresiasRepository {
   /**
    * Elimina un plan de membresía por su ID
    */
-  remove(id: number) {
-    return this.prisma.membresiaPlan.delete({
+  //NOTA: No hay es activo ni estado en membresía plan todavía
+  /*async softDelete(id: number) {
+    return await this.prisma.membresiaPlan.update({
+      where: { id_membresia_plan: id },
+      data: {es_activo: false} //NOTA: Solo por el momento
+    });
+  }*/
+
+  //NOTA: No es un soft delete, es un delete real.
+  //Se hace así por el momento ya que no hay membresias activas.
+  async remove(id: number) {
+    return await this.prisma.membresiaPlan.delete({
       where: { id_membresia_plan: id },
     });
   }
 
   /**
-   * Obtiene la lista de estados posibles de membresía
+   * Obtiene la lista de estados de membresía
    */
   async obtenerEstados() {
-    return this.prisma.membresiaEstado.findMany({
+    return await this.prisma.membresiaEstado.findMany({
       orderBy: { id_membresia_estado: 'asc' },
     });
   }
@@ -66,7 +76,7 @@ export class MembresiasRepository {
    * Busca un estado específico por su ID
    */
   async obtenerEstadoPorId(id_membresia_estado: number) {
-    return this.prisma.membresiaEstado.findUnique({
+    return await this.prisma.membresiaEstado.findUnique({
       where: { id_membresia_estado },
     });
   }
