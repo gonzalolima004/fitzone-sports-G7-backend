@@ -2,9 +2,13 @@ node_modules
 /dist
 /build
 /generated/prisma
-
+.pnpm-store/
+pnpm-debug.log*
 .env
+package
 .windsurf/
 .claude/
 .agents/
 skills-lock.json
+pnpm-workspace.yaml
+pnpm-lock.yaml
