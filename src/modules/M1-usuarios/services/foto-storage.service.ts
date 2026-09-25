@@ -2,6 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
   BadRequestException,
+  HttpException,
 } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 
@@ -39,7 +40,7 @@ export class FotoStorageService {
       );
     }
 
-    //Genera nombre único del archivo con timestamp para evitar coliciones
+    //Genera nombre único del archivo para evitar coliciones
     const fileExtension = (
       file.originalname.split('.').pop() || 'jpg'
     ).toLowerCase();
@@ -73,8 +74,14 @@ export class FotoStorageService {
 
       return data.publicUrl;
     } catch (error) {
-      console.error('Error al subir la foto:', error);
-      throw new InternalServerErrorException('Error al subir la foto');
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      console.error('Error no controlado al subir la foto:', error);
+      throw new InternalServerErrorException(
+        'Error inesperado al subir la foto',
+      );
     }
   }
 }
