@@ -195,7 +195,7 @@
 
 #### 22/09/2026
 
-#### Matías | Rol: Desarrollador Backend
+#### Matías Sillen Ríos | Rol: Desarrollador Backend
 
 * **Actividades:** Implementación de la grilla horaria de disponibilidad de alto rendimiento para canchas, creando los DTOs de consulta y respuesta, el repositorio de reservas optimizado con rangos de fechas, el algoritmo de cruce de slots en memoria dentro del servicio y el endpoint documentado con Swagger.
 * **Decisiones:**
@@ -216,7 +216,7 @@
 
 #### 24/09/2026
 
-#### Matías | Rol: Desarrollador Backend
+#### Matías Sillen Ríos | Rol: Desarrollador Backend
 
 * **Actividades:** Desarrollo del motor de precios dinámicos aplicando el Patrón Strategy (RF-11), creando el DTO de cotización, la interfaz base, las estrategias concretas para precio estándar, descuento del 15% para socios activos y recargo por horario pico, y el servicio orquestador de contexto.
 * **Decisiones:**
@@ -231,3 +231,21 @@
 * `feat(module): inyectar las estrategias en el array providers en canchas.module.ts`
 
 ---
+
+#### 24/09/2026
+
+#### Matías Sillen Ríos | Rol: Desarrollador Backend
+
+* **Actividades:** Implementación del flujo de reservas de canchas con control de concurrencia (US-05-04). Se crearon los DTOs correspondientes, la persistencia transaccional en el repositorio, la orquestación en el servicio integrando el cálculo de precios mediante el patrón Strategy, y el endpoint POST documentado con Swagger.
+* **Decisiones:**
+* Utilizar el método atómico `$transaction` de Prisma a nivel de base de datos para validar solapamientos horarios y persistir la reserva en una misma operación, previniendo así condiciones de carrera (race conditions) y sobreventa de turnos.
+* Dejar la inyección del usuario autenticado (decoradores y guards de JWT) comentada temporalmente y utilizar un ID de usuario fijo (`mock`) para poder probar el flujo completo de forma aislada hasta que el equipo consolide la Épica 1.
+* Simular temporalmente mediante logs el broadcast hacia Supabase Realtime, preparando el terreno para la actualización en vivo de la grilla.
+
+
+* **Dificultades:** Ninguna.
+* **Commits:**
+* `feat(canchas): crear DTOs de entrada y respuesta para reservas`
+* `feat(canchas): implementar bloqueo transaccional contra concurrencia en repositorio`
+* `feat(canchas): orquestar reserva integrando Strategy y persistencia atómica`
+* `feat(canchas): exponer endpoint protegido de reservas de canchas`
