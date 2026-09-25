@@ -1,62 +1,79 @@
 import {
-    Injectable,
-    ForbiddenException,
-    ConflictException,
-    UnauthorizedException,
+  Injectable,
+  //ForbiddenException,
+  //UnauthorizedException,
+  //ConflictException,
 } from '@nestjs/common';
+//import { RegistroAcceso } from '@prisma/client';
 import { AccesosRepository } from '../repositories/accesos.repository';
 import { QrService } from './qr.service';
 //import { MembresiasService } from '../../M1-usuarios/services/membresias.service';
-import { ValidarIngresoDto } from '../dto/validar-ingreso.dto';
-import { AccesoResponseDto } from '../dto/acceso-response.dto';
+//import { ValidarIngresoDto } from '../dto/validar-ingreso.dto';
+//import { AccesoResponseDto } from '../dto/acceso-response.dto';
+
+export interface PayloadQrToken {
+  id_usuario: number;
+  iat: number;
+}
 
 @Injectable()
 export class AccesosService {
-    constructor(
-        private readonly accesosRepository: AccesosRepository,
-        private readonly qrService: QrService,
-        //private readonly membresiasService: MembresiasService,
-    ) { }
+  constructor(
+    private readonly accesosRepository: AccesosRepository,
+    private readonly qrService: QrService,
+    //private readonly membresiasService: MembresiasService,
+  ) {}
+  /*
 
-    //async validarYRegistrarIngreso(
-    //  validarIngresoDto: ValidarIngresoDto,
-    //): Promise<AccesoResponseDto> {
-    //  const { qrToken, id_sede } = validarIngresoDto;
+  async validarYRegistrarIngreso(dto: ValidarIngresoDto): Promise<AccesoResponseDto> {
+     1. Decodificar y validar vigencia/firma del token QR (< 60s)
+    let payload: PayloadQrToken;
+    try {
+      payload = await this.qrService.validarTokenEfimero(dto.qrToken);
+    } catch {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: 'El código QR es inválido o ha expirado (vigencia máxima 60 segundos).',
+        error: 'Unauthorized',
+      });
+    }
 
-    // 1. Descifrar y validar la ventana de vigencia del token QR (<60s)
-    //const payload = this.qrService.validarTokenQr(qrToken);
-    //if (!payload || !payload.id_usuario) {
-    //  throw new UnauthorizedException('Token QR inválido o expirado.');
-    //}
+    const { id_usuario } = payload;
 
-    //const id_usuario = payload.id_usuario;
+     2. Corroborar el estado de la membresía y regla de mora (RN-03 / RF-03)
+    const estadoMembresia = await this.membresiasService.verificarEstadoMembresia(id_usuario);
+    if (!estadoMembresia.esSocioActivo || estadoMembresia.enMora) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        message: 'Acceso rechazado: El usuario no cuenta con una membresía activa o se encuentra en mora.',
+        error: 'Forbidden',
+      });
+    }
 
-    // 2. Control Anti-Doble Ingreso Simultáneo (RN-01)
-    //const accesoActivo = await this.accesosRepository.buscarAccesoActivoPorUsuario(id_usuario);
-    //if (accesoActivo) {
-    //  throw new ConflictException(
-    //    `El usuario ya registra un ingreso activo en la sede ${accesoActivo.id_sede} sin marcar egreso.`,
-    //  );
-    //}
+     3. Transacción atómica para prevenir race conditions y aplicar regla Anti-Doble Ingreso (RN-01)
+    const nuevoRegistro: RegistroAcceso = await this.accesosRepository.ejecutarTransaccionIngreso(
+      async () => {
+    const accesoActivo = await this.accesosRepository.buscarAccesoActivoPorUsuario(id_usuario);
 
-    // 3. Corroborar el estado de la membresía del socio
-    //const estadoMembresia = await this.membresiasService.verificarEstadoMembresia(id_usuario);
-    //if (!estadoMembresia.esSocioActivo || estadoMembresia.enMora) {
-    //  throw new ForbiddenException(
-    //    'Acceso denegado: La membresía del usuario no se encuentra activa o está en mora.',
-    //  );
-    //}
+    if (accesoActivo) {
+          throw new ConflictException({
+            statusCode: 409,
+            message: `Acceso rechazado (RN-01): El usuario ya figura dentro de la sede '${accesoActivo.sede.nombre}' sin haber registrado su egreso.`,
+            error: 'Conflict',
+          });
+        }
 
-    // 4. Persistir la entrada en la base de datos
-    //const registro = await this.accesosRepository.crearIngreso(id_usuario, id_sede);
+        return this.accesosRepository.crearIngreso(id_usuario, dto.id_sede);
+      },
+    );
 
-    //const nombreCompleto = `${registro.usuario.nombre} ${registro.usuario.apellido}`;
-
-    //return new AccesoResponseDto(
-    //  registro.id_registro_acceso,
-    //  nombreCompleto,
-    //  true,
-    //  registro.fecha_ingreso,
-    //);
-    //}
+    return new AccesoResponseDto({
+      id_registro_acceso: nuevoRegistro.id_registro_acceso,
+      nombreUsuario: estadoMembresia.nombreUsuario,
+      accesoPermitido: true,
+      fechaIngreso: nuevoRegistro.fecha_ingreso,
+      mensaje: 'Acceso autorizado correctamente.',
+    });
+  }
+  */
 }
