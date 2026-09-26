@@ -39,12 +39,14 @@
 
 #### 23/08/2026
 
-#### Gonzalo Lima y Matías Sillen | Rol: Desarrolladores Backend
+#### Angelina Vialle y Marcos Caraballo | Rol: Desarrolladores Backend
 
-- **Actividades:** Diseñar en conjunto el diagrama de entidad-relación de la base de datos.
+- **Actividades:** 
+  - Identificación de las entidades principales del sistema.
+  - Diseño en conjunto del diagrama de entidad-relación de la base de datos.
 - **Decisiones:** Usar Draw.io para armar el diagrama porque es visual, gratuito y nos permite editar o exportar facilmente.
   Utilizar tablas en lugar de enumeraciones para roles, tipos y estados. Añadir tabla ciudad para asociarla a sedes, para poder evitar que un socio use libremente las sedes de otras ciudades, sin afectar las de su misma ciudad.
-- **Dificultades:** Ninguna
+- **Dificultades:** La tabla de pagos apuntaba alternativamente a membresías o canchas, lo cual generaba un antipatrón. Se resolvió separando la lógica de pago por módulo para permitir agregar nuevas entidades financieras a futuro.
 - **Commits:** ----
 
 ---
@@ -75,7 +77,7 @@
 
 #### 01/09/2026 a 06/09/2026
 
-#### Angelina Vialle y Facundo Agüero | Rol: Backend Developers
+#### Angelina Vialle y Marcos Caraballo | Rol: Backend Developers
 
 - **Actividades:** Escribir los registros de decisiones (ADRs) para el backend del proyecto.
 - **Decisiones:** ----
@@ -192,3 +194,47 @@
   - `feat: controller de pagos`
 
 ---
+
+#### 25/09/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+- **Actividades:**
+
+  - Finalización de la tarea de Carga de fotos de usuario y ensamblado preliminar del módulo de usuarios.
+  - Implementación y refinamiento de `CreateUsuarioDto` con validaciones estrictas de `class-validator`, transformaciones de sanitización con `class-transformer` (normalización de DNI, emails en minúsculas y capitalización automática de nombres/apellidos) y documentación interactiva para Swagger mediante `@ApiProperty`.
+  - Integración en `UsuariosRepository` y `UsuariosService` con guardas de unicidad para DNI y correo electrónico.
+
+- **Decisiones:**
+  - Sanitizar y limpiar los datos de entrada directamente en la capa de DTOs utilizando decoradores `@Transform` para evitar duplicar lógica de procesamiento de cadenas en los servicios.
+  - Mantener la relación directa de usuarios con sedes y roles, evitando entidades intermedias o abstracciones redundantes como la tabla "Socio".
+
+- **Dificultades:**
+  - Ajuste de los DTOs para mantener compatibilidad entre los datos de formulario de fotos de perfil y los atributos requeridos por la tabla de usuarios en Prisma sin alterar el flujo de registro.
+
+- **Commits:**
+  - `feat(M1): implementar DTO de creacion de usuario con sanitizacion y Swagger`
+  - `feat(M1): ensamblado preliminar del modulo de usuarios y carga de foto`
+
+  #### 26/09/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+- **Actividades**
+  - Implementación completa de la US-02-04: Asignación, Renovación y Control de Estados de Membresía (RF-02).
+  - Definición de los DTOs de contrato (`CreateMembresiaDto`, `ActualizarMembresiaEstadoDto`, `MembresiaResponseDto`).
+  - Implementación de las operaciones de membresías de usuario en `MembresiasRepository` (`create`, `findById`, `findActiveByUsuarioId`, `findByUsuarioId`, `findAll`, `updateEstado`, `deactivatePrevious`).
+  - Desarrollo de la lógica de negocio en `MembresiasService` y ruteo en `MembresiasController`.
+
+- **Decisiones**
+  - Programar el cálculo dinámico de vigencia en el servicio (`fecha_inicio = HOY` y `fecha_fin = HOY + duracion_dias` del plan) cuando no se envían fechas explícitas desde el cliente.
+  - Garantizar la regla de negocio de una sola membresía activa por usuario a la vez, ejecutando automáticamente `deactivatePrevious()` (pasando a estado Vencido) antes de registrar un nuevo alta.
+
+- **Dificultades**
+  - Incompatibilidad de tipos estricta en TypeScript al pasar propiedades opcionales provenientes de DTOs parciales (`PartialType`) hacia parámetros numéricos requeridos del repositorio. Se resolvió aplicando guardas de validación defensivas (`if (!dto.id_membresia_estado)`) en el servicio.
+
+- **Commits:**
+  - `feat(M1): crear DTOs de asignacion, cambio de estado y respuesta de Membresias`
+  - `feat(M1): implementar metodos de persistencia de membresias en MembresiasRepository`
+  - `feat(M1): implementar MembresiasService con calculo de fechas y regla de una sola activa`
+  - `feat(M1): implementar MembresiasController ajustado a MembresiasService`
