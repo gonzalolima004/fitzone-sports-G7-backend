@@ -218,3 +218,20 @@
 - **Dificultades:** Ninguna.
 - **Commits:**
   - ``
+
+---
+#### 25/09/2026
+
+#### Angelina Vialle | Rol: Desarrolador Backend
+
+- **Actividades:** Desarrollar DTO de validacion de reglas de acceso, service y repository de validacion de reglas de acceso
+
+- **Decisiones:**
+  - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso..
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `Tarea 1: DTO Validacion de Reglas de Acceso`
+  - `Tarea 3.2: Consulta de Accesos Activos en Repositorio`
+  - `Tarea 3.3: Aplicación de la Regla RN-01 en el Servicio de Accesos`
+  - `Correcciones`
+  
