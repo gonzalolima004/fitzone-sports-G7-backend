@@ -192,3 +192,43 @@
   - `feat: controller de pagos`
 
 ---
+
+#### 24/09/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del procesamiento de Webhooks de MercadoPago para confirmar cobros en tiempo real.
+  - Creación del endpoint público para recibir las notificaciones automáticas de pago.
+  - Confirmación automática de reservas de canchas y activación de membresías apenas el pago es aprobado, garantizando que una misma notificación no duplique operaciones.
+- **Decisiones:**
+  - Responder siempre con un 200 OK para evitar que reenvíe notificaciones repetidas.
+  - Certificar siempre el cobro contra la API antes de habilitar el servicio.
+  - Incorporar control de idempotencia para ignorar avisos repetidos si el pago ya estaba aprobado.
+  - Validar la firma digital de seguridad de MercadoPago si la clave secreta está configurada.
+- **Dificultades:**
+  - Verificar documentación en para ver si se hizo de forma correcta el módulo.
+- **Commits:**
+  - `feat(pagos): dto webhook y dto respuesta del webhook de mp`
+  - `feat(pagos): verificación del estado del pago vía api de mp`
+  - `feat(pagos): confirmación del pago atómica y control de idempotencia`
+  - `feat(pagos): controller público de webhooks`
+
+---
+
+#### 24/09/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Estructuración de los datos necesarios para armar los recibos y facturas de los pagos realizados.
+  - Creación del servicio para generar automáticamente los comprobantes en PDF y sin guardarlos.
+  - Implementación del endpoint para que los usuarios puedan ver o imprimir su comprobante desde el navegador, guardando el enlace en la base de datos.
+- **Decisiones:**
+  - Hacer que toda la información sea 100% dinámica.
+  - Configurar la respuesta en modo visualización para que se pueda abrir o mandar a imprimir.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(pagos): dto de comprobantes`
+  - `feat(pagos): generador de pdfs con pdfkit`
+  - `feat(pagos): controller de comprobantes`

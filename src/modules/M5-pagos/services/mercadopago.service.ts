@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { MercadoPagoConfigOptions } from '../../../config/mercadopago.config';
 
+import type { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
+
 @Injectable()
 export class MercadoPagoService {
   private readonly logger = new Logger(MercadoPagoService.name);
@@ -32,6 +34,28 @@ export class MercadoPagoService {
     this.preference = new Preference(this.client);
     this.payment = new Payment(this.client);
     this.logger.log('MercadoPagoService inicializado correctamente.');
+  }
+
+  /**
+   * Consulta el estado oficial de una transacción directamente en los servidores
+   * de Mercado Pago (Payment.get) para certificar su estado real (approved, rejected, pending, etc.)
+   * y prevenir falsificaciones en webhooks.
+   */
+  async consultarPago(id: string | number): Promise<PaymentResponse> {
+    try {
+      this.logger.log(`Consultando estado del pago #${id} en Mercado Pago...`);
+      const payment = await this.payment.get({ id: String(id) });
+      this.logger.log(
+        `Pago #${id} verificado en Mercado Pago. Estado: '${payment.status}' (detalle: '${payment.status_detail}').`,
+      );
+      return payment;
+    } catch (error: unknown) {
+      this.logger.error(
+        `Error al consultar el pago #${id} en los servidores de Mercado Pago:`,
+        error,
+      );
+      throw error;
+    }
   }
 
   get config(): MercadoPagoConfigOptions {
