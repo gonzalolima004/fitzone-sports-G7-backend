@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsNumber, IsDate } from 'class-validator';
 import { Type } from 'class-transformer';
+
 export class QrDinamicoResponseDto {
   @ApiProperty({
     description: 'Token efímero/TOTP firmado correspondiente al usuario',
@@ -16,6 +17,7 @@ export class QrDinamicoResponseDto {
     example: 60,
     default: 60,
   })
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   expiraEnSegundos: number;

@@ -192,3 +192,46 @@
   - `feat: controller de pagos`
 
 ---
+
+#### 18/09/2026
+
+#### Angelina Vialle | Rol: Desarrolador Backend
+
+- **Actividades:** Implementar la generación y validación de tokens QR dinámicos con una vigencia corta (60 segundos) usando JWT y la librería OTPLib, garantizando la seguridad en el acceso de usuarios a las instalaciones.
+
+- **Decisiones:**
+  - Emplear HMAC SHA-256 para derivar un secreto TOTP determinista único por usuario a partir del secreto principal de la aplicación.
+  - Definir la vigencia del token JWT y del algoritmo TOTP en 60 segundos con una ventana de tolerancia de 5 segundos para prevenir ataques de repetición o desfases de tiempo.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - ``
+
+---
+#### 23/09/2026
+
+#### Angelina Vialle | Rol: Desarrolador Backend
+
+- **Actividades:** Desarrollar el módulo de validación de ingreso por QR y verificación de membresía en tiempo real para autorizar o rechazar ingresos físicos en las sedes,
+
+- **Decisiones:**
+  - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso..
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - ``
+
+---
+#### 25/09/2026
+
+#### Angelina Vialle | Rol: Desarrolador Backend
+
+- **Actividades:** Desarrollar DTO de validacion de reglas de acceso, service y repository de validacion de reglas de acceso
+
+- **Decisiones:**
+  - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso..
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `Tarea 1: DTO Validacion de Reglas de Acceso`
+  - `Tarea 3.2: Consulta de Accesos Activos en Repositorio`
+  - `Tarea 3.3: Aplicación de la Regla RN-01 en el Servicio de Accesos`
+  - `Correcciones`
+  
