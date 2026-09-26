@@ -3,6 +3,7 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { MercadoPagoService } from './mercadopago.service';
@@ -10,6 +11,7 @@ import { GeneradorPdfService } from './generador-pdf.service';
 import {
   PagosRepository,
   PagoConRelaciones,
+  PagoConDetalleCompleto,
 } from '../repositories/pagos.repository';
 import { IniciarPagoDto } from '../dto/iniciar-pago.dto';
 import { PreferenciaPagoResponseDto } from '../dto/preferencia-pago-response.dto';
@@ -17,6 +19,10 @@ import {
   ComprobanteItemDto,
   ComprobanteResponseDto,
 } from '../dto/comprobante-response.dto';
+import {
+  PagoDetalleResponseDto,
+  PagoConceptoDto,
+} from '../dto/pago-detalle-response.dto';
 
 @Injectable()
 export class PagosService {
@@ -440,5 +446,109 @@ export class PagosService {
   async generarComprobantePdf(id_pago: number): Promise<Buffer> {
     const datos = await this.obtenerDatosComprobante(id_pago);
     return this.generadorPdfService.generarComprobante(datos);
+  }
+
+  /**
+   * Transforma un registro de pago y sus relaciones en el DTO de respuesta detallado.
+   */
+  private formatearDetallePago(
+    pago: PagoConDetalleCompleto,
+  ): PagoDetalleResponseDto {
+    let concepto: PagoConceptoDto;
+
+    if (pago.cancha_reserva) {
+      const r = pago.cancha_reserva;
+      const nombreCancha = r.cancha?.nombre || 'Cancha Deportiva';
+      const nombreSede = r.cancha?.sede?.nombre || 'Sede Central';
+      const fechaStr = new Date(r.fecha_inicio).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+      const horaInicio = new Date(r.fecha_inicio).toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const horaFin = new Date(r.fecha_fin).toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      concepto = {
+        tipo: 'cancha',
+        id_referencia: r.id_cancha_reserva,
+        titulo: `Reserva ${nombreCancha}`,
+        detalle: `Sede ${nombreSede} - Horario: ${fechaStr} ${horaInicio} a ${horaFin} hs`,
+      };
+    } else if (pago.membresia) {
+      const m = pago.membresia;
+      const nombrePlan = m.membresia_plan?.nombre || 'Plan FitZone';
+      const dias = m.membresia_plan?.duracion_dias || 30;
+      const inicioStr = new Date(m.fecha_inicio).toLocaleDateString('es-AR');
+      const finStr = new Date(m.fecha_fin).toLocaleDateString('es-AR');
+
+      concepto = {
+        tipo: 'membresia',
+        id_referencia: m.id_membresia,
+        titulo: `Membresía ${nombrePlan}`,
+        detalle: `Vigencia: ${inicioStr} al ${finStr} (${dias} días)`,
+      };
+    } else {
+      concepto = {
+        tipo: 'general',
+        id_referencia: null,
+        titulo: 'Servicio Deportivo FitZone',
+        detalle: 'Abono general registrado',
+      };
+    }
+
+    const comprobanteUrl =
+      pago.comprobante_url || `/pagos/${pago.id_pago}/comprobante`;
+
+    return {
+      id_pago: pago.id_pago,
+      monto: Number(pago.monto),
+      fecha_pago: pago.fecha_pago,
+      estado: pago.pago_estado?.descripcion || 'Pendiente',
+      token_transaccion: pago.token_transaccion,
+      comprobante_url: comprobanteUrl,
+      concepto,
+    };
+  }
+
+  /**
+   * Obtiene la lista cronológica de pagos realizados por un socio
+   */
+  async obtenerHistorialUsuario(
+    id_usuario: number,
+  ): Promise<PagoDetalleResponseDto[]> {
+    const pagos =
+      await this.pagosRepository.obtenerHistorialPorUsuario(id_usuario);
+    return pagos.map((pago) => this.formatearDetallePago(pago));
+  }
+
+  /**
+   * Obtiene el detalle de un pago por su ID y opcionalmente valida su pertenencia
+   */
+  async obtenerDetallePago(
+    id_pago: number,
+    id_usuario?: number,
+  ): Promise<PagoDetalleResponseDto> {
+    const pago = await this.pagosRepository.obtenerDetallePorId(id_pago);
+    if (!pago) {
+      throw new NotFoundException(`El pago #${id_pago} no existe.`);
+    }
+
+    if (id_usuario) {
+      const usuarioPago =
+        pago.cancha_reserva?.id_usuario ?? pago.membresia?.id_usuario;
+      if (usuarioPago !== undefined && usuarioPago !== id_usuario) {
+        throw new ForbiddenException(
+          'No tienes permisos para consultar este comprobante o pago.',
+        );
+      }
+    }
+
+    return this.formatearDetallePago(pago);
   }
 }
