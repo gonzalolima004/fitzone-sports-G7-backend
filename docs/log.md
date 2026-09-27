@@ -249,3 +249,24 @@
 * `feat(canchas): implementar bloqueo transaccional contra concurrencia en repositorio`
 * `feat(canchas): orquestar reserva integrando Strategy y persistencia atómica`
 * `feat(canchas): exponer endpoint protegido de reservas de canchas`
+
+---
+
+#### 27/09/2026
+
+#### Matías Sillen Ríos | Rol: Desarrollador Backend
+
+* **Actividades:** Implementación de la inhabilitación de canchas por mantenimiento (US-05-05). Se desarrollaron los DTOs de creación y respuesta, la capa de persistencia en el repositorio, y el servicio y controlador correspondientes. Finalmente, se ensambló y exportó el módulo completo de canchas integrando todos sus controladores, repositorios y el patrón Strategy.
+* **Decisiones:**
+* Aislar el registro del bloqueo insertando los datos únicamente en la tabla `cancha_mantenimiento` sin alterar la tabla `cancha_reserva`. Esto garantiza que se respeten los turnos previamente confirmados, cumpliendo estrictamente con el RF-12.
+* Apoyarse en el algoritmo de la grilla horaria desarrollado en la US-05-02, el cual ya está diseñado para leer esta tabla de mantenimientos y bloquear automáticamente los turnos futuros, evitando duplicar lógica de negocio.
+
+
+* **Dificultades:** Ninguna.
+* **Commits:**
+* `feat(canchas): crear DTOs de request y response para mantenimiento`
+* `feat(canchas): implementar persistencia de mantenimiento en repositorio`
+* `feat(canchas): desarrollar servicio y endpoint para programar mantenimientos`
+* `chore(canchas): registrar controladores, servicios y estrategias en el módulo`
+
+---
