@@ -22,6 +22,7 @@ import { MembresiasService } from '../services/membresias.service';
 import { CreateMembresiaDto } from '../dto/crear-membresia.dto';
 import { ActualizarMembresiaEstadoDto } from '../dto/actualizar-membresia-estado.dto';
 import { MembresiaResponseDto } from '../dto/membresia-response.dto';
+import { VerificarMembresiaResponseDto } from '../dto/verificar-membresia-response.dto';
 
 @ApiTags('Membresías')
 @Controller('membresias')
@@ -83,6 +84,28 @@ export class MembresiasController {
     @Param('id_usuario', ParseIntPipe) id_usuario: number,
   ): Promise<MembresiaResponseDto | null> {
     return this.membresiasService.findActiveByUsuarioId(id_usuario);
+  }
+
+  @Get('usuario/:id_usuario/verificar')
+  @ApiOperation({
+    summary: 'Verificar estado de membresía multi-sede y regla de mora',
+  })
+  @ApiParam({
+    name: 'id_usuario',
+    type: Number,
+    description: 'ID del usuario a verificar',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estado de membresía verificado correctamente.',
+    type: VerificarMembresiaResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado.' })
+  async verificarEstadoMembresia(
+    @Param('id_usuario', ParseIntPipe) id_usuario: number,
+  ): Promise<VerificarMembresiaResponseDto> {
+    return this.membresiasService.verificarMembresia(id_usuario);
   }
 
   @Get(':id')

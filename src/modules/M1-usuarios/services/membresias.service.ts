@@ -199,7 +199,7 @@ export class MembresiasService {
       id_usuario: id_usuario,
       esSocioActivo: !esMora, // Si no está en mora, es socio activo
       enMora: esMora,
-      id_sede_origen: usuario.id_sede,
+      id_sede_origen: idSedeOrigen,
       fecha_vencimiento: membresiaActiva.fecha_fin,
       mensaje: esMora
         ? 'Membresía vencida. El socio se encuentra en mora y no tiene permitido el acceso.'
