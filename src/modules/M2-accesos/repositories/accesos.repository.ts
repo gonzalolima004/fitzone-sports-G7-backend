@@ -56,13 +56,14 @@ export class AccesosRepository {
    */
   async cerrarEgreso(
     id_registro_acceso: number,
+    fechaEgreso?: Date,
     tx?: Prisma.TransactionClient,
   ): Promise<RegistroAcceso> {
     const client = tx ?? this.prisma;
     return client.registroAcceso.update({
       where: { id_registro_acceso },
       data: {
-        fecha_egreso: new Date(),
+        fecha_egreso: fechaEgreso ?? new Date(),
       },
     });
   }
