@@ -1,11 +1,15 @@
 import {
   Controller,
-  //Post, Body, HttpCode, HttpStatus, UseGuards
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  //UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
-  //ApiOperation,
-  //ApiResponse,
+  ApiOperation,
+  ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AccesosService } from '../services/accesos.service';
@@ -14,6 +18,8 @@ import { ValidarIngresoDto } from '../dto/validar-ingreso.dto';
 import { AccesoResponseDto } from '../dto/acceso-response.dto';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 */
+import { RegistrarEgresoDto } from '../dto/registrar-egreso.dto';
+import { EgresoResponseDto } from '../dto/egreso-response.dto';
 @ApiTags('Control de Acceso')
 @ApiBearerAuth()
 //@UseGuards(SupabaseAuthGuard)
@@ -50,4 +56,36 @@ export class AccesosController {
     return this.accesosService.validarYRegistrarIngreso(validarIngresoDto);
   }
     */
+
+  /**
+   * Endpoint HTTP de Egreso
+   * Publica la ruta para registrar la salida física del establecimiento,
+   * cerrar la sesión de entrenamiento y liberar aforo de forma controlada.
+   */
+  @Post('registrar-egreso')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Registrar salida física de socio y calcular permanencia',
+    description:
+      'Busca la entrada activa del usuario en la sede, estampa la fecha/hora de salida y retorna la confirmación del egreso.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Egreso registrado correctamente y aforo liberado.',
+    type: EgresoResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'La sede del egreso no coincide con la sede donde ingresó el socio.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No se encontró un ingreso activo previo para el usuario.',
+  })
+  async registrarEgreso(
+    @Body() registrarEgresoDto: RegistrarEgresoDto,
+  ): Promise<EgresoResponseDto> {
+    return this.accesosService.registrarEgreso(registrarEgresoDto);
+  }
 }
