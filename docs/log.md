@@ -177,6 +177,24 @@
 
 ---
 
+#### 19/09/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+**Actividades:**
+  - Implementación del módulo base de Usuarios: desarrollo de `UsuariosRepository` utilizando `PrismaService`, `UsuariosService` con encriptación de contraseñas mediante `bcrypt`, y `UsuariosController` documentado con anotaciones de Swagger.
+  - Integración de `class-transformer` en los DTOs de usuarios para permitir la transformación y sanitización automática de datos en el flujo de entrada de la API.
+**Decisiones:** Ninguna.
+**Dificultades:** 
+  - Ajuste de los DTOs para mantener compatibilidad entre los datos de formulario de fotos de perfil y los atributos requeridos por la tabla de usuarios en Prisma sin alterar el flujo de registro.
+**Commits:**
+  - `feat(M1): implementar UsuariosRepository con PrismaService`
+  - `feat(M1): Implementar UsuarioService con encriptación bcrypt`
+  - `feat(M1): implementar UsuariosController con anotaciones Swagger`
+  - `feat(M1): Implementar class transformer en dtos y que sean utilizados en el flujo`
+
+---
+
 #### 21/09/2026
 
 #### Gonzalo Lima | Rol: Desarrolador Backend
@@ -195,46 +213,84 @@
 
 ---
 
+#### 23/09/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+**Actividades:**
+  - Creación del DTO `UploadFotoResponseDto` para definir el contrato de respuesta estructurado tras la subida de fotos de perfil.
+**Decisiones:**
+  - Definir un DTO específico de respuesta para la carga de imágenes, asegurando que el cliente reciba un formato estandarizado con la URL devuelta por el almacenamiento.
+**Dificultades:** Ninguna.
+**Commits:**
+  - `feat(M1): crear UploadFotoResponseDto para respuesta de foto de perfil`
+
+---
 #### 25/09/2026
 
 #### Marcos Caraballo | Rol: Desarrollador Backend
 
-- **Actividades:**
+**Actividades:**
+  - Implementación del servicio de almacenamiento `FotoStorageService` para conectar con Supabase Storage y el controlador `UploadFotoController` para la carga de archivos.
+  - Creación del repositorio `MembresiasRepository` para la gestión de planes de membresía y sus estados.
+  - Desarrollo de DTOs, servicio (`PlanesService`) y controlador (`PlanesController`) para administrar el catálogo de planes de suscripción.
+**Decisiones:**
+  - Desacoplar el almacenamiento de imágenes mediante un servicio dedicado (`FotoStorageService`), persistiendo en la base de datos únicamente la URL pública entregada por Supabase.
+  - Separar la administración de los planes de membresía en su propio controlador para permitir la gestión independiente de precios, duraciones y estados de los planes.
+**Dificultades:**
+  - Manejo de la interceptación de archivos `multipart/form-data` en NestJS y su correcto pasaje en memoria hacia la API de Supabase Storage.
+**Commits:**
+  - `feat(M1): crear FotoStorageService para gestionar fotos con supabase storage`
+  - `feat(M1): implementar UploadFotoController para carga de fotos`
+  - `feat(M1): crear DTOs para crear, actualizar y el response de membresia_plan`
+  - `feat(M1): crear MembresiasRepository para gestion de planes y estados`
+  - `feat(M1):implementar repositorio, servicio y controlador para gestion de planes de membresia`
 
-  - Finalización de la tarea de Carga de fotos de usuario y ensamblado preliminar del módulo de usuarios.
-  - Implementación y refinamiento de `CreateUsuarioDto` con validaciones estrictas de `class-validator`, transformaciones de sanitización con `class-transformer` (normalización de DNI, emails en minúsculas y capitalización automática de nombres/apellidos) y documentación interactiva para Swagger mediante `@ApiProperty`.
-  - Integración en `UsuariosRepository` y `UsuariosService` con guardas de unicidad para DNI y correo electrónico.
+---
 
-- **Decisiones:**
-  - Sanitizar y limpiar los datos de entrada directamente en la capa de DTOs utilizando decoradores `@Transform` para evitar duplicar lógica de procesamiento de cadenas en los servicios.
-  - Mantener la relación directa de usuarios con sedes y roles, evitando entidades intermedias o abstracciones redundantes como la tabla "Socio".
-
-- **Dificultades:**
-  - Ajuste de los DTOs para mantener compatibilidad entre los datos de formulario de fotos de perfil y los atributos requeridos por la tabla de usuarios en Prisma sin alterar el flujo de registro.
-
-- **Commits:**
-  - `feat(M1): implementar DTO de creacion de usuario con sanitizacion y Swagger`
-  - `feat(M1): ensamblado preliminar del modulo de usuarios y carga de foto`
-
-  #### 26/09/2026
+#### 26/09/2026
 
 #### Marcos Caraballo | Rol: Desarrollador Backend
 
-- **Actividades**
+**Actividades:**
   - Implementación completa de la US-02-04: Asignación, Renovación y Control de Estados de Membresía (RF-02).
   - Definición de los DTOs de contrato (`CreateMembresiaDto`, `ActualizarMembresiaEstadoDto`, `MembresiaResponseDto`).
-  - Implementación de las operaciones de membresías de usuario en `MembresiasRepository` (`create`, `findById`, `findActiveByUsuarioId`, `findByUsuarioId`, `findAll`, `updateEstado`, `deactivatePrevious`).
-  - Desarrollo de la lógica de negocio en `MembresiasService` y ruteo en `MembresiasController`.
-
-- **Decisiones**
-  - Programar el cálculo dinámico de vigencia en el servicio (`fecha_inicio = HOY` y `fecha_fin = HOY + duracion_dias` del plan) cuando no se envían fechas explícitas desde el cliente.
-  - Garantizar la regla de negocio de una sola membresía activa por usuario a la vez, ejecutando automáticamente `deactivatePrevious()` (pasando a estado Vencido) antes de registrar un nuevo alta.
-
-- **Dificultades**
-  - Incompatibilidad de tipos estricta en TypeScript al pasar propiedades opcionales provenientes de DTOs parciales (`PartialType`) hacia parámetros numéricos requeridos del repositorio. Se resolvió aplicando guardas de validación defensivas (`if (!dto.id_membresia_estado)`) en el servicio.
-
-- **Commits:**
+  - Implementación de las operaciones de membresías de usuario en `MembresiasRepository`
+  - Desarrollo de la lógica de negocio en `MembresiasService`
+  - Desarrollo del ruteo en `MembresiasController`.
+**Decisiones:**
+  - Programar el cálculo dinámico de vigencia en el servicio (`fecha_inicio` y `fecha_fin`) cuando no se envían fechas explícitas desde el cliente.
+  - Garantizar la regla de negocio de una sola membresía activa por usuario a la vez, ejecutando automáticamente `deactivatePrevious()` en el repositorio al registrar una nueva alta.
+**Dificultades:**
+  - Incompatibilidad de tipos estricta en TypeScript al pasar propiedades opcionales provinientes de DTOs parciales (`PartialType`) hacia parámetros requeridos del repositorio. Se resolvió aplicando guardas defensivas en el servicio.
+**Commits:**
   - `feat(M1): crear DTOs de asignacion, cambio de estado y respuesta de Membresias`
-  - `feat(M1): implementar metodos de persistencia de membresias en MembresiasRepository`
-  - `feat(M1): implementar MembresiasService con calculo de fechas y regla de una sola activa`
-  - `feat(M1): implementar MembresiasController ajustado a MembresiasService`
+  - `feat(M1): implementar MembresiasService con validaciones de existencia y control de estado`
+  - `feat(M1): implementar MembresiasController`
+  - `docs(log): actualizar bitacora`
+
+---
+
+#### 27/09/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+**Actividades:**
+  - Implementación completa de la US-02-05: Verificación de Membresía Multi-Sede (RF-03) y Regla de Mora (RN-03).
+  - Creación del DTO de respuesta `VerificarMembresiaResponseDto`.
+  - Desarrollo del método `verificarEstadoMembresia` en `MembresiasService` e integración del endpoint de verificación de membresías en `MembresiasController`.
+  - Configuración e integración final de `UsuariosModule` dentro del módulo principal `AppModule`.
+**Decisiones:**
+  - Realizar la verificación en una sola consulta a la BD (`findActiveByUsuarioId`) y evaluar la regla de mora (RN-03) en tiempo real por fecha (`fecha_fin < HOY`), evitando consultas complejas sobre el historial.
+  - Simplificar la respuesta considerando que si un usuario no tiene membresía activa, opera directamente como cliente externo, enfocando el contrato en los flags de estado (`esSocioActivo` y `enMora`).
+  - Devolver la `id_sede_origen` desde M1 y delegar la validación de la restricción territorial (misma ciudad) al Módulo de Control de Acceso (M2) al momento del escaneo del QR.
+**Dificultades:**
+  - Análisis y definición del modelo de estados de membresía: requirió un análisis profundo de arquitectura para conciliar los estados persistidos en la BD (`Activa`, `Vencida`, `Suspendida`) con la expiración por fecha en tiempo real, evitando múltiples consultas al historial y reduciendo la complejidad de micro-casos redundantes.
+**Commits:**
+  - `feat(M1): crear DTO de respuesta para verificacion multi-sede y regla de mora`
+  - `feat(M1): agregar verificacion de membresia multi-sede y regla de mora en MembresiasService`
+  - `feat(M1): implementar metodo para verificar membresia en el controller de membresias`
+  - `feat(app): registrar UsuariosModule (M1) en AppModule`
+  - `docs(log): actualizar bitacora`
+
+---
