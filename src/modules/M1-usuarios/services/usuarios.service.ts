@@ -62,7 +62,7 @@ export class UsuariosService {
       usuario_estado: { connect: { id_usuario_estado: ID_ESTADO_ACTIVO } },
     };
 
-    const usuario = this.repository.create(usuarioData);
+    const usuario = await this.repository.create(usuarioData);
     return plainToInstance(UsuarioResponseDto, usuario);
   }
 
