@@ -192,3 +192,29 @@
   - `feat: controller de pagos`
 
 ---
+
+Nombre / Rol: Facundo Agüero — Dev
+Rama: feature/auth-supabase
+Actividades realizadas:
+Se implementó la autenticación mediante Supabase Auth. Se creó SupabaseService, SupabaseAuthGuard, la interfaz AuthenticatedUser y los decoradores CurrentUser / CurrentUserId. El usuario autenticado por Supabase se vincula actualmente con el usuario de FitZone mediante el email.
+Durante las pruebas de integración se realizaron ajustes en M1 Usuarios y M2 Accesos necesarios para completar el flujo de autenticación.
+Cambios relacionados con otros módulos:
+
+- M1 Usuarios: se agregó findByEmail() para localizar al usuario local autenticado.
+- M1 Usuarios: se corrigieron los nombres de relaciones Prisma en defaultIncludes (usuario_estado y usuario_rol).
+- M1 Usuarios: se agregó await a repository.create() antes de transformar la respuesta.
+- M2 Accesos: se importó UsuariosModule para que SupabaseAuthGuard pueda resolver UsuariosService.
+- Dependencias: se agregó jsonwebtoken, requerido por el sistema de QR de Accesos.
+  Problemas encontrados / soluciones:
+- La conexión directa de Supabase utilizaba IPv6 y no era accesible desde la red local. Se utilizó Session Pooler.
+- La base no contenía datos iniciales de sede, usuario_estado ni rol.
+- Se detectó que el código supone id_usuario_estado = 1 como activo y 3 como desactivado, pero actualmente no existe un seed que cree esos valores.
+- Se corrigieron relaciones Prisma inválidas que impedían consultar usuarios.
+  Pruebas realizadas:
+- Sin token → 401.
+- Token inválido → 401.
+- Token Supabase válido sin usuario local → 403.
+- Token Supabase válido con usuario local → 200.
+- npm run typecheck sin errores.
+  Observaciones:
+  La vinculación Supabase ↔ Usuario FitZone se realiza actualmente mediante email. Queda pendiente definir con el equipo si a futuro se almacenará el UUID de Supabase en la tabla de usuarios y agregar seeds para datos maestros.
