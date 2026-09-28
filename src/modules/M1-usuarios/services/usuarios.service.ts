@@ -77,6 +77,14 @@ export class UsuariosService {
     return plainToInstance(UsuarioResponseDto, user);
   }
 
+  async findByEmail(email: string): Promise<UsuarioResponseDto> {
+    const user = await this.repository.findByEmail(email);
+
+    if (!user) throw new NotFoundException('Usuario con email no encontrado');
+
+    return plainToInstance(UsuarioResponseDto, user);
+  }
+
   async update(
     id: number,
     dto: ActualizarUsuarioDto,
