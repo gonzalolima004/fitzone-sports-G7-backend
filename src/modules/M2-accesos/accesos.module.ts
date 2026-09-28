@@ -4,8 +4,10 @@ import { QrController } from './controllers/qr.controller';
 import { QrService } from './services/qr.service';
 import { UserRepository } from './repositories/user.repository';
 import { PrismaModule } from '../../database/prisma-service/prisma.module';
+import { UsuariosModule } from '../M1-usuarios/usuarios.module';
+
 @Module({
-  imports: [ConfigModule, PrismaModule],
+  imports: [ConfigModule, PrismaModule, UsuariosModule],
   controllers: [QrController],
   providers: [QrService, UserRepository],
   exports: [QrService],
