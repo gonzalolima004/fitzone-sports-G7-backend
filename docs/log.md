@@ -253,4 +253,19 @@
   - `feat(M2): Actualizacion de Egreso y Calculo de Permanencia`
   - `feat(M2): Endpoint HTTP de Egreso`
   - `feat(M2): Actualizacion log`
+
+#### 29/09/2026
+
+#### Angelina Vialle | Rol: Desarrolador Backend
+
+- **Actividades:** Desarrollo e integración de la emisión de aforo en tiempo real vía Supabase Realtime Broadcast tras ingresos y egresos. Creación del DTO. Desarrollo de servicio para gestionar los canales dinámicos utilizando Supabase Client.  Ampliación de AccesosRepository y AccesosService con la lógica de consulta de aforo actual y capacidad máxima. Implementación del endpoint 
+
+- **Decisiones:**
+  - Desconexión del canal Realtime tras el envio del mensaje para evitar acumulación de suscripciones innecesarias en el servidor NestJS.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M2): DTOs de solicitud de egreso`
+  - `feat(M2): Actualizacion de Egreso y Calculo de Permanencia`
+  - `feat(M2): Endpoint HTTP de Egreso`
+  - `feat(M2): Actualizacion log`
   
