@@ -4,6 +4,9 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  Get,
+  Param,
+  ParseIntPipe,
   //UseGuards,
 } from '@nestjs/common';
 import {
@@ -11,6 +14,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { AccesosService } from '../services/accesos.service';
 /*
@@ -20,6 +24,7 @@ import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 */
 import { RegistrarEgresoDto } from '../dto/registrar-egreso.dto';
 import { EgresoResponseDto } from '../dto/egreso-response.dto';
+import { AforoStatusResponseDto } from '../dto/aforo-status-response.dto';
 @ApiTags('Control de Acceso')
 @ApiBearerAuth()
 //@UseGuards(SupabaseAuthGuard)
@@ -87,5 +92,19 @@ export class AccesosController {
     @Body() registrarEgresoDto: RegistrarEgresoDto,
   ): Promise<EgresoResponseDto> {
     return this.accesosService.registrarEgreso(registrarEgresoDto);
+  }
+  @Get('aforo/:id_sede')
+  @ApiOperation({ summary: 'Obtener estado del aforo actual de una sede' })
+  @ApiParam({ name: 'id_sede', type: String, description: 'ID de la sede' })
+  @ApiResponse({
+    status: 200,
+    type: AforoStatusResponseDto,
+    description: 'Estado del aforo obtenido exitosamente',
+  })
+  @ApiResponse({ status: 404, description: 'Sede no encontrada' })
+  async obtenerAforo(
+    @Param('id_sede', ParseIntPipe) idSede: number,
+  ): Promise<AforoStatusResponseDto> {
+    return this.accesosService.obtenerEstadoAforo(idSede);
   }
 }
