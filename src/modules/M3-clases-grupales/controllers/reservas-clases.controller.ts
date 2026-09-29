@@ -17,7 +17,7 @@ import { ReservasClasesService } from '../services/reservas-clases.service';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 import { ReservaClaseResponseDto } from '../dto/reserva-clase-response.dto';
 import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { CurrentUserId } from '../../../common/decorators/current-user.decorator';
 
 @ApiTags('Reservas de Clases Grupales')
@@ -27,7 +27,7 @@ export class ReservasClasesController {
   constructor(private readonly reservasService: ReservasClasesService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(SupabaseAuthGuard)
   @ApiOperation({ summary: 'Reservar una clase grupal (hasta 48h antes)' })
   @ApiResponse({
     status: 201,
@@ -42,7 +42,7 @@ export class ReservasClasesController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(SupabaseAuthGuard)
   @ApiOperation({
     summary: 'Cancelar una reserva de clase',
     description:

@@ -8,7 +8,7 @@ import {
 import { ListaEsperaService } from '../services/lista-espera.service';
 import { InscribirListaEsperaDto } from '../dto/inscribir-lista-espera.dto';
 import { CurrentUserId } from '../../../common/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 
 @ApiTags('Lista de Espera')
 @Controller('lista-espera')
@@ -16,7 +16,7 @@ export class ListaEsperaController {
   constructor(private readonly listaEsperaService: ListaEsperaService) {}
 
   @Post('inscribir')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(SupabaseAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Inscribirse en lista de espera de una clase agotada',

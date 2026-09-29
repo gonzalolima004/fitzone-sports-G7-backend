@@ -20,12 +20,12 @@ import { PagosService } from '../services/pagos.service';
 import { IniciarPagoDto } from '../dto/iniciar-pago.dto';
 import { PreferenciaPagoResponseDto } from '../dto/preferencia-pago-response.dto';
 import { PagoDetalleResponseDto } from '../dto/pago-detalle-response.dto';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { CurrentUserId } from '../../../common/decorators/current-user.decorator';
 
 @ApiTags('Pagos y Facturación')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(SupabaseAuthGuard)
 @Controller('pagos')
 export class PagosController {
   constructor(private readonly pagosService: PagosService) {}
