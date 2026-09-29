@@ -8,9 +8,17 @@ import {
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
+import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
+import { Subject } from 'rxjs';
 
 @Injectable()
 export class ReservasClasesService {
+  // Sujeto Observer para notificar cuando se libera una vacante por cancelación
+  public readonly vacanteNotifier = new Subject<{
+    id_clase: number;
+    id_clase_reserva: number;
+  }>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly reservasRepository: ReservasClasesRepository,
@@ -110,5 +118,61 @@ export class ReservasClasesService {
         tx,
       );
     });
+  }
+
+  async cancelarReserva(
+    id_reserva: number,
+    id_usuario: number,
+  ): Promise<CancelarReservaResponseDto> {
+    const reserva =
+      await this.reservasRepository.obtenerReservaPorId(id_reserva);
+
+    if (!reserva) {
+      throw new NotFoundException(`La reserva con ID ${id_reserva} no existe.`);
+    }
+
+    if (reserva.id_usuario !== id_usuario) {
+      throw new ForbiddenException(
+        'No tienes permiso para cancelar esta reserva.',
+      );
+    }
+
+    if (reserva.id_clase_reserva_estado === 2) {
+      throw new BadRequestException('La reserva ya se encuentra cancelada.');
+    }
+
+    const ahora = new Date();
+    const fechaInicio = new Date(reserva.fecha_inicio);
+
+    if (ahora >= fechaInicio) {
+      throw new BadRequestException(
+        'No se puede cancelar una clase que ya comenzó o finalizó.',
+      );
+    }
+
+    // Calcular la diferencia en horas
+    const diffHoras =
+      (fechaInicio.getTime() - ahora.getTime()) / (1000 * 60 * 60);
+
+    // Si faltan menos de 2 horas, se aplica penalidad
+    const penalidadAplicada = diffHoras < 2;
+
+    // Actualizar estado a Cancelada (Asumimos ID 2)
+    const reservaCancelada =
+      await this.reservasRepository.actualizarEstadoReserva(id_reserva, 2);
+
+    // Disparar el Observer para notificar que hay una vacante disponible
+    this.vacanteNotifier.next({
+      id_clase: reserva.id_clase,
+      id_clase_reserva: reserva.id_clase_reserva,
+    });
+
+    return {
+      penalidadAplicada,
+      mensaje: penalidadAplicada
+        ? 'Reserva cancelada con penalidad (fuera de término, menos de 2 horas de anticipación).'
+        : 'Reserva cancelada exitosamente sin penalidad.',
+      reserva: reservaCancelada,
+    };
   }
 }

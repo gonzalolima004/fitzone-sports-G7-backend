@@ -96,9 +96,8 @@
     },
     "transformIgnorePatterns": [
       "node_modules/(?!(@nestjs|@nestjs/.*)/)"
-    ],
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "/node_modules/(?!(@nestjs)/)",
+      "node_modules/(?!(@nestjs/config)/)"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
