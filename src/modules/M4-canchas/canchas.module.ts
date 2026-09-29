@@ -7,10 +7,12 @@ import { PrecioEstandarStrategy } from './patterns/strategy/precio-estandar.stra
 import { DescuentoSocioStrategy } from './patterns/strategy/descuento-socio.strategy';
 import { HorarioPicoStrategy } from './patterns/strategy/horario-pico.strategy';
 import { PrecioContextService } from './services/precio-context.service';
+import { ReservasCanchasController } from './controllers/reservas-canchas.controller';
+import { ReservasCanchasService } from './services/reservas-canchas.service';
 
 @Module({
   // Los controladores que manejan las rutas (ej. GET /canchas)
-  controllers: [CanchasController],
+  controllers: [CanchasController, ReservasCanchasController],
 
   // La lógica de negocio y el acceso a base de datos que se inyectan
   providers: [
@@ -22,6 +24,7 @@ import { PrecioContextService } from './services/precio-context.service';
     DescuentoSocioStrategy,
     HorarioPicoStrategy,
     PrecioContextService,
+    ReservasCanchasService,
   ],
   // Exportamos el servicio por si otro módulo (ej. Reservas o Pagos) necesita consultarlo en el futuro
   exports: [
