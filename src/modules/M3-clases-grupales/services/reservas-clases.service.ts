@@ -122,7 +122,10 @@ export class ReservasClasesService {
     });
   }
 
-  async cancelarReserva(id_clase_reserva: number, id_usuario: number) {
+  async cancelarReserva(
+    id_clase_reserva: number,
+    id_usuario: number,
+  ): Promise<CancelarReservaResponseDto> {
     return await this.prisma.$transaction(async (tx) => {
       // 1. Obtener la reserva original
       const reserva = await tx.claseReserva.findUnique({
@@ -145,12 +148,27 @@ export class ReservasClasesService {
         );
       }
 
+      const ahora = new Date();
+      const fechaInicio = new Date(reserva.fecha_inicio);
+
+      if (ahora >= fechaInicio) {
+        throw new BadRequestException(
+          'No se puede cancelar una clase que ya comenzó o finalizó.',
+        );
+      }
+
+      // Calcular diferencia en horas: penalidad si faltan menos de 2 horas
+      const diffHoras =
+        (fechaInicio.getTime() - ahora.getTime()) / (1000 * 60 * 60);
+      const penalidadAplicada = diffHoras < 2;
+
       // 2. Marcar como cancelada (ej. estado 4)
-      await this.reservasRepository.actualizarEstadoReserva(
-        id_clase_reserva,
-        4, // Cancelada
-        tx,
-      );
+      const reservaCancelada =
+        await this.reservasRepository.actualizarEstadoReserva(
+          id_clase_reserva,
+          4, // Cancelada
+          tx,
+        );
 
       // 3. Buscar si hay alguien en lista de espera (estado 2) para esa clase y horario exacto
       const primerEnEspera =
@@ -180,7 +198,11 @@ export class ReservasClasesService {
       }
 
       return {
-        message: 'Reserva cancelada exitosamente',
+        penalidadAplicada,
+        mensaje: penalidadAplicada
+          ? 'Reserva cancelada con penalidad (fuera de término, menos de 2 horas de anticipación).'
+          : 'Reserva cancelada exitosamente sin penalidad.',
+        reserva: reservaCancelada,
         cupo_reasignado: !!primerEnEspera,
       };
     });

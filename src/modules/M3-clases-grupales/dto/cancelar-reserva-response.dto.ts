@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ReservaClaseResponseDto } from './reserva-clase-response.dto';
 
 export class CancelarReservaResponseDto {
@@ -20,4 +20,11 @@ export class CancelarReservaResponseDto {
     type: ReservaClaseResponseDto,
   })
   reserva: ReservaClaseResponseDto;
+
+  @ApiPropertyOptional({
+    description:
+      'Indica si el cupo liberado fue reasignado a un socio en lista de espera',
+    example: true,
+  })
+  cupo_reasignado?: boolean;
 }
