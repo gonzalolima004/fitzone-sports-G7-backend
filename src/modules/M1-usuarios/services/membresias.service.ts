@@ -9,6 +9,7 @@ import { CreateMembresiaDto } from '../dto/crear-membresia.dto';
 import { ActualizarMembresiaEstadoDto } from '../dto/actualizar-membresia-estado.dto';
 import { plainToInstance } from 'class-transformer';
 import { MembresiaResponseDto } from '../dto/membresia-response.dto';
+import { VerificarMembresiaResponseDto } from '../dto/verificar-membresia-response.dto';
 
 @Injectable()
 export class MembresiasService {
@@ -155,5 +156,54 @@ export class MembresiasService {
       throw new NotFoundException(`Membresía con ID ${id} no encontrada`);
     }
     return plainToInstance(MembresiaResponseDto, membresia);
+  }
+
+  /**
+   * Verifica el estado de membresía de un usuario para validación de acceso multi-sede.
+   */
+  async verificarMembresia(
+    id_usuario: number,
+  ): Promise<VerificarMembresiaResponseDto> {
+    // 1. Verificar que el usuario exista
+    const usuario = await this.usuariosRepository.findById(id_usuario);
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con ID ${id_usuario} no encontrado`);
+    }
+
+    // Extraer sede de origen del usuario
+    const idSedeOrigen = usuario.id_sede ?? 0;
+
+    // 2. Obtener membresía activa vigente (id_membresia_estado = 1 y fecha_fin >= HOY)
+    const membresiaActiva =
+      await this.membresiasRepository.findActiveByUsuarioId(id_usuario);
+
+    // Si no tiene membresía activa
+    if (!membresiaActiva) {
+      return plainToInstance(VerificarMembresiaResponseDto, {
+        id_usuario: id_usuario,
+        esSocioActivo: false,
+        enMora: false,
+        id_sede_origen: idSedeOrigen, //MMMMMMMMMMMM
+        fecha_vencimiento: null,
+        nombre_plan: null,
+        mensaje:
+          'El usuario no cuenta con una membresía activa vigente. Puede operar como cliente externo.',
+      });
+    }
+
+    // 3. Determinar estado de mora según fecha de vencimiento
+    const esMora = membresiaActiva.fecha_fin < new Date();
+
+    // 4. Construir respuesta
+    return plainToInstance(VerificarMembresiaResponseDto, {
+      id_usuario: id_usuario,
+      esSocioActivo: !esMora, // Si no está en mora, es socio activo
+      enMora: esMora,
+      id_sede_origen: idSedeOrigen,
+      fecha_vencimiento: membresiaActiva.fecha_fin,
+      mensaje: esMora
+        ? 'Membresía vencida. El socio se encuentra en mora y no tiene permitido el acceso.'
+        : 'Socio activo habilitado para acceso multi-sede y beneficios.',
+    });
   }
 }
