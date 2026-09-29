@@ -6,7 +6,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { SupabaseService } from '../services/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import type { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
 import { UsuariosService } from '../../modules/M1-usuarios/services/usuarios.service';
 
