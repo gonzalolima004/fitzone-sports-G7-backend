@@ -10,17 +10,17 @@ export class PlanesService {
   constructor(private readonly membresiasRepository: MembresiasRepository) {}
 
   async create(createPlanDto: CrearPlanDto): Promise<PlanResponseDto> {
-    const plan = await this.membresiasRepository.create(createPlanDto);
+    const plan = await this.membresiasRepository.createPlan(createPlanDto);
     return plainToInstance(PlanResponseDto, plan);
   }
 
   async findAll(): Promise<PlanResponseDto[]> {
-    const planes = await this.membresiasRepository.findAll();
+    const planes = await this.membresiasRepository.findAllPlanes();
     return plainToInstance(PlanResponseDto, planes);
   }
 
   async findOne(id: number): Promise<PlanResponseDto> {
-    const plan = await this.membresiasRepository.findOne(id);
+    const plan = await this.membresiasRepository.findOnePlan(id);
     if (!plan) {
       throw new NotFoundException(`Plan con ID ${id} no encontrado`);
     }
@@ -32,20 +32,20 @@ export class PlanesService {
     updatePlanDto: ActualizarPlanDto,
   ): Promise<PlanResponseDto> {
     await this.findOne(id); // Verifica existencia previa
-    const plan = await this.membresiasRepository.update(id, updatePlanDto);
+    const plan = await this.membresiasRepository.updatePlan(id, updatePlanDto);
     return plainToInstance(PlanResponseDto, plan);
   }
 
   async remove(id: number): Promise<PlanResponseDto> {
-    const plan = await this.membresiasRepository.remove(id);
+    const plan = await this.membresiasRepository.removePlan(id);
     return plainToInstance(PlanResponseDto, plan);
   }
 
   async obtenerEstados(): Promise<any[]> {
-    return this.membresiasRepository.obtenerEstados();
+    return this.membresiasRepository.findAllEstados();
   }
 
   async obtenerEstadoPorId(id_membresia_estado: number): Promise<any> {
-    return this.membresiasRepository.obtenerEstadoPorId(id_membresia_estado);
+    return this.membresiasRepository.findOneEstado(id_membresia_estado);
   }
 }
