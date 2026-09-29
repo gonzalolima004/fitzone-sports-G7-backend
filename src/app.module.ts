@@ -3,25 +3,34 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import mercadopagoConfig from './config/mercadopago.config';
+import supabaseConfig from './config/supabase.config';
+import { SupabaseModule } from './common/supabase/supabase.module';
 import { PrismaModule } from './database/prisma-service/prisma.module';
 import { AccesosModule } from './modules/M2-accesos/accesos.module';
 import { CanchasModule } from './modules/M4-canchas/canchas.module';
 import { PagosModule } from './modules/M5-pagos/pagos.module';
 import { UsuariosModule } from './modules/M1-usuarios/usuarios.module';
 import { SupabaseModule } from './common/supabase.module';
+import { SedesModule } from './modules/M0-sedes/sedes.module';
+import { ClasesGrupalesModule } from './modules/M3-clases-grupales/clases-grupales.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [mercadopagoConfig],
+      load: [mercadopagoConfig, supabaseConfig],
     }),
     PrismaModule,
+    SupabaseModule,
     AccesosModule,
+    ClasesGrupalesModule,
     CanchasModule,
+    UsuariosModule,
     PagosModule,
     UsuariosModule,
     SupabaseModule,
+    SedesModule,
+    ClasesGrupalesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
