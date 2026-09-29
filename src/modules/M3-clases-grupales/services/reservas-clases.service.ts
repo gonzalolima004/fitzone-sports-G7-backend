@@ -9,9 +9,17 @@ import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 import { ListaEsperaSubject } from '../patterns/observer/lista-espera.subject';
+import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
+import { Subject } from 'rxjs';
 
 @Injectable()
 export class ReservasClasesService {
+  // Sujeto Observer para notificar cuando se libera una vacante por cancelación
+  public readonly vacanteNotifier = new Subject<{
+    id_clase: number;
+    id_clase_reserva: number;
+  }>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly reservasRepository: ReservasClasesRepository,

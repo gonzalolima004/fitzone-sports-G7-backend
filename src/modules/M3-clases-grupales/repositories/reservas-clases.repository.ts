@@ -51,6 +51,19 @@ export class ReservasClasesRepository {
       },
     });
   }
+
+  /**
+   * Obtiene una reserva por su ID.
+   */
+  async obtenerReservaPorId(id_clase_reserva: number) {
+    return await this.prisma.claseReserva.findUnique({
+      where: { id_clase_reserva },
+    });
+  }
+
+  /**
+   * Actualiza el estado de una reserva existente.
+   */
   async actualizarEstadoReserva(
     id_clase_reserva: number,
     id_estado: number,
