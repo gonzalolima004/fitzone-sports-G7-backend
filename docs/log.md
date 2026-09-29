@@ -41,7 +41,7 @@
 
 #### Angelina Vialle y Marcos Caraballo | Rol: Desarrolladores Backend
 
-- **Actividades:** 
+- **Actividades:**
   - Identificación de las entidades principales del sistema.
   - Diseño en conjunto del diagrama de entidad-relación de la base de datos.
 - **Decisiones:** Usar Draw.io para armar el diagrama porque es visual, gratuito y nos permite editar o exportar facilmente.
@@ -209,16 +209,17 @@
 #### Marcos Caraballo | Rol: Desarrollador Backend
 
 **Actividades:**
-  - Implementación del módulo base de Usuarios: desarrollo de `UsuariosRepository` utilizando `PrismaService`, `UsuariosService` con encriptación de contraseñas mediante `bcrypt`, y `UsuariosController` documentado con anotaciones de Swagger.
-  - Integración de `class-transformer` en los DTOs de usuarios para permitir la transformación y sanitización automática de datos en el flujo de entrada de la API.
-**Decisiones:** Ninguna.
-**Dificultades:** 
-  - Ajuste de los DTOs para mantener compatibilidad entre los datos de formulario de fotos de perfil y los atributos requeridos por la tabla de usuarios en Prisma sin alterar el flujo de registro.
-**Commits:**
-  - `feat(M1): implementar UsuariosRepository con PrismaService`
-  - `feat(M1): Implementar UsuarioService con encriptación bcrypt`
-  - `feat(M1): implementar UsuariosController con anotaciones Swagger`
-  - `feat(M1): Implementar class transformer en dtos y que sean utilizados en el flujo`
+
+- Implementación del módulo base de Usuarios: desarrollo de `UsuariosRepository` utilizando `PrismaService`, `UsuariosService` con encriptación de contraseñas mediante `bcrypt`, y `UsuariosController` documentado con anotaciones de Swagger.
+- Integración de `class-transformer` en los DTOs de usuarios para permitir la transformación y sanitización automática de datos en el flujo de entrada de la API.
+  **Decisiones:** Ninguna.
+  **Dificultades:**
+- Ajuste de los DTOs para mantener compatibilidad entre los datos de formulario de fotos de perfil y los atributos requeridos por la tabla de usuarios en Prisma sin alterar el flujo de registro.
+  **Commits:**
+- `feat(M1): implementar UsuariosRepository con PrismaService`
+- `feat(M1): Implementar UsuarioService con encriptación bcrypt`
+- `feat(M1): implementar UsuariosController con anotaciones Swagger`
+- `feat(M1): Implementar class transformer en dtos y que sean utilizados en el flujo`
 
 ---
 
@@ -274,13 +275,14 @@
   - Utilizar el ciclo de vida de NestJS (`OnModuleInit`) para suscribir el observador al sujeto de forma limpia.
   - Utilizar el campo auto-incremental `id_clase_reserva` para determinar quién llegó primero a la lista de espera, evitando alterar el modelo de base de datos.
   - Mantener estricto aislamiento de código, resolviendo errores de validación sin afectar módulos (`M2` o `M4`) de otros integrantes.
-- **Dificultades:** 
+- **Dificultades:**
   - Conflictos en el pipeline de CI local por dependencias y tipos faltantes en módulos en desarrollo por otros compañeros, mitigados corriendo las validaciones localizadas (`/validacion m3`).
   - Un error temporal de tipeo en el `package.json` de la rama dev, que fue diagnosticado y reparado mediante Self-Healing QA.
 - **Commits:**
   - `feat(clases): agrega observer de realtime para notificar vacantes (Tarea 4.5.3)`
   - `feat(clases): agrega cancelacion, promocion de cupo y conecta observer (Tarea 4.5.4)`
   - `feat(clases): ensambla modulo clases grupales y lo registra en app (Tarea 4.5.5)`
+
 #### 22/09/2026
 
 #### Joaquín Ribarola | Rol: Desarrollador Backend
@@ -307,33 +309,36 @@
 #### Marcos Caraballo | Rol: Desarrollador Backend
 
 **Actividades:**
-  - Creación del DTO `UploadFotoResponseDto` para definir el contrato de respuesta estructurado tras la subida de fotos de perfil.
-**Decisiones:**
-  - Definir un DTO específico de respuesta para la carga de imágenes, asegurando que el cliente reciba un formato estandarizado con la URL devuelta por el almacenamiento.
-**Dificultades:** Ninguna.
-**Commits:**
-  - `feat(M1): crear UploadFotoResponseDto para respuesta de foto de perfil`
+
+- Creación del DTO `UploadFotoResponseDto` para definir el contrato de respuesta estructurado tras la subida de fotos de perfil.
+  **Decisiones:**
+- Definir un DTO específico de respuesta para la carga de imágenes, asegurando que el cliente reciba un formato estandarizado con la URL devuelta por el almacenamiento.
+  **Dificultades:** Ninguna.
+  **Commits:**
+- `feat(M1): crear UploadFotoResponseDto para respuesta de foto de perfil`
 
 ---
+
 #### 25/09/2026
 
 #### Marcos Caraballo | Rol: Desarrollador Backend
 
 **Actividades:**
-  - Implementación del servicio de almacenamiento `FotoStorageService` para conectar con Supabase Storage y el controlador `UploadFotoController` para la carga de archivos.
-  - Creación del repositorio `MembresiasRepository` para la gestión de planes de membresía y sus estados.
-  - Desarrollo de DTOs, servicio (`PlanesService`) y controlador (`PlanesController`) para administrar el catálogo de planes de suscripción.
-**Decisiones:**
-  - Desacoplar el almacenamiento de imágenes mediante un servicio dedicado (`FotoStorageService`), persistiendo en la base de datos únicamente la URL pública entregada por Supabase.
-  - Separar la administración de los planes de membresía en su propio controlador para permitir la gestión independiente de precios, duraciones y estados de los planes.
-**Dificultades:**
-  - Manejo de la interceptación de archivos `multipart/form-data` en NestJS y su correcto pasaje en memoria hacia la API de Supabase Storage.
-**Commits:**
-  - `feat(M1): crear FotoStorageService para gestionar fotos con supabase storage`
-  - `feat(M1): implementar UploadFotoController para carga de fotos`
-  - `feat(M1): crear DTOs para crear, actualizar y el response de membresia_plan`
-  - `feat(M1): crear MembresiasRepository para gestion de planes y estados`
-  - `feat(M1):implementar repositorio, servicio y controlador para gestion de planes de membresia`
+
+- Implementación del servicio de almacenamiento `FotoStorageService` para conectar con Supabase Storage y el controlador `UploadFotoController` para la carga de archivos.
+- Creación del repositorio `MembresiasRepository` para la gestión de planes de membresía y sus estados.
+- Desarrollo de DTOs, servicio (`PlanesService`) y controlador (`PlanesController`) para administrar el catálogo de planes de suscripción.
+  **Decisiones:**
+- Desacoplar el almacenamiento de imágenes mediante un servicio dedicado (`FotoStorageService`), persistiendo en la base de datos únicamente la URL pública entregada por Supabase.
+- Separar la administración de los planes de membresía en su propio controlador para permitir la gestión independiente de precios, duraciones y estados de los planes.
+  **Dificultades:**
+- Manejo de la interceptación de archivos `multipart/form-data` en NestJS y su correcto pasaje en memoria hacia la API de Supabase Storage.
+  **Commits:**
+- `feat(M1): crear FotoStorageService para gestionar fotos con supabase storage`
+- `feat(M1): implementar UploadFotoController para carga de fotos`
+- `feat(M1): crear DTOs para crear, actualizar y el response de membresia_plan`
+- `feat(M1): crear MembresiasRepository para gestion de planes y estados`
+- `feat(M1):implementar repositorio, servicio y controlador para gestion de planes de membresia`
 
 ---
 
@@ -342,21 +347,22 @@
 #### Marcos Caraballo | Rol: Desarrollador Backend
 
 **Actividades:**
-  - Implementación completa de la US-02-04: Asignación, Renovación y Control de Estados de Membresía (RF-02).
-  - Definición de los DTOs de contrato (`CreateMembresiaDto`, `ActualizarMembresiaEstadoDto`, `MembresiaResponseDto`).
-  - Implementación de las operaciones de membresías de usuario en `MembresiasRepository`
-  - Desarrollo de la lógica de negocio en `MembresiasService`
-  - Desarrollo del ruteo en `MembresiasController`.
-**Decisiones:**
-  - Programar el cálculo dinámico de vigencia en el servicio (`fecha_inicio` y `fecha_fin`) cuando no se envían fechas explícitas desde el cliente.
-  - Garantizar la regla de negocio de una sola membresía activa por usuario a la vez, ejecutando automáticamente `deactivatePrevious()` en el repositorio al registrar una nueva alta.
-**Dificultades:**
-  - Incompatibilidad de tipos estricta en TypeScript al pasar propiedades opcionales provinientes de DTOs parciales (`PartialType`) hacia parámetros requeridos del repositorio. Se resolvió aplicando guardas defensivas en el servicio.
-**Commits:**
-  - `feat(M1): crear DTOs de asignacion, cambio de estado y respuesta de Membresias`
-  - `feat(M1): implementar MembresiasService con validaciones de existencia y control de estado`
-  - `feat(M1): implementar MembresiasController`
-  - `docs(log): actualizar bitacora`
+
+- Implementación completa de la US-02-04: Asignación, Renovación y Control de Estados de Membresía (RF-02).
+- Definición de los DTOs de contrato (`CreateMembresiaDto`, `ActualizarMembresiaEstadoDto`, `MembresiaResponseDto`).
+- Implementación de las operaciones de membresías de usuario en `MembresiasRepository`
+- Desarrollo de la lógica de negocio en `MembresiasService`
+- Desarrollo del ruteo en `MembresiasController`.
+  **Decisiones:**
+- Programar el cálculo dinámico de vigencia en el servicio (`fecha_inicio` y `fecha_fin`) cuando no se envían fechas explícitas desde el cliente.
+- Garantizar la regla de negocio de una sola membresía activa por usuario a la vez, ejecutando automáticamente `deactivatePrevious()` en el repositorio al registrar una nueva alta.
+  **Dificultades:**
+- Incompatibilidad de tipos estricta en TypeScript al pasar propiedades opcionales provinientes de DTOs parciales (`PartialType`) hacia parámetros requeridos del repositorio. Se resolvió aplicando guardas defensivas en el servicio.
+  **Commits:**
+- `feat(M1): crear DTOs de asignacion, cambio de estado y respuesta de Membresias`
+- `feat(M1): implementar MembresiasService con validaciones de existencia y control de estado`
+- `feat(M1): implementar MembresiasController`
+- `docs(log): actualizar bitacora`
 
 ---
 
@@ -365,47 +371,49 @@
 #### Marcos Caraballo | Rol: Desarrollador Backend
 
 **Actividades:**
-  - Implementación completa de la US-02-05: Verificación de Membresía Multi-Sede (RF-03) y Regla de Mora (RN-03).
-  - Creación del DTO de respuesta `VerificarMembresiaResponseDto`.
-  - Desarrollo del método `verificarEstadoMembresia` en `MembresiasService` e integración del endpoint de verificación de membresías en `MembresiasController`.
-  - Configuración e integración final de `UsuariosModule` dentro del módulo principal `AppModule`.
-**Decisiones:**
-  - Realizar la verificación en una sola consulta a la BD (`findActiveByUsuarioId`) y evaluar la regla de mora (RN-03) en tiempo real por fecha (`fecha_fin < HOY`), evitando consultas complejas sobre el historial.
-  - Simplificar la respuesta considerando que si un usuario no tiene membresía activa, opera directamente como cliente externo, enfocando el contrato en los flags de estado (`esSocioActivo` y `enMora`).
-  - Devolver la `id_sede_origen` desde M1 y delegar la validación de la restricción territorial (misma ciudad) al Módulo de Control de Acceso (M2) al momento del escaneo del QR.
-**Dificultades:**
-  - Análisis y definición del modelo de estados de membresía: requirió un análisis profundo de arquitectura para conciliar los estados persistidos en la BD (`Activa`, `Vencida`, `Suspendida`) con la expiración por fecha en tiempo real, evitando múltiples consultas al historial y reduciendo la complejidad de micro-casos redundantes.
-**Commits:**
-  - `feat(M1): crear DTO de respuesta para verificacion multi-sede y regla de mora`
-  - `feat(M1): agregar verificacion de membresia multi-sede y regla de mora en MembresiasService`
-  - `feat(M1): implementar metodo para verificar membresia en el controller de membresias`
-  - `feat(app): registrar UsuariosModule (M1) en AppModule`
-  - `docs(log): actualizar bitacora`
+
+- Implementación completa de la US-02-05: Verificación de Membresía Multi-Sede (RF-03) y Regla de Mora (RN-03).
+- Creación del DTO de respuesta `VerificarMembresiaResponseDto`.
+- Desarrollo del método `verificarEstadoMembresia` en `MembresiasService` e integración del endpoint de verificación de membresías en `MembresiasController`.
+- Configuración e integración final de `UsuariosModule` dentro del módulo principal `AppModule`.
+  **Decisiones:**
+- Realizar la verificación en una sola consulta a la BD (`findActiveByUsuarioId`) y evaluar la regla de mora (RN-03) en tiempo real por fecha (`fecha_fin < HOY`), evitando consultas complejas sobre el historial.
+- Simplificar la respuesta considerando que si un usuario no tiene membresía activa, opera directamente como cliente externo, enfocando el contrato en los flags de estado (`esSocioActivo` y `enMora`).
+- Devolver la `id_sede_origen` desde M1 y delegar la validación de la restricción territorial (misma ciudad) al Módulo de Control de Acceso (M2) al momento del escaneo del QR.
+  **Dificultades:**
+- Análisis y definición del modelo de estados de membresía: requirió un análisis profundo de arquitectura para conciliar los estados persistidos en la BD (`Activa`, `Vencida`, `Suspendida`) con la expiración por fecha en tiempo real, evitando múltiples consultas al historial y reduciendo la complejidad de micro-casos redundantes.
+  **Commits:**
+- `feat(M1): crear DTO de respuesta para verificacion multi-sede y regla de mora`
+- `feat(M1): agregar verificacion de membresia multi-sede y regla de mora en MembresiasService`
+- `feat(M1): implementar metodo para verificar membresia en el controller de membresias`
+- `feat(app): registrar UsuariosModule (M1) en AppModule`
+- `docs(log): actualizar bitacora`
 
 ---
+
 - **Commits:**
   - `feat(M1): crear DTOs de asignacion, cambio de estado y respuesta de Membresias`
   - `feat(M1): implementar metodos de persistencia de membresias en MembresiasRepository`
   - `feat(M1): implementar MembresiasService con calculo de fechas y regla de una sola activa`
   - `feat(M1): implementar MembresiasController ajustado a MembresiasService`
+
 #### 22/09/2026
 
 #### Matías Sillen Ríos | Rol: Desarrollador Backend
 
-* **Actividades:** Implementación de la grilla horaria de disponibilidad de alto rendimiento para canchas, creando los DTOs de consulta y respuesta, el repositorio de reservas optimizado con rangos de fechas, el algoritmo de cruce de slots en memoria dentro del servicio y el endpoint documentado con Swagger.
-* **Decisiones:**
-* Generar los bloques horarios de manera dinámica en memoria (de 08:00 a 23:00) cruzando en paralelo las reservas y los mantenimientos para garantizar respuestas en milisegundos (RNF-03).
-* Separar el acceso a datos en un repositorio especializado (`ReservasCanchasRepository`) para aislar las consultas de disponibilidad de la entidad base de canchas.
+- **Actividades:** Implementación de la grilla horaria de disponibilidad de alto rendimiento para canchas, creando los DTOs de consulta y respuesta, el repositorio de reservas optimizado con rangos de fechas, el algoritmo de cruce de slots en memoria dentro del servicio y el endpoint documentado con Swagger.
+- **Decisiones:**
+- Generar los bloques horarios de manera dinámica en memoria (de 08:00 a 23:00) cruzando en paralelo las reservas y los mantenimientos para garantizar respuestas en milisegundos (RNF-03).
+- Separar el acceso a datos en un repositorio especializado (`ReservasCanchasRepository`) para aislar las consultas de disponibilidad de la entidad base de canchas.
 
+- **Dificultades:** Ninguna.
 
-* **Dificultades:** Ninguna.
+- **Commits:**
+- `feat(dtos): crear dtos de validacion de fecha a ingresar`
+- `feat(repository): crear nuevo repositorio para separar la lógica de reservas/mantenimiento de la entidad base de canchas`
+- `feat(service): actualizar canchas.services.ts inyectando el nuevo repo reservas-canchas.repository.ts y agregar nuevo metodo obtenerDisponibilidad()`
+- `feat(controller): crear endpoint de disponibilidad en canchas.controller.ts`
 
-
-* **Commits:**
-* `feat(dtos): crear dtos de validacion de fecha a ingresar`
-* `feat(repository): crear nuevo repositorio para separar la lógica de reservas/mantenimiento de la entidad base de canchas`
-* `feat(service): actualizar canchas.services.ts inyectando el nuevo repo reservas-canchas.repository.ts y agregar nuevo metodo obtenerDisponibilidad()`
-* `feat(controller): crear endpoint de disponibilidad en canchas.controller.ts`
 #### 24/09/2026
 
 #### Joaquín Ribarola | Rol: Desarrollador Backend
@@ -417,6 +425,7 @@
 - **Dificultades:** Lidiar con conflictos en el linter y código heredado del módulo M2 que bloqueaba los commits. Se decidió hacer commit usando `--no-verify`.
 - **Commits:**
   - `feat(clases): agrega inscripción a lista de espera para clases llenas (US-04-04)`
+
 #### Gonzalo Lima | Rol: Desarrollador Backend
 
 - **Actividades:**
@@ -452,6 +461,7 @@
   - ``
 
 ---
+
 #### 22/09/2026
 
 #### Angelina Vialle | Rol: Desarrolador Backend
@@ -468,6 +478,7 @@
   - `Tarea 2.4: Controlador HTTP de Validación de Acceso`
 
 ---
+
 #### 25/09/2026
 
 #### Angelina Vialle | Rol: Desarrolador Backend
@@ -512,6 +523,7 @@ Cambios relacionados con otros módulos:
 - npm run typecheck sin errores.
   Observaciones:
   La vinculación Supabase ↔ Usuario FitZone se realiza actualmente mediante email. Queda pendiente definir con el equipo si a futuro se almacenará el UUID de Supabase en la tabla de usuarios y agregar seeds para datos maestros.
+
 #### 27/09/2026
 
 #### Angelina Vialle | Rol: Desarrolador Backend
@@ -531,7 +543,7 @@ Cambios relacionados con otros módulos:
 
 #### Angelina Vialle | Rol: Desarrolador Backend
 
-- **Actividades:** Desarrollo e integración de la emisión de aforo en tiempo real vía Supabase Realtime Broadcast tras ingresos y egresos. Creación del DTO. Desarrollo de servicio para gestionar los canales dinámicos utilizando Supabase Client.  Ampliación de AccesosRepository y AccesosService con la lógica de consulta de aforo actual y capacidad máxima. Implementación del endpoint 
+- **Actividades:** Desarrollo e integración de la emisión de aforo en tiempo real vía Supabase Realtime Broadcast tras ingresos y egresos. Creación del DTO. Desarrollo de servicio para gestionar los canales dinámicos utilizando Supabase Client. Ampliación de AccesosRepository y AccesosService con la lógica de consulta de aforo actual y capacidad máxima. Implementación del endpoint
 
 - **Decisiones:**
   - Desconexión del canal Realtime tras el envio del mensaje para evitar acumulación de suscripciones innecesarias en el servidor NestJS.
@@ -541,24 +553,21 @@ Cambios relacionados con otros módulos:
   - `feat(M2): Actualizacion de Egreso y Calculo de Permanencia`
   - `feat(M2): Endpoint HTTP de Egreso`
   - `feat(M2): Actualizacion log`
-  
-  
-  
+
 #### 24/09/2026
 
 #### Matías Sillen Ríos | Rol: Desarrollador Backend
 
-* **Actividades:** Desarrollo del motor de precios dinámicos aplicando el Patrón Strategy (RF-11), creando el DTO de cotización, la interfaz base, las estrategias concretas para precio estándar, descuento del 15% para socios activos y recargo por horario pico, y el servicio orquestador de contexto.
-* **Decisiones:**
-* Implementar composición de estrategias en el contexto para permitir que un socio activo que reserva en horario pico reciba correctamente tanto el recargo como su beneficio correspondiente.
+- **Actividades:** Desarrollo del motor de precios dinámicos aplicando el Patrón Strategy (RF-11), creando el DTO de cotización, la interfaz base, las estrategias concretas para precio estándar, descuento del 15% para socios activos y recargo por horario pico, y el servicio orquestador de contexto.
+- **Decisiones:**
+- Implementar composición de estrategias en el contexto para permitir que un socio activo que reserva en horario pico reciba correctamente tanto el recargo como su beneficio correspondiente.
 
-
-* **Dificultades:** Ninguna.
-* **Commits:**
-* `feat(strategy): definir la interfaz precio-strategy.interface.ts y cotizacion-turno-dto.ts`
-* `feat(strategy): implementar estrategias`
-* `feat(service): implementar precio-context.service.ts para gestionar las estrategias correspondientes`
-* `feat(module): inyectar las estrategias en el array providers en canchas.module.ts`
+- **Dificultades:** Ninguna.
+- **Commits:**
+- `feat(strategy): definir la interfaz precio-strategy.interface.ts y cotizacion-turno-dto.ts`
+- `feat(strategy): implementar estrategias`
+- `feat(service): implementar precio-context.service.ts para gestionar las estrategias correspondientes`
+- `feat(module): inyectar las estrategias en el array providers en canchas.module.ts`
 
 ---
 
@@ -598,23 +607,23 @@ Cambios relacionados con otros módulos:
   - `a545e72 feat(sedes): agregar servicios de ciudad y sede`
   - `699c7ad feat(sedes): agregar controllers y módulo de sedes`
   - `a87c4e6 docs(sedes): documentar endpoints con Swagger`
+
 #### 24/09/2026
 
 #### Matías Sillen Ríos | Rol: Desarrollador Backend
 
-* **Actividades:** Implementación del flujo de reservas de canchas con control de concurrencia (US-05-04). Se crearon los DTOs correspondientes, la persistencia transaccional en el repositorio, la orquestación en el servicio integrando el cálculo de precios mediante el patrón Strategy, y el endpoint POST documentado con Swagger.
-* **Decisiones:**
-* Utilizar el método atómico `$transaction` de Prisma a nivel de base de datos para validar solapamientos horarios y persistir la reserva en una misma operación, previniendo así condiciones de carrera (race conditions) y sobreventa de turnos.
-* Dejar la inyección del usuario autenticado (decoradores y guards de JWT) comentada temporalmente y utilizar un ID de usuario fijo (`mock`) para poder probar el flujo completo de forma aislada hasta que el equipo consolide la Épica 1.
-* Simular temporalmente mediante logs el broadcast hacia Supabase Realtime, preparando el terreno para la actualización en vivo de la grilla.
+- **Actividades:** Implementación del flujo de reservas de canchas con control de concurrencia (US-05-04). Se crearon los DTOs correspondientes, la persistencia transaccional en el repositorio, la orquestación en el servicio integrando el cálculo de precios mediante el patrón Strategy, y el endpoint POST documentado con Swagger.
+- **Decisiones:**
+- Utilizar el método atómico `$transaction` de Prisma a nivel de base de datos para validar solapamientos horarios y persistir la reserva en una misma operación, previniendo así condiciones de carrera (race conditions) y sobreventa de turnos.
+- Dejar la inyección del usuario autenticado (decoradores y guards de JWT) comentada temporalmente y utilizar un ID de usuario fijo (`mock`) para poder probar el flujo completo de forma aislada hasta que el equipo consolide la Épica 1.
+- Simular temporalmente mediante logs el broadcast hacia Supabase Realtime, preparando el terreno para la actualización en vivo de la grilla.
 
-
-* **Dificultades:** Ninguna.
-* **Commits:**
-* `feat(canchas): crear DTOs de entrada y respuesta para reservas`
-* `feat(canchas): implementar bloqueo transaccional contra concurrencia en repositorio`
-* `feat(canchas): orquestar reserva integrando Strategy y persistencia atómica`
-* `feat(canchas): exponer endpoint protegido de reservas de canchas`
+- **Dificultades:** Ninguna.
+- **Commits:**
+- `feat(canchas): crear DTOs de entrada y respuesta para reservas`
+- `feat(canchas): implementar bloqueo transaccional contra concurrencia en repositorio`
+- `feat(canchas): orquestar reserva integrando Strategy y persistencia atómica`
+- `feat(canchas): exponer endpoint protegido de reservas de canchas`
 
 ---
 
@@ -622,20 +631,20 @@ Cambios relacionados con otros módulos:
 
 #### Matías Sillen Ríos | Rol: Desarrollador Backend
 
-* **Actividades:** Implementación de la inhabilitación de canchas por mantenimiento (US-05-05). Se desarrollaron los DTOs de creación y respuesta, la capa de persistencia en el repositorio, y el servicio y controlador correspondientes. Finalmente, se ensambló y exportó el módulo completo de canchas integrando todos sus controladores, repositorios y el patrón Strategy.
-* **Decisiones:**
-* Aislar el registro del bloqueo insertando los datos únicamente en la tabla `cancha_mantenimiento` sin alterar la tabla `cancha_reserva`. Esto garantiza que se respeten los turnos previamente confirmados, cumpliendo estrictamente con el RF-12.
-* Apoyarse en el algoritmo de la grilla horaria desarrollado en la US-05-02, el cual ya está diseñado para leer esta tabla de mantenimientos y bloquear automáticamente los turnos futuros, evitando duplicar lógica de negocio.
+- **Actividades:** Implementación de la inhabilitación de canchas por mantenimiento (US-05-05). Se desarrollaron los DTOs de creación y respuesta, la capa de persistencia en el repositorio, y el servicio y controlador correspondientes. Finalmente, se ensambló y exportó el módulo completo de canchas integrando todos sus controladores, repositorios y el patrón Strategy.
+- **Decisiones:**
+- Aislar el registro del bloqueo insertando los datos únicamente en la tabla `cancha_mantenimiento` sin alterar la tabla `cancha_reserva`. Esto garantiza que se respeten los turnos previamente confirmados, cumpliendo estrictamente con el RF-12.
+- Apoyarse en el algoritmo de la grilla horaria desarrollado en la US-05-02, el cual ya está diseñado para leer esta tabla de mantenimientos y bloquear automáticamente los turnos futuros, evitando duplicar lógica de negocio.
 
-
-* **Dificultades:** Ninguna.
-* **Commits:**
-* `feat(canchas): crear DTOs de request y response para mantenimiento`
-* `feat(canchas): implementar persistencia de mantenimiento en repositorio`
-* `feat(canchas): desarrollar servicio y endpoint para programar mantenimientos`
-* `chore(canchas): registrar controladores, servicios y estrategias en el módulo`
+- **Dificultades:** Ninguna.
+- **Commits:**
+- `feat(canchas): crear DTOs de request y response para mantenimiento`
+- `feat(canchas): implementar persistencia de mantenimiento en repositorio`
+- `feat(canchas): desarrollar servicio y endpoint para programar mantenimientos`
+- `chore(canchas): registrar controladores, servicios y estrategias en el módulo`
 
 ---
+
 #### Gonzalo Lima | Rol: Desarrollador Backend
 
 - **Actividades:**
