@@ -14,6 +14,8 @@ import { QrService } from './qr.service';
 //import { AccesoResponseDto } from '../dto/acceso-response.dto';
 import { RegistrarEgresoDto } from '../dto/registrar-egreso.dto';
 import { EgresoResponseDto } from '../dto/egreso-response.dto';
+import { AforoRealtimeService } from './aforo-realtime.service';
+import { AforoStatusResponseDto } from '../dto/aforo-status-response.dto';
 
 export interface PayloadQrToken {
   id_usuario: number;
@@ -25,6 +27,7 @@ export class AccesosService {
   constructor(
     private readonly accesosRepository: AccesosRepository,
     private readonly qrService: QrService,
+    private readonly aforoRealtimeService: AforoRealtimeService,
     //private readonly membresiasService: MembresiasService,
   ) {}
 
@@ -112,6 +115,9 @@ export class AccesosService {
       accesoActivo.id_registro_acceso,
       fechaSalida,
     );
+
+    await this.notificarCambioAforo(dto.id_sede);
+
     /* 
         const minutosPermanencia = this.calcularMinutosPermanencia(
           registroCerrado.fecha_ingreso,
@@ -142,4 +148,28 @@ export class AccesosService {
       return Math.round(diferenciaMs / (1000 * 60));
     }
     */
+  async obtenerEstadoAforo(idSede: number): Promise<AforoStatusResponseDto> {
+    const aforoMaximo =
+      await this.accesosRepository.obtenerAforoMaximoSede(idSede);
+
+    if (aforoMaximo === null) {
+      throw new NotFoundException(`Sede con ID ${idSede} no fue encontrada.`);
+    }
+
+    const aforoActual = await this.accesosRepository.contarAforoActual(idSede);
+    //const porcentajeCalculado = (aforoActual / aforoMaximo) * 100;
+    //const porcentajeOcupacion = Number(porcentajeCalculado.toFixed(2));
+    //const aforoExcedido = aforoActual > aforoMaximo;
+
+    return new AforoStatusResponseDto({
+      idSede,
+      aforoActual,
+      aforoMaximo,
+    });
+  }
+
+  async notificarCambioAforo(idSede: number): Promise<void> {
+    const estadoActualizado = await this.obtenerEstadoAforo(idSede);
+    await this.aforoRealtimeService.emitirAforo(idSede, estadoActualizado);
+  }
 }

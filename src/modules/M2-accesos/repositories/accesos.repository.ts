@@ -78,4 +78,26 @@ export class AccesosRepository {
       return fn(tx);
     });
   }
+  /**
+   * Cuenta el número de accesos activos en una sede específica
+   */
+  async contarAforoActual(idSede: number): Promise<number> {
+    return this.prisma.registroAcceso.count({
+      where: {
+        id_sede: idSede,
+        fecha_egreso: null,
+      },
+    });
+  }
+
+  /**
+   * Obtiene el aforo máximo de una sede específica
+   */
+  async obtenerAforoMaximoSede(idSede: number): Promise<number | null> {
+    const sede = await this.prisma.sede.findUnique({
+      where: { id_sede: idSede },
+      select: { aforo_maximo: true },
+    });
+    return sede ? sede.aforo_maximo : null;
+  }
 }
