@@ -3,8 +3,7 @@ import { PrismaService } from '../../../database/prisma-service/prisma.service';
 
 @Injectable()
 export class UserRepository {
-
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Actualiza la columna qr_url del perfil/usuario en Postgres vía Prisma
