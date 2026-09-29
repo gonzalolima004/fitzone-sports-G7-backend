@@ -8,13 +8,13 @@ export class UsuariosRepository {
 
   private readonly defaultIncludes = {
     sede: true,
-    estado: true,
-    roles: {
+    usuario_estado: true,
+    usuario_rol: {
       include: {
         rol: true,
       },
     },
-  };
+  } satisfies Prisma.UsuarioInclude;
 
   async create(data: Prisma.UsuarioCreateInput): Promise<Usuario> {
     return this.prisma.usuario.create({

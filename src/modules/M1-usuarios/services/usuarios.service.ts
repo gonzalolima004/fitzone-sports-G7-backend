@@ -62,7 +62,7 @@ export class UsuariosService {
       usuario_estado: { connect: { id_usuario_estado: ID_ESTADO_ACTIVO } },
     };
 
-    const usuario = this.repository.create(usuarioData);
+    const usuario = await this.repository.create(usuarioData);
     return plainToInstance(UsuarioResponseDto, usuario);
   }
 
@@ -74,6 +74,14 @@ export class UsuariosService {
     const user = await this.repository.findById(id);
     if (!user)
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+    return plainToInstance(UsuarioResponseDto, user);
+  }
+
+  async findByEmail(email: string): Promise<UsuarioResponseDto> {
+    const user = await this.repository.findByEmail(email);
+
+    if (!user) throw new NotFoundException('Usuario con email no encontrado');
+
     return plainToInstance(UsuarioResponseDto, user);
   }
 
