@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
+import { ListaEsperaSubject } from '../patterns/observer/lista-espera.subject';
 import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
 import { Subject } from 'rxjs';
 
@@ -22,6 +23,7 @@ export class ReservasClasesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly reservasRepository: ReservasClasesRepository,
+    private readonly listaEsperaSubject: ListaEsperaSubject,
   ) {}
 
   async crearReserva(data: CrearReservaClaseDto, id_usuario: number) {
@@ -120,59 +122,67 @@ export class ReservasClasesService {
     });
   }
 
-  async cancelarReserva(
-    id_reserva: number,
-    id_usuario: number,
-  ): Promise<CancelarReservaResponseDto> {
-    const reserva =
-      await this.reservasRepository.obtenerReservaPorId(id_reserva);
+  async cancelarReserva(id_clase_reserva: number, id_usuario: number) {
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Obtener la reserva original
+      const reserva = await tx.claseReserva.findUnique({
+        where: { id_clase_reserva },
+      });
 
-    if (!reserva) {
-      throw new NotFoundException(`La reserva con ID ${id_reserva} no existe.`);
-    }
+      if (!reserva) {
+        throw new NotFoundException('Reserva no encontrada');
+      }
 
-    if (reserva.id_usuario !== id_usuario) {
-      throw new ForbiddenException(
-        'No tienes permiso para cancelar esta reserva.',
+      if (reserva.id_usuario !== id_usuario) {
+        throw new ForbiddenException(
+          'No puedes cancelar una reserva que no es tuya',
+        );
+      }
+
+      if (reserva.id_clase_reserva_estado !== 1) {
+        throw new BadRequestException(
+          'La reserva no está en estado confirmada',
+        );
+      }
+
+      // 2. Marcar como cancelada (ej. estado 4)
+      await this.reservasRepository.actualizarEstadoReserva(
+        id_clase_reserva,
+        4, // Cancelada
+        tx,
       );
-    }
 
-    if (reserva.id_clase_reserva_estado === 2) {
-      throw new BadRequestException('La reserva ya se encuentra cancelada.');
-    }
+      // 3. Buscar si hay alguien en lista de espera (estado 2) para esa clase y horario exacto
+      const primerEnEspera =
+        await this.reservasRepository.obtenerPrimerEnEspera(
+          reserva.id_clase,
+          reserva.fecha_inicio,
+          reserva.fecha_fin,
+          tx,
+        );
 
-    const ahora = new Date();
-    const fechaInicio = new Date(reserva.fecha_inicio);
+      // 4. Si hay alguien, se promueve y se notifica
+      if (primerEnEspera) {
+        // Promover a Confirmada (estado 1)
+        await this.reservasRepository.actualizarEstadoReserva(
+          primerEnEspera.id_clase_reserva,
+          1,
+          tx,
+        );
 
-    if (ahora >= fechaInicio) {
-      throw new BadRequestException(
-        'No se puede cancelar una clase que ya comenzó o finalizó.',
-      );
-    }
+        // Disparar evento a los observadores
+        await this.listaEsperaSubject.notify({
+          id_clase: reserva.id_clase,
+          fecha_inicio: reserva.fecha_inicio,
+          fecha_fin: reserva.fecha_fin,
+          id_usuario_promovido: primerEnEspera.id_usuario,
+        });
+      }
 
-    // Calcular la diferencia en horas
-    const diffHoras =
-      (fechaInicio.getTime() - ahora.getTime()) / (1000 * 60 * 60);
-
-    // Si faltan menos de 2 horas, se aplica penalidad
-    const penalidadAplicada = diffHoras < 2;
-
-    // Actualizar estado a Cancelada (Asumimos ID 2)
-    const reservaCancelada =
-      await this.reservasRepository.actualizarEstadoReserva(id_reserva, 2);
-
-    // Disparar el Observer para notificar que hay una vacante disponible
-    this.vacanteNotifier.next({
-      id_clase: reserva.id_clase,
-      id_clase_reserva: reserva.id_clase_reserva,
+      return {
+        message: 'Reserva cancelada exitosamente',
+        cupo_reasignado: !!primerEnEspera,
+      };
     });
-
-    return {
-      penalidadAplicada,
-      mensaje: penalidadAplicada
-        ? 'Reserva cancelada con penalidad (fuera de término, menos de 2 horas de anticipación).'
-        : 'Reserva cancelada exitosamente sin penalidad.',
-      reserva: reservaCancelada,
-    };
   }
 }
