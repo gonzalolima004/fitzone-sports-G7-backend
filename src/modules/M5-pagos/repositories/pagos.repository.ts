@@ -10,6 +10,28 @@ export type PagoConRelaciones = Prisma.PagoGetPayload<{
   };
 }>;
 
+export type PagoParaComprobante = Prisma.PagoGetPayload<{
+  include: {
+    pago_estado: true;
+    cancha_reserva: {
+      include: {
+        cancha: {
+          include: {
+            sede: true;
+          };
+        };
+        usuario: true;
+      };
+    };
+    membresia: {
+      include: {
+        membresia_plan: true;
+        usuario: true;
+      };
+    };
+  };
+}>;
+
 @Injectable()
 export class PagosRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -273,5 +295,42 @@ export class PagosRepository {
       where: { id_membresia },
     });
     return !!membresia;
+  }
+
+  async obtenerPagoCompletoParaComprobante(
+    id_pago: number,
+  ): Promise<PagoParaComprobante | null> {
+    return this.prisma.pago.findUnique({
+      where: { id_pago },
+      include: {
+        pago_estado: true,
+        cancha_reserva: {
+          include: {
+            cancha: {
+              include: {
+                sede: true,
+              },
+            },
+            usuario: true,
+          },
+        },
+        membresia: {
+          include: {
+            membresia_plan: true,
+            usuario: true,
+          },
+        },
+      },
+    });
+  }
+
+  async actualizarComprobanteUrl(
+    id_pago: number,
+    comprobante_url: string,
+  ): Promise<Pago> {
+    return this.prisma.pago.update({
+      where: { id_pago },
+      data: { comprobante_url },
+    });
   }
 }
