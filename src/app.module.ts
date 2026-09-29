@@ -8,6 +8,7 @@ import { AccesosModule } from './modules/M2-accesos/accesos.module';
 import { CanchasModule } from './modules/M4-canchas/canchas.module';
 import { PagosModule } from './modules/M5-pagos/pagos.module';
 import { SedesModule } from './modules/M0-sedes/sedes.module';
+import { ClasesGrupalesModule } from './modules/M3-clases-grupales/clases-grupales.module';
 
 @Module({
   imports: [
@@ -17,9 +18,11 @@ import { SedesModule } from './modules/M0-sedes/sedes.module';
     }),
     PrismaModule,
     AccesosModule,
+    ClasesGrupalesModule,
     CanchasModule,
     PagosModule,
     SedesModule,
+    ClasesGrupalesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -8,7 +8,7 @@ import { Prisma, Cancha } from '@prisma/client';
  */
 @Injectable()
 export class CanchasRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async crear(data: Prisma.CanchaUncheckedCreateInput): Promise<Cancha> {
     return this.prisma.cancha.create({
