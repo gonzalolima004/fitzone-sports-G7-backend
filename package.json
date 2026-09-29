@@ -95,6 +95,10 @@
     "transform": {
       "^.+\\.(t|j)s$": "@swc/jest"
     },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(@nestjs)/)",
+      "node_modules/(?!(@nestjs/config)/)"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     "transformIgnorePatterns": [

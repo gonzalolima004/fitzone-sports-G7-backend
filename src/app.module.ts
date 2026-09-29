@@ -7,8 +7,7 @@ import { PrismaModule } from './database/prisma-service/prisma.module';
 import { AccesosModule } from './modules/M2-accesos/accesos.module';
 import { CanchasModule } from './modules/M4-canchas/canchas.module';
 import { PagosModule } from './modules/M5-pagos/pagos.module';
-import { ClasesGrupalesModule } from './modules/M3-clases-grupales/clases-grupales.module';
-
+import { SedesModule } from './modules/M0-sedes/sedes.module';
 import { ClasesGrupalesModule } from './modules/M3-clases-grupales/clases-grupales.module';
 
 @Module({
@@ -22,6 +21,7 @@ import { ClasesGrupalesModule } from './modules/M3-clases-grupales/clases-grupal
     ClasesGrupalesModule,
     CanchasModule,
     PagosModule,
+    SedesModule,
     ClasesGrupalesModule,
   ],
   controllers: [AppController],
