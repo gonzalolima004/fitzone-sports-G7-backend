@@ -6,10 +6,18 @@ import {
 import { CanchasRepository } from '../repositories/canchas.repository';
 import { CrearCanchaDto } from '../dto/crear-cancha.dto';
 import { ActualizarCanchaDto } from '../dto/actualizar-cancha.dto';
+import { ReservasCanchasRepository } from '../repositories/reservas-canchas.repository';
+import {
+  DisponibilidadSlotResponseDto,
+  SlotEstado,
+} from '../dto/disponibilidad-slot-response.dto';
 
 @Injectable()
 export class CanchasService {
-  constructor(private readonly canchasRepository: CanchasRepository) {}
+  constructor(
+    private readonly canchasRepository: CanchasRepository,
+    private readonly reservasRepository: ReservasCanchasRepository,
+  ) {}
 
   async crearCancha(dto: CrearCanchaDto) {
     // Validación 1: Verificar que la sede exista
@@ -55,5 +63,64 @@ export class CanchasService {
     // Validar existencia previa
     await this.obtenerCancha(id);
     return this.canchasRepository.borradoLogico(id);
+  }
+
+  async obtenerDisponibilidad(
+    id_cancha: number,
+    fechaStr: string,
+  ): Promise<DisponibilidadSlotResponseDto[]> {
+    // 1. Validar existencia de la cancha
+    await this.obtenerCancha(id_cancha);
+
+    // 2. Configurar límites del día (08:00 a 23:00)
+    const fechaBase = new Date(`${fechaStr}T00:00:00Z`);
+    const inicioDia = new Date(fechaBase.setUTCHours(8, 0, 0, 0));
+    const finDia = new Date(fechaBase.setUTCHours(23, 0, 0, 0));
+
+    // 3. Obtener bloqueos (Reservas y Mantenimientos) en paralelo para mayor velocidad
+    const [reservas, mantenimientos] = await Promise.all([
+      this.reservasRepository.obtenerReservasPorFecha(
+        id_cancha,
+        inicioDia,
+        finDia,
+      ),
+      this.reservasRepository.obtenerMantenimientosPorFecha(
+        id_cancha,
+        inicioDia,
+        finDia,
+      ),
+    ]);
+
+    // 4. Generar Slots en memoria (O(n))
+    const slots: DisponibilidadSlotResponseDto[] = [];
+    let horaActual = new Date(inicioDia);
+
+    while (horaActual < finDia) {
+      const horaSiguiente = new Date(horaActual);
+      horaSiguiente.setUTCHours(horaActual.getUTCHours() + 1);
+
+      // Evaluar colisiones
+      const enMantenimiento = mantenimientos.some(
+        (m) => m.fecha_inicio < horaSiguiente && m.fecha_fin > horaActual,
+      );
+
+      const reservado = reservas.some(
+        (r) => r.fecha_inicio < horaSiguiente && r.fecha_fin > horaActual,
+      );
+
+      let estado = SlotEstado.DISPONIBLE;
+      if (enMantenimiento) estado = SlotEstado.MANTENIMIENTO;
+      else if (reservado) estado = SlotEstado.RESERVADO;
+
+      slots.push({
+        horaInicio: horaActual.toISOString().slice(11, 16),
+        horaFin: horaSiguiente.toISOString().slice(11, 16),
+        estado,
+      });
+
+      horaActual = horaSiguiente;
+    }
+
+    return slots;
   }
 }
