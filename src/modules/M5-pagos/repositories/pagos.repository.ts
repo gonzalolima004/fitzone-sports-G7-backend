@@ -10,7 +10,7 @@ export type PagoConRelaciones = Prisma.PagoGetPayload<{
   };
 }>;
 
-export type PagoParaComprobante = Prisma.PagoGetPayload<{
+export type PagoConDetalleCompleto = Prisma.PagoGetPayload<{
   include: {
     pago_estado: true;
     cancha_reserva: {
@@ -31,6 +31,8 @@ export type PagoParaComprobante = Prisma.PagoGetPayload<{
     };
   };
 }>;
+
+export type PagoParaComprobante = PagoConDetalleCompleto;
 
 @Injectable()
 export class PagosRepository {
@@ -297,9 +299,13 @@ export class PagosRepository {
     return !!membresia;
   }
 
-  async obtenerPagoCompletoParaComprobante(
+  /**
+   * Obtiene el detalle completo de un pago por su ID incluyendo relaciones
+   * de cancha, sede, plan de membresía y estado.
+   */
+  async obtenerDetallePorId(
     id_pago: number,
-  ): Promise<PagoParaComprobante | null> {
+  ): Promise<PagoConDetalleCompleto | null> {
     return this.prisma.pago.findUnique({
       where: { id_pago },
       include: {
@@ -322,6 +328,46 @@ export class PagosRepository {
         },
       },
     });
+  }
+
+  /**
+   * Obtiene la lista cronológica de pagos asociados a un usuario (identificado por id_usuario)
+   * a través de sus reservas de cancha o membresías adquiridas.
+   */
+  async obtenerHistorialPorUsuario(
+    id_usuario: number,
+  ): Promise<PagoConDetalleCompleto[]> {
+    return this.prisma.pago.findMany({
+      where: {
+        OR: [{ cancha_reserva: { id_usuario } }, { membresia: { id_usuario } }],
+      },
+      orderBy: { fecha_pago: 'desc' },
+      include: {
+        pago_estado: true,
+        cancha_reserva: {
+          include: {
+            cancha: {
+              include: {
+                sede: true,
+              },
+            },
+            usuario: true,
+          },
+        },
+        membresia: {
+          include: {
+            membresia_plan: true,
+            usuario: true,
+          },
+        },
+      },
+    });
+  }
+
+  async obtenerPagoCompletoParaComprobante(
+    id_pago: number,
+  ): Promise<PagoParaComprobante | null> {
+    return this.obtenerDetallePorId(id_pago);
   }
 
   async actualizarComprobanteUrl(
