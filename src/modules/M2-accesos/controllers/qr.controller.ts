@@ -1,23 +1,22 @@
-import { Controller /*, Get, UseGuards */ } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
-  //ApiOperation,
-  //ApiResponse,
+  ApiOperation,
+  ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-//import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
-//import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-//import type { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 import { QrService } from '../services/qr.service';
-//import { QrDinamicoResponseDto } from '../dto/qr-dinamico-response.dto';
+import { QrDinamicoResponseDto } from '../dto/qr-dinamico-response.dto';
 
 @ApiTags('Control de Acceso')
 @ApiBearerAuth()
-//@UseGuards(SupabaseAuthGuard)
+@UseGuards(SupabaseAuthGuard)
 @Controller('access/qr')
 export class QrController {
   constructor(private readonly qrService: QrService) {}
-  /*
     @Get('generate')
     @ApiOperation({
       summary: 'Generar código QR dinámico temporal (60s)',
@@ -44,5 +43,4 @@ export class QrController {
     ): Promise<QrDinamicoResponseDto> {
       return await this.qrService.generarQrDinamico(user.id_usuario);
     }
-      */
 }
