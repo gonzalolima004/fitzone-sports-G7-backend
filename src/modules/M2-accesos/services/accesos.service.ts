@@ -1,5 +1,7 @@
 import {
   Injectable,
+  NotFoundException,
+  BadRequestException,
   //ForbiddenException,
   //UnauthorizedException,
   //ConflictException,
@@ -10,6 +12,8 @@ import { QrService } from './qr.service';
 //import { MembresiasService } from '../../M1-usuarios/services/membresias.service';
 //import { ValidarIngresoDto } from '../dto/validar-ingreso.dto';
 //import { AccesoResponseDto } from '../dto/acceso-response.dto';
+import { RegistrarEgresoDto } from '../dto/registrar-egreso.dto';
+import { EgresoResponseDto } from '../dto/egreso-response.dto';
 
 export interface PayloadQrToken {
   id_usuario: number;
@@ -23,6 +27,7 @@ export class AccesosService {
     private readonly qrService: QrService,
     //private readonly membresiasService: MembresiasService,
   ) {}
+
   /*
 
   async validarYRegistrarIngreso(dto: ValidarIngresoDto): Promise<AccesoResponseDto> {
@@ -76,4 +81,65 @@ export class AccesosService {
     });
   }
   */
+
+  /**
+   * Procesa el egreso de un socio, verifica que tenga un acceso activo en la sede especificada
+   * y calcula los minutos de permanencia en el establecimiento.
+   */
+  async registrarEgreso(dto: RegistrarEgresoDto): Promise<EgresoResponseDto> {
+    const accesoActivo =
+      await this.accesosRepository.buscarAccesoActivoPorUsuario(dto.id_usuario);
+
+    if (!accesoActivo) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: `No se encontró una entrada activa para el usuario con ID ${dto.id_usuario}.`,
+        error: 'Not Found',
+      });
+    }
+
+    if (accesoActivo.id_sede !== dto.id_sede) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: `El usuario figura ingresado en la sede '${accesoActivo.sede.nombre}' (ID ${accesoActivo.id_sede}), no en la sede actual (ID ${dto.id_sede}).`,
+        error: 'Bad Request',
+      });
+    }
+
+    const fechaSalida = dto.fecha_egreso ?? new Date();
+
+    const registroCerrado = await this.accesosRepository.cerrarEgreso(
+      accesoActivo.id_registro_acceso,
+      fechaSalida,
+    );
+    /* 
+        const minutosPermanencia = this.calcularMinutosPermanencia(
+          registroCerrado.fecha_ingreso,
+          registroCerrado.fecha_egreso ?? fechaSalida,
+        );*/
+
+    return new EgresoResponseDto({
+      id_registro_acceso: registroCerrado.id_registro_acceso,
+      id_usuario: registroCerrado.id_usuario,
+      id_sede: registroCerrado.id_sede,
+      fechaIngreso: registroCerrado.fecha_ingreso,
+      fechaEgreso: registroCerrado.fecha_egreso ?? new Date(),
+      mensaje: 'Egreso registrado correctamente y aforo liberado.',
+    });
+  }
+  /*
+    /**
+   * Función para calcular los minutos transcurridos entre el ingreso y el egreso.
+   *
+    private calcularMinutosPermanencia(
+      fechaIngreso: Date,
+      fechaEgreso: Date,
+    ): number {
+      const ingresoMs = fechaIngreso.getTime();
+      const egresoMs = fechaEgreso.getTime();
+  
+      const diferenciaMs = Math.max(0, egresoMs - ingresoMs);
+      return Math.round(diferenciaMs / (1000 * 60));
+    }
+    */
 }

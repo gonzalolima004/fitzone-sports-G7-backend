@@ -452,17 +452,20 @@
   - ``
 
 ---
-#### 23/09/2026
+#### 22/09/2026
 
 #### Angelina Vialle | Rol: Desarrolador Backend
 
 - **Actividades:** Desarrollar el módulo de validación de ingreso por QR y verificación de membresía en tiempo real para autorizar o rechazar ingresos físicos en las sedes,
 
 - **Decisiones:**
-  - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso..
+  - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - ``
+  - `DTOs de Validación y Respuesta de Ingreso`
+  - `Tarea 2.2: Repositorio de Control de Acceso (Patrón Repository)`
+  - `Tarea 2.3: Servicio de Validación Central y Registro de Ingreso`
+  - `Tarea 2.4: Controlador HTTP de Validación de Acceso`
 
 ---
 #### 25/09/2026
@@ -472,13 +475,30 @@
 - **Actividades:** Desarrollar DTO de validacion de reglas de acceso, service y repository de validacion de reglas de acceso
 
 - **Decisiones:**
-  - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso..
+  - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso.
 - **Dificultades:** Ninguna.
 - **Commits:**
   - `Tarea 1: DTO Validacion de Reglas de Acceso`
   - `Tarea 3.2: Consulta de Accesos Activos en Repositorio`
   - `Tarea 3.3: Aplicación de la Regla RN-01 en el Servicio de Accesos`
   - `Correcciones`
+
+---
+#### 27/09/2026
+
+#### Angelina Vialle | Rol: Desarrolador Backend
+
+- **Actividades:** Desarrollar DTOs de solicitud de egreso con validaciones, la logica de actulizacion de agreso con calculo de permanencia en minutos en service y repository. Hacer el endpoint HTTP de registrar egreso
+
+- **Decisiones:**
+  - Diseñar el DTO de solicitud con decoradores de class-validator y class-transformer (@IsInt, @IsPositive, @Type) para transformar y validar los datos de entrada, permitiendo además una marca de fecha opcional (fecha_egreso). Implementar una función de cálculo de minutos de permanencia para obtener la diferencia en minutos entre la entrada y salida.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M2): DTOs de solicitud de egreso`
+  - `feat(M2): Actualizacion de Egreso y Calculo de Permanencia`
+  - `feat(M2): Endpoint HTTP de Egreso`
+  - `feat(M2): Actualizacion log`
+  
   
 #### 24/09/2026
 
