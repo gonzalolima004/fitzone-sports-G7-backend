@@ -4,10 +4,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import mercadopagoConfig from './config/mercadopago.config';
 import { PrismaModule } from './database/prisma-service/prisma.module';
-//import { AccesosModule } from './modules/M2-accesos/accesos.module';
+import { AccesosModule } from './modules/M2-accesos/accesos.module';
 import { CanchasModule } from './modules/M4-canchas/canchas.module';
 import { PagosModule } from './modules/M5-pagos/pagos.module';
 import { UsuariosModule } from './modules/M1-usuarios/usuarios.module';
+import { SedesModule } from './modules/M0-sedes/sedes.module';
+import { ClasesGrupalesModule } from './modules/M3-clases-grupales/clases-grupales.module';
 
 @Module({
   imports: [
@@ -16,10 +18,13 @@ import { UsuariosModule } from './modules/M1-usuarios/usuarios.module';
       load: [mercadopagoConfig],
     }),
     PrismaModule,
-    //AccesosModule,
+    AccesosModule,
+    ClasesGrupalesModule,
     CanchasModule,
     UsuariosModule,
     PagosModule,
+    SedesModule,
+    ClasesGrupalesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
