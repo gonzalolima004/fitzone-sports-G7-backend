@@ -52,7 +52,7 @@ export class AccesosService {
 
      3. Transacción atómica para prevenir race conditions y aplicar regla Anti-Doble Ingreso (RN-01)
     const nuevoRegistro: RegistroAcceso = await this.accesosRepository.ejecutarTransaccionIngreso(
-      async () => {
+      async (tx) => {
     const accesoActivo = await this.accesosRepository.buscarAccesoActivoPorUsuario(id_usuario);
 
     if (accesoActivo) {
@@ -63,7 +63,7 @@ export class AccesosService {
           });
         }
 
-        return this.accesosRepository.crearIngreso(id_usuario, dto.id_sede);
+        return this.accesosRepository.crearIngreso(id_usuario, dto.id_sede, tx);
       },
     );
 
