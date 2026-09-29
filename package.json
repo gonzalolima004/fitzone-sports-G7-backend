@@ -96,13 +96,24 @@
       "^.+\\.(t|j)s$": "@swc/jest"
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!(@nestjs|@nestjs/.*)/)"
+      "/node_modules/(?!(@nestjs)/)",
+      "node_modules/(?!(@nestjs/config)/)"
     ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@nestjs|@nestjs/.*)/)"
+      "/node_modules/(?!(@nestjs)/)",
+      "node_modules/(?!(@nestjs/config)/)"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "transformIgnorePatterns": [
+      "node_modules/(?!(\\.pnpm|@nestjs|@scure|otplib)/)"
+    ],
+    "moduleNameMapper": {
+      "^@nestjs/config$": "<rootDir>/../node_modules/@nestjs/config"
+    }
   },
   "lint-staged": {
     "*.ts": [
