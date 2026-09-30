@@ -7,6 +7,7 @@ import { PrismaModule } from './database/prisma-service/prisma.module';
 import { AccesosModule } from './modules/M2-accesos/accesos.module';
 import { CanchasModule } from './modules/M4-canchas/canchas.module';
 import { PagosModule } from './modules/M5-pagos/pagos.module';
+import { ReportesModule } from './modules/M6-reportes/reportes.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PagosModule } from './modules/M5-pagos/pagos.module';
     AccesosModule,
     CanchasModule,
     PagosModule,
+    ReportesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
