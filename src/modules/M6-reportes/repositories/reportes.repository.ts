@@ -8,6 +8,14 @@ export type IngresoAgrupadoPorSede = {
   total_ingresos: Prisma.Decimal;
 };
 
+export type MetricaOcupacionAgrupadaPorSede = {
+  id_sede: number;
+  nombre_sede: string;
+  total_asistencias: number;
+  total_reservas_canchas: number;
+  total_reservas_clases: number;
+};
+
 @Injectable()
 export class ReportesRepository {
   constructor(private readonly prismaService: PrismaService) {}
@@ -82,6 +90,83 @@ export class ReportesRepository {
         GROUP BY ingresos.id_sede, ingresos.nombre_sede
         ORDER BY ingresos.id_sede
       `,
+    );
+  }
+
+  async obtenerMetricasOcupacionPorSede(
+    fechaDesde: Date,
+    fechaHastaExclusiva: Date,
+    idSede?: number,
+  ): Promise<MetricaOcupacionAgrupadaPorSede[]> {
+    const filtroSede = idSede
+      ? Prisma.sql`AND s.id_sede = ${idSede}`
+      : Prisma.empty;
+
+    return this.prismaService.$queryRaw<MetricaOcupacionAgrupadaPorSede[]>(
+      Prisma.sql`
+    WITH asistencias AS (
+      SELECT
+        s.id_sede,
+        s.nombre AS nombre_sede,
+        COUNT(ra.id_registro_acceso)::int AS total_asistencias
+      FROM registro_accesos ra
+      INNER JOIN sede s
+        ON s.id_sede = ra.id_sede
+      WHERE ra.fecha_ingreso >= ${fechaDesde}
+        AND ra.fecha_ingreso < ${fechaHastaExclusiva}
+        ${filtroSede}
+      GROUP BY s.id_sede, s.nombre
+    ),
+
+reservas_canchas AS (
+  SELECT
+    s.id_sede,
+    COUNT(cr.id_cancha_reserva)::int AS total_reservas_canchas
+  FROM cancha_reserva cr
+  INNER JOIN cancha c
+    ON c.id_cancha = cr.id_cancha
+  INNER JOIN sede s
+    ON s.id_sede = c.id_sede
+  INNER JOIN cancha_reserva_estado cre
+    ON cre.id_cancha_reserva_estado = cr.id_cancha_reserva_estado
+  WHERE cr.fecha_inicio >= ${fechaDesde}
+    AND cr.fecha_inicio < ${fechaHastaExclusiva}
+    AND LOWER(cre.descripcion) = 'confirmada'
+    ${filtroSede}
+  GROUP BY s.id_sede
+)
+
+    SELECT
+      a.id_sede,
+      a.nombre_sede,
+      a.total_asistencias,
+      COALESCE(rc.total_reservas_canchas, 0)::int AS total_reservas_canchas,
+      0::int AS total_reservas_clases
+    FROM asistencias a
+    LEFT JOIN reservas_canchas rc
+      ON rc.id_sede = a.id_sede
+    ORDER BY a.id_sede
+  )
+    
+
+    reservas_clases AS (
+  SELECT
+    s.id_sede,
+    COUNT(cr.id_clase_reserva)::int AS total_reservas_clases
+  FROM clase_reserva cr
+  INNER JOIN clase c
+    ON c.id_clase = cr.id_clase
+  INNER JOIN sede s
+    ON s.id_sede = c.id_sede
+  INNER JOIN clase_reserva_estado cre
+    ON cre.id_clase_reserva_estado = cr.id_clase_reserva_estado
+  WHERE cr.fecha_inicio >= ${fechaDesde}
+    AND cr.fecha_inicio < ${fechaHastaExclusiva}
+    AND LOWER(cre.descripcion) = 'confirmada'
+    ${filtroSede}
+  GROUP BY s.id_sede
+)
+    `,
     );
   }
 }

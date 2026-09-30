@@ -659,3 +659,25 @@ Cambios relacionados con otros módulos:
   - `feat(pagos): dto de comprobantes`
   - `feat(pagos): generador de pdfs con pdfkit`
   - `feat(pagos): controller de comprobantes`
+
+Tarea 5 — Reporte Consolidado de Ingresos Multi-Sede
+
+- Se agregaron DTOs de consulta y respuesta.
+- Se implementó la consulta de ingresos aprobados por sede.
+- Se consolidaron pagos de membresías y reservas de canchas.
+- Se agregó filtrado por rango de fechas, sede y concepto.
+- Se implementó el servicio y el endpoint GET /reportes/ingresos.
+- Se integró ReportesModule al sistema.
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+Tarea 6 — Métricas de Ocupación por Sede
+
+- Se agregaron DTOs para consulta y respuesta de métricas.
+- Se implementaron métricas de asistencia mediante RegistroAcceso.
+- Se incorporó cantidad de reservas confirmadas de canchas.
+- Se incorporó cantidad de reservas confirmadas de clases grupales.
+- Se contemplan sedes sin actividad mediante valores en cero.
+- Se agregó filtrado por rango de fechas y sede.
+- Se implementó el servicio y el endpoint GET /reportes/ocupacion.
+- Se reutilizó la configuración existente de ReportesModule.

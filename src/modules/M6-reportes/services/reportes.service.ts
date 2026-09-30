@@ -2,6 +2,8 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConsultaIngresosDto } from '../dto/consulta-ingresos.dto';
 import { ReporteIngresosResponseDto } from '../dto/reporte-ingresos-response.dto';
 import { ReportesRepository } from '../repositories/reportes.repository';
+import { ConsultaMetricasOcupacionDto } from '../dto/consulta-metricas-ocupacion.dto';
+import { ReporteOcupacionResponseDto } from '../dto/reporte-ocupacion-response.dto';
 
 @Injectable()
 export class ReportesService {
@@ -45,6 +47,34 @@ export class ReportesService {
       fecha_desde: consulta.fecha_desde,
       fecha_hasta: consulta.fecha_hasta,
       total_ingresos: totalIngresos,
+      sedes,
+    };
+  }
+
+  async obtenerMetricasOcupacion(
+    consulta: ConsultaMetricasOcupacionDto,
+  ): Promise<ReporteOcupacionResponseDto> {
+    const fechaDesde = new Date(consulta.fecha_desde);
+    const fechaHasta = new Date(consulta.fecha_hasta);
+
+    if (fechaDesde > fechaHasta) {
+      throw new BadRequestException(
+        'La fecha desde no puede ser posterior a la fecha hasta',
+      );
+    }
+
+    const fechaHastaExclusiva = new Date(fechaHasta);
+    fechaHastaExclusiva.setUTCDate(fechaHastaExclusiva.getUTCDate() + 1);
+
+    const sedes = await this.reportesRepository.obtenerMetricasOcupacionPorSede(
+      fechaDesde,
+      fechaHastaExclusiva,
+      consulta.id_sede,
+    );
+
+    return {
+      fecha_desde: consulta.fecha_desde,
+      fecha_hasta: consulta.fecha_hasta,
       sedes,
     };
   }
