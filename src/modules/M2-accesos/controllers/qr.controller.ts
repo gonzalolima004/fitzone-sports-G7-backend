@@ -17,7 +17,6 @@ import { QrDinamicoResponseDto } from '../dto/qr-dinamico-response.dto';
 @Controller('access/qr')
 export class QrController {
   constructor(private readonly qrService: QrService) {}
-
   @Get('generate')
   @ApiOperation({
     summary: 'Generar código QR dinámico temporal (60s)',

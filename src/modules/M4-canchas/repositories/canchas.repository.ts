@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
-import { Prisma, Cancha } from '@prisma/client';
+import { Prisma, Cancha, CanchaMantenimiento } from '@prisma/client';
 
 /**
  * PATRÓN REPOSITORY: Centraliza y encapsula todas las consultas a la base de datos
@@ -8,7 +8,7 @@ import { Prisma, Cancha } from '@prisma/client';
  */
 @Injectable()
 export class CanchasRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async crear(data: Prisma.CanchaUncheckedCreateInput): Promise<Cancha> {
     return this.prisma.cancha.create({
@@ -66,5 +66,16 @@ export class CanchasRepository {
       where: { id_cancha_tipo },
     });
     return !!tipo;
+  }
+
+  /**
+   * Registra un nuevo mantenimiento para la cancha sin afectar las reservas existentes (RF-12).
+   */
+  async crearMantenimiento(
+    data: Prisma.CanchaMantenimientoUncheckedCreateInput,
+  ): Promise<CanchaMantenimiento> {
+    return this.prisma.canchaMantenimiento.create({
+      data,
+    });
   }
 }
