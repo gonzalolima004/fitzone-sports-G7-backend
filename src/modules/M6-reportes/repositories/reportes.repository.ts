@@ -118,20 +118,23 @@ export class ReportesRepository {
       GROUP BY s.id_sede, s.nombre
     ),
 
-    reservas_canchas AS (
-      SELECT
-        s.id_sede,
-        COUNT(cr.id_cancha_reserva)::int AS total_reservas_canchas
-      FROM cancha_reserva cr
-      INNER JOIN cancha c
-        ON c.id_cancha = cr.id_cancha
-      INNER JOIN sede s
-        ON s.id_sede = c.id_sede
-      WHERE cr.fecha_inicio >= ${fechaDesde}
-        AND cr.fecha_inicio < ${fechaHastaExclusiva}
-        ${filtroSede}
-      GROUP BY s.id_sede
-    )
+reservas_canchas AS (
+  SELECT
+    s.id_sede,
+    COUNT(cr.id_cancha_reserva)::int AS total_reservas_canchas
+  FROM cancha_reserva cr
+  INNER JOIN cancha c
+    ON c.id_cancha = cr.id_cancha
+  INNER JOIN sede s
+    ON s.id_sede = c.id_sede
+  INNER JOIN cancha_reserva_estado cre
+    ON cre.id_cancha_reserva_estado = cr.id_cancha_reserva_estado
+  WHERE cr.fecha_inicio >= ${fechaDesde}
+    AND cr.fecha_inicio < ${fechaHastaExclusiva}
+    AND LOWER(cre.descripcion) = 'confirmada'
+    ${filtroSede}
+  GROUP BY s.id_sede
+)
 
     SELECT
       a.id_sede,
@@ -147,22 +150,22 @@ export class ReportesRepository {
     
 
     reservas_clases AS (
- SELECT
-  s.id_sede,
-  s.nombre AS nombre_sede,
-  COALESCE(a.total_asistencias, 0)::int AS total_asistencias,
-  COALESCE(rc.total_reservas_canchas, 0)::int AS total_reservas_canchas,
-  COALESCE(rcl.total_reservas_clases, 0)::int AS total_reservas_clases
-FROM sede s
-LEFT JOIN asistencias a
-  ON a.id_sede = s.id_sede
-LEFT JOIN reservas_canchas rc
-  ON rc.id_sede = s.id_sede
-LEFT JOIN reservas_clases rcl
-  ON rcl.id_sede = s.id_sede
-WHERE 1 = 1
-  ${filtroSede}
-ORDER BY s.id_sede
+  SELECT
+    s.id_sede,
+    COUNT(cr.id_clase_reserva)::int AS total_reservas_clases
+  FROM clase_reserva cr
+  INNER JOIN clase c
+    ON c.id_clase = cr.id_clase
+  INNER JOIN sede s
+    ON s.id_sede = c.id_sede
+  INNER JOIN clase_reserva_estado cre
+    ON cre.id_clase_reserva_estado = cr.id_clase_reserva_estado
+  WHERE cr.fecha_inicio >= ${fechaDesde}
+    AND cr.fecha_inicio < ${fechaHastaExclusiva}
+    AND LOWER(cre.descripcion) = 'confirmada'
+    ${filtroSede}
+  GROUP BY s.id_sede
+)
     `,
     );
   }
