@@ -681,3 +681,68 @@ Tarea 6 — Métricas de Ocupación por Sede
 - Se agregó filtrado por rango de fechas y sede.
 - Se implementó el servicio y el endpoint GET /reportes/ocupacion.
 - Se reutilizó la configuración existente de ReportesModule.
+
+---
+
+#### 03/10/2026 - 05/10/2026
+#### Matías Sillen | Rol: Desarrollador Backend
+
+* **Actividades:**
+* Desarrollo desde cero del módulo de autenticación (`AuthModule`) en NestJS, incluyendo la generación de tokens JWT.
+* Implementación del servicio de validación de credenciales usando `bcryptjs` para comparar contraseñas hasheadas.
+* Población de la tabla `Rol` en la base de datos de Supabase para alinear el esquema de Prisma con los perfiles del sistema (`socio`, `recepcion`, `gerente`, `admin`).
+
+
+* **Decisiones:**
+* Configurar los tokens JWT con una duración de 8 horas e inyectar el rol del usuario directamente en el payload para que el frontend pueda administrar permisos fácilmente.
+* Crear un DTO específico (`LoginDto`) con `class-validator` para exigir el formato correcto de email y contraseña.
+
+
+* **Dificultades:**
+* El servidor se detenía en el arranque por ausencia de variables de entorno de otros servicios (`SUPABASE_URL`, `QR_TOKEN_SECRET`), resuelto unificando el archivo `.env`.
+* Error de integridad referencial en Prisma (código P2025) al registrar un nuevo usuario con roles, resuelto insertando manualmente los registros maestros faltantes en la tabla `Rol` mediante un script SQL en Supabase.
+
+
+* **Commits:**
+* `feat(usuarios): implementar dto de login`
+* `feat(usuarios): implementar servicio de autenticación`
+* `feat(usuarios): implementar controlador de auntenticación`
+* `feat(usuarios): actualizar modulo de usuarios`
+
+---
+
+Para la modificación en el backend, dado que es un ajuste de configuración directamente relacionado con el almacenamiento de archivos, podés usar la siguiente nomenclatura:
+
+**Nombre de la rama:**
+Si estás trabajando con ramas separadas por tarea, podés usar algo como:
+`chore/configurar-supabase-key` o `fix/e2-t2-storage-rls`
+
+**Mensaje del Commit:**
+
+```bash
+git commit -am "chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos"
+
+```
+
+---
+#### 05/10/2026 
+#### Matías Sillen | Rol: Desarrollador Backend
+
+* **Actividades:**
+* Configuración de la conexión del controlador de carga de imágenes con Multer.
+* Creación y configuración pública del bucket `fitzonepublic` directamente en el panel de Supabase Storage para alojar las fotos de perfil.
+* Autorización del backend para realizar escrituras en el almacenamiento en la nube sin ser bloqueado por las políticas de seguridad.
+
+
+* **Decisiones:**
+* Utilizar la clave `service_role` de Supabase a través del archivo `.env` del servidor. Esto permite que NestJS actúe con privilegios de administrador para subir los archivos al Storage, sorteando las políticas RLS sin comprometer la seguridad pública de la base de datos.
+
+
+* **Dificultades:**
+* Excepción `LIMIT_UNEXPECTED_FILE` lanzada por Multer al rechazar la petición inicial; se identificó que el frontend enviaba la imagen bajo la key `file` mientras el decorador `@UseInterceptors(FileInterceptor('foto'))` esperaba la key `foto`.
+* Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
+* Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
+
+
+* **Commits:**
+* `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
