@@ -755,10 +755,15 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Soporte de filtrado opcional por fecha (`YYYY-MM-DD`) para consultar las reservas correspondientes a un día específico.
   - Creación del DTO de respuesta `MiReservaClaseResponseDto` con tipado estricto (`id_clase_reserva`, `id_clase`, `id_usuario`, fechas en ISO y estado `CONFIRMADA` / `CANCELADA`).
   - Unificación y validación de tipos del DTO de lista de espera (`InscribirListaEsperaDto`) con `@IsDateString()` para garantizar paridad y consistencia de payloads con reservas de clases.
+  - Implementación del endpoint `GET /lista-espera/mis-inscripciones` protegido con `SupabaseAuthGuard` y `@CurrentUserId()` para consultar las inscripciones activas del socio.
+  - Cálculo dinámico del turno en fila (`orden_en_cola`) para cada inscripción activa en lista de espera.
+  - Creación del DTO de respuesta `MiInscripcionListaEsperaResponseDto`.
 - **Decisiones:**
   - Mapear las reservas retornando tanto el código de estado como su descripción legible en mayúsculas (`CONFIRMADA`), incluyendo el nombre de la clase para evitar peticiones redundantes desde el cliente.
   - Estandarizar la recepción de horarios en formato ISO string en todos los DTOs del módulo M3.
+  - Computar la posición en la lista de espera mediante conteo atómico de solicitudes activas anteriores para el mismo bloque de clase.
 - **Dificultades:**
-  - Ninguna. Se verificó compatibilidad de tipos con `npm run typecheck` y formato con ESLint y Prettier.
+  - Ninguna. Se ejecutó el pipeline de validación `/validacion` completo con éxito.
 - **Commits:**
   - `feat(clases): implementar consulta de mis-reservas y unificar validacion de payloads en m3`
+  - `feat(clases): implementar consulta de mis-inscripciones en lista de espera con orden en cola`
