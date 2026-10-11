@@ -13,6 +13,7 @@ import { ClasesService } from '../services/clases.service';
 import { CreateClaseDto } from '../dto/create-clase.dto';
 import { UpdateClaseDto } from '../dto/update-clase.dto';
 import { ClaseResponseDto } from '../dto/clase-response.dto';
+import { ClaseAgendaResponseDto } from '../dto/clase-agenda-response.dto';
 
 @ApiTags('Clases Grupales')
 @Controller('clases')
@@ -31,20 +32,37 @@ export class ClasesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Obtener el catálogo de clases por sede' })
+  @ApiOperation({
+    summary:
+      'Obtener catálogo de clases por sede o agenda con ocupación por fecha',
+    description:
+      'Si se especifica la fecha (YYYY-MM-DD), devuelve la agenda con ocupación real, cupos y estado.',
+  })
   @ApiQuery({
     name: 'id_sede',
     required: true,
     type: Number,
     description: 'ID de la sede para filtrar las clases activas',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'fecha',
+    required: false,
+    type: String,
+    description: 'Fecha en formato YYYY-MM-DD para calcular ocupación y agenda',
+    example: '2026-10-12',
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de clases activas para la sede especificada.',
-    type: [ClaseResponseDto],
+    description:
+      'Lista de clases o agenda detallada con ocupación para la fecha especificada.',
+    type: [ClaseAgendaResponseDto],
   })
-  async obtenerClasesPorSede(@Query('id_sede', ParseIntPipe) id_sede: number) {
-    return await this.clasesService.obtenerClasesPorSede(id_sede);
+  async obtenerClasesPorSede(
+    @Query('id_sede', ParseIntPipe) id_sede: number,
+    @Query('fecha') fecha?: string,
+  ) {
+    return await this.clasesService.obtenerClasesPorSede(id_sede, fecha);
   }
 
   @Get(':id')

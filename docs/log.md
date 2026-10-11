@@ -758,12 +758,17 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Implementación del endpoint `GET /lista-espera/mis-inscripciones` protegido con `SupabaseAuthGuard` y `@CurrentUserId()` para consultar las inscripciones activas del socio.
   - Cálculo dinámico del turno en fila (`orden_en_cola`) para cada inscripción activa en lista de espera.
   - Creación del DTO de respuesta `MiInscripcionListaEsperaResponseDto`.
+  - Extensión del modelo `Clase` en Prisma (`profesor`, `sala`, `horario_inicio`, `horario_fin`) y sincronización con la base de datos de Supabase.
+  - Implementación de la agenda diaria en `GET /clases?id_sede=:id_sede&fecha=:fecha` con conteo en tiempo real de `cupos_ocupados`, `cupos_disponibles`, `en_espera` y cálculo de `estado` (`DISPONIBLE` / `COMPLETO`).
+  - Creación del DTO `ClaseAgendaResponseDto` para proveer contratos estrictos tanto de visualización (`HH:mm`) como de invocación de reservas (`ISO string`).
 - **Decisiones:**
   - Mapear las reservas retornando tanto el código de estado como su descripción legible en mayúsculas (`CONFIRMADA`), incluyendo el nombre de la clase para evitar peticiones redundantes desde el cliente.
   - Estandarizar la recepción de horarios en formato ISO string en todos los DTOs del módulo M3.
   - Computar la posición en la lista de espera mediante conteo atómico de solicitudes activas anteriores para el mismo bloque de clase.
+  - Retornar en la agenda diaria tanto los horarios legibles (`horario_inicio: "18:00"`) como los timestamps ISO completos (`fecha_inicio: "2026-10-12T18:00:00.000Z"`) para simplificar el binding directo con los endpoints de reserva del Frontend sin transformaciones adicionales en el cliente.
 - **Dificultades:**
-  - Ninguna. Se ejecutó el pipeline de validación `/validacion` completo con éxito.
+  - Ausencia de tablas de lista de espera y estados en Supabase, resuelta sincronizando el esquema mediante `prisma db push` y sembrado del estado inicial.
 - **Commits:**
   - `feat(clases): implementar consulta de mis-reservas y unificar validacion de payloads en m3`
   - `feat(clases): implementar consulta de mis-inscripciones en lista de espera con orden en cola`
+  - `feat(clases): implementar agenda diaria con filtro de fecha y ocupacion real en m3`

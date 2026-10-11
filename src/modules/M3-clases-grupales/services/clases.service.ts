@@ -1,11 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ClasesRepository } from '../repositories/clases.repository';
+import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
+import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { CreateClaseDto } from '../dto/create-clase.dto';
 import { UpdateClaseDto } from '../dto/update-clase.dto';
 
 @Injectable()
 export class ClasesService {
-  constructor(private readonly clasesRepository: ClasesRepository) {}
+  constructor(
+    private readonly clasesRepository: ClasesRepository,
+    private readonly reservasRepository: ReservasClasesRepository,
+    private readonly listaEsperaRepository: ListaEsperaRepository,
+  ) {}
 
   async crearClase(createClaseDto: CreateClaseDto) {
     // Las validaciones de datos (como capacidad_maxima > 0) ya se ejecutan
@@ -14,8 +20,64 @@ export class ClasesService {
     return await this.clasesRepository.crearClase(createClaseDto);
   }
 
-  async obtenerClasesPorSede(id_sede: number) {
-    return await this.clasesRepository.obtenerClasesPorSede(id_sede);
+  async obtenerClasesPorSede(id_sede: number, fecha?: string) {
+    const clases = await this.clasesRepository.obtenerClasesPorSede(id_sede);
+
+    if (!fecha) {
+      return clases;
+    }
+
+    // Si se envía fecha (YYYY-MM-DD), calculamos la agenda del día con ocupación real:
+    const agenda = await Promise.all(
+      clases.map(async (clase) => {
+        const horaInicioStr = clase.horario_inicio || '09:00';
+        const horaFinStr = clase.horario_fin || '10:00';
+
+        const fechaInicio = new Date(`${fecha}T${horaInicioStr}:00.000Z`);
+        const fechaFin = new Date(`${fecha}T${horaFinStr}:00.000Z`);
+
+        const cuposOcupados =
+          await this.reservasRepository.contarReservasConfirmadas(
+            clase.id_clase,
+            fechaInicio,
+            fechaFin,
+          );
+
+        const enEspera =
+          await this.listaEsperaRepository.contarInscriptosActivos(
+            clase.id_clase,
+            fechaInicio,
+            fechaFin,
+          );
+
+        const cuposDisponibles = Math.max(
+          0,
+          clase.capacidad_maxima - cuposOcupados,
+        );
+        const estado: 'DISPONIBLE' | 'COMPLETO' =
+          cuposDisponibles > 0 ? 'DISPONIBLE' : 'COMPLETO';
+
+        return {
+          id_clase: clase.id_clase,
+          id_sede: clase.id_sede,
+          nombre: clase.nombre,
+          descripcion: clase.descripcion,
+          profesor: clase.profesor ?? 'Profesor no asignado',
+          sala: clase.sala ?? 'Sala Principal',
+          horario_inicio: horaInicioStr,
+          horario_fin: horaFinStr,
+          fecha_inicio: fechaInicio.toISOString(),
+          fecha_fin: fechaFin.toISOString(),
+          capacidad_maxima: clase.capacidad_maxima,
+          cupos_ocupados: cuposOcupados,
+          cupos_disponibles: cuposDisponibles,
+          en_espera: enEspera,
+          estado,
+        };
+      }),
+    );
+
+    return agenda;
   }
 
   async obtenerClasePorId(id_clase: number) {
