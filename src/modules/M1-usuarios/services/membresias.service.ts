@@ -197,10 +197,11 @@ export class MembresiasService {
     // 4. Construir respuesta
     return plainToInstance(VerificarMembresiaResponseDto, {
       id_usuario: id_usuario,
-      esSocioActivo: !esMora, // Si no está en mora, es socio activo
+      esSocioActivo: !esMora,
       enMora: esMora,
       id_sede_origen: idSedeOrigen,
       fecha_vencimiento: membresiaActiva.fecha_fin,
+      nombre_plan: membresiaActiva.membresia_plan?.nombre, // Agregada esta línea
       mensaje: esMora
         ? 'Membresía vencida. El socio se encuentra en mora y no tiene permitido el acceso.'
         : 'Socio activo habilitado para acceso multi-sede y beneficios.',
