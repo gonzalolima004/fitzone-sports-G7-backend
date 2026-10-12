@@ -23,6 +23,7 @@ import {
   PagoDetalleResponseDto,
   PagoConceptoDto,
 } from '../dto/pago-detalle-response.dto';
+import { PagoPendienteResponseDto } from '../dto/pago-pendiente-response.dto';
 
 @Injectable()
 export class PagosService {
@@ -111,7 +112,10 @@ export class PagosService {
                 pending: backUrls.pending,
               }
             : undefined,
-          auto_return: backUrls?.success ? 'approved' : undefined,
+          auto_return:
+            backUrls?.success && !backUrls.success.includes('localhost')
+              ? 'approved'
+              : undefined,
           notification_url: notificationUrl || undefined,
           external_reference: itemId,
           metadata: {
@@ -550,5 +554,85 @@ export class PagosService {
     }
 
     return this.formatearDetallePago(pago);
+  }
+
+  /**
+   * Obtiene los conceptos que el usuario tiene pendientes de abonar:
+   * - Su membresía, si está vencida o no activa y no fue renovada con un pago aprobado.
+   * - Sus reservas de cancha futuras sin pago aprobado.
+   */
+  async obtenerPendientesUsuario(
+    id_usuario: number,
+  ): Promise<PagoPendienteResponseDto[]> {
+    const pendientes: PagoPendienteResponseDto[] = [];
+
+    const membresia =
+      await this.pagosRepository.obtenerUltimaMembresiaDeUsuario(id_usuario);
+
+    if (membresia) {
+      const estadoActiva =
+        membresia.membresia_estado?.descripcion?.toLowerCase() === 'activa';
+      const vencida = new Date(membresia.fecha_fin) < new Date();
+
+      // La aprobación de un pago siempre deja la membresía 'Activa', por lo que
+      // solo una membresía vencida necesita comprobar si ya fue renovada.
+      const renovada =
+        estadoActiva && vencida
+          ? await this.pagosRepository.existePagoAprobadoDeMembresiaDesde(
+              membresia.id_membresia,
+              membresia.fecha_fin,
+            )
+          : false;
+
+      if ((!estadoActiva || vencida) && !renovada) {
+        const nombrePlan = membresia.membresia_plan?.nombre || 'Plan FitZone';
+        const dias = membresia.membresia_plan?.duracion_dias || 30;
+        const finStr = new Date(membresia.fecha_fin).toLocaleDateString(
+          'es-AR',
+          { timeZone: 'UTC' },
+        );
+
+        pendientes.push({
+          tipo: 'membresia',
+          id_referencia: membresia.id_membresia,
+          titulo: `Membresía ${nombrePlan}`,
+          detalle: vencida
+            ? `Venció el ${finStr} (plan de ${dias} días)`
+            : `Pendiente de activación - vigencia hasta ${finStr} (plan de ${dias} días)`,
+          monto: Number(membresia.membresia_plan?.precio ?? 0),
+        });
+      }
+    }
+
+    const reservas =
+      await this.pagosRepository.obtenerReservasPendientesDePago(id_usuario);
+
+    for (const r of reservas) {
+      const nombreCancha = r.cancha?.nombre || 'Cancha Deportiva';
+      const nombreSede = r.cancha?.sede?.nombre || 'Sede Central';
+      const fechaStr = new Date(r.fecha_inicio).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+      const horaInicio = new Date(r.fecha_inicio).toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const horaFin = new Date(r.fecha_fin).toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      pendientes.push({
+        tipo: 'cancha',
+        id_referencia: r.id_cancha_reserva,
+        titulo: `Reserva ${nombreCancha}`,
+        detalle: `Sede ${nombreSede} - Horario: ${fechaStr} ${horaInicio} a ${horaFin} hs`,
+        monto: Number(r.precio_congelado),
+      });
+    }
+
+    return pendientes;
   }
 }

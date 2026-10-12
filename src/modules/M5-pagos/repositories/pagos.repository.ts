@@ -34,6 +34,23 @@ export type PagoConDetalleCompleto = Prisma.PagoGetPayload<{
 
 export type PagoParaComprobante = PagoConDetalleCompleto;
 
+export type ReservaPendienteDePago = Prisma.CanchaReservaGetPayload<{
+  include: {
+    cancha: {
+      include: {
+        sede: true;
+      };
+    };
+  };
+}>;
+
+export type MembresiaConPlanYEstado = Prisma.MembresiaGetPayload<{
+  include: {
+    membresia_plan: true;
+    membresia_estado: true;
+  };
+}>;
+
 @Injectable()
 export class PagosRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -362,6 +379,83 @@ export class PagosRepository {
         },
       },
     });
+  }
+
+  /**
+   * Reservas futuras del usuario que no fueron canceladas ni confirmadas
+   * y que no tienen ningún pago aprobado asociado.
+   */
+  async obtenerReservasPendientesDePago(
+    id_usuario: number,
+  ): Promise<ReservaPendienteDePago[]> {
+    return this.prisma.canchaReserva.findMany({
+      where: {
+        id_usuario,
+        fecha_fin: { gte: new Date() },
+        NOT: [
+          {
+            cancha_reserva_estado: {
+              descripcion: { equals: 'Cancelada', mode: 'insensitive' },
+            },
+          },
+          {
+            cancha_reserva_estado: {
+              descripcion: { equals: 'Confirmada', mode: 'insensitive' },
+            },
+          },
+        ],
+        pagos: {
+          none: {
+            pago_estado: {
+              descripcion: { equals: 'Aprobado', mode: 'insensitive' },
+            },
+          },
+        },
+      },
+      orderBy: { fecha_inicio: 'asc' },
+      include: {
+        cancha: {
+          include: {
+            sede: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Última membresía del usuario (la de mayor fecha de fin), con plan y estado.
+   */
+  async obtenerUltimaMembresiaDeUsuario(
+    id_usuario: number,
+  ): Promise<MembresiaConPlanYEstado | null> {
+    return this.prisma.membresia.findFirst({
+      where: { id_usuario },
+      orderBy: { fecha_fin: 'desc' },
+      include: {
+        membresia_plan: true,
+        membresia_estado: true,
+      },
+    });
+  }
+
+  /**
+   * Indica si la membresía tiene un pago aprobado realizado desde la fecha dada.
+   */
+  async existePagoAprobadoDeMembresiaDesde(
+    id_membresia: number,
+    desde: Date,
+  ): Promise<boolean> {
+    const cantidad = await this.prisma.pago.count({
+      where: {
+        id_membresia,
+        fecha_pago: { gte: desde },
+        pago_estado: {
+          descripcion: { equals: 'Aprobado', mode: 'insensitive' },
+        },
+      },
+    });
+    return cantidad > 0;
   }
 
   async obtenerPagoCompletoParaComprobante(
