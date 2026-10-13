@@ -16,16 +16,18 @@ model Ciudad {
 }
 
 model Sede {
-  id_sede          Int              @id @default(autoincrement())
-  nombre           String           @db.VarChar(50)
-  direccion        String           @db.VarChar(50)
+  id_sede          Int               @id @default(autoincrement())
+  nombre           String            @db.VarChar(50)
+  direccion        String            @db.VarChar(50)
   aforo_maximo     Int
-  activo           Boolean          @default(true)
+  activo           Boolean           @default(true)
   id_ciudad        Int
+  calendario_sede  calendario_sede[]
   canchas          Cancha[]
   clases           Clase[]
   registro_accesos RegistroAcceso[]
-  ciudad           Ciudad           @relation(fields: [id_ciudad], references: [id_ciudad])
+  ciudad           Ciudad            @relation(fields: [id_ciudad], references: [id_ciudad])
+  sede_horario     sede_horario[]
   usuarios         Usuario[]
 
   @@map("sede")
@@ -59,27 +61,27 @@ model UsuarioEstado {
 }
 
 model Usuario {
-  id_usuario        Int              @id @default(autoincrement())
-  dni               String           @unique @db.VarChar(20)
-  email             String           @unique @db.VarChar(100)
-  password          String           @db.VarChar(100)
-  nombre            String           @db.VarChar(50)
-  apellido          String           @db.VarChar(50)
-  telefono          String?          @db.VarChar(30)
-  foto_url          String?          @db.VarChar(255)
-  modificado        DateTime         @updatedAt
-  creacion          DateTime         @default(now())
-  qr_url            String?          @db.VarChar(255)
-  id_sede           Int
-  id_usuario_estado Int
+  id_usuario         Int                @id @default(autoincrement())
+  dni                String             @unique @db.VarChar(20)
+  email              String             @unique @db.VarChar(100)
+  password           String             @db.VarChar(100)
+  nombre             String             @db.VarChar(50)
+  apellido           String             @db.VarChar(50)
+  telefono           String?            @db.VarChar(30)
+  foto_url           String?            @db.VarChar(255)
+  modificado         DateTime           @updatedAt
+  creacion           DateTime           @default(now())
+  qr_url             String?            @db.VarChar(255)
+  id_sede            Int
+  id_usuario_estado  Int
   cancha_reserva     CanchaReserva[]
-  clase_reserva      ClaseReserva[]
   clase_lista_espera ClaseListaEspera[]
+  clase_reserva      ClaseReserva[]
   membresia          Membresia[]
   registro_accesos   RegistroAcceso[]
-  sede               Sede             @relation(fields: [id_sede], references: [id_sede])
-  usuario_estado    UsuarioEstado    @relation(fields: [id_usuario_estado], references: [id_usuario_estado])
-  usuario_rol       UsuarioRol[]
+  sede               Sede               @relation(fields: [id_sede], references: [id_sede])
+  usuario_estado     UsuarioEstado      @relation(fields: [id_usuario_estado], references: [id_usuario_estado])
+  usuario_rol        UsuarioRol[]
 
   @@map("usuario")
 }
@@ -158,15 +160,19 @@ model CanchaReserva {
 }
 
 model Clase {
-  id_clase         Int            @id @default(autoincrement())
-  id_sede          Int
-  capacidad_maxima Int
-  nombre           String         @db.VarChar(100)
-  descripcion      String?        @db.VarChar(255)
-  activo           Boolean        @default(true)
+  id_clase           Int                @id @default(autoincrement())
+  id_sede            Int
+  capacidad_maxima   Int
+  nombre             String             @db.VarChar(100)
+  descripcion        String?            @db.VarChar(255)
+  activo             Boolean            @default(true)
+  horario_fin        String?            @db.VarChar(10)
+  horario_inicio     String?            @db.VarChar(10)
+  profesor           String?            @db.VarChar(100)
+  sala               String?            @db.VarChar(100)
   sede               Sede               @relation(fields: [id_sede], references: [id_sede])
-  clase_reserva      ClaseReserva[]
   clase_lista_espera ClaseListaEspera[]
+  clase_reserva      ClaseReserva[]
 
   @@map("clase")
 }
@@ -272,4 +278,39 @@ model Pago {
   pago_estado       PagoEstado     @relation(fields: [id_pago_estado], references: [id_pago_estado])
 
   @@map("pago")
+}
+
+model calendario {
+  id_calendario   Int               @id @default(autoincrement())
+  fecha           DateTime          @unique @db.Date
+  descripcion     String?           @db.VarChar(100)
+  es_feriado      Boolean           @default(false)
+  es_dia_habil    Boolean           @default(true)
+  calendario_sede calendario_sede[]
+}
+
+model calendario_sede {
+  id_calendario_sede Int        @id @default(autoincrement())
+  id_sede            Int
+  id_calendario      Int
+  cerrado            Boolean    @default(true)
+  hora_apertura      String?    @db.VarChar(5)
+  hora_cierre        String?    @db.VarChar(5)
+  motivo             String?    @db.VarChar(255)
+  calendario         calendario @relation(fields: [id_calendario], references: [id_calendario])
+  sede               Sede       @relation(fields: [id_sede], references: [id_sede])
+
+  @@unique([id_sede, id_calendario], map: "uq_sede_calendario")
+}
+
+model sede_horario {
+  id_sede_horario Int     @id @default(autoincrement())
+  id_sede         Int
+  dia_semana      Int
+  hora_apertura   String  @db.VarChar(5)
+  hora_cierre     String  @db.VarChar(5)
+  abierto         Boolean @default(true)
+  sede            Sede    @relation(fields: [id_sede], references: [id_sede])
+
+  @@unique([id_sede, dia_semana], map: "uq_sede_dia")
 }
