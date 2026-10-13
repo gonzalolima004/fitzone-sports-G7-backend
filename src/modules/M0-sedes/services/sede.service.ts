@@ -53,4 +53,71 @@ export class SedeService {
 
     return this.sedeRepository.logicalDelete(id_sede);
   }
+
+  /**
+   * Determina el horario operativo de la sede cruzando Calendario y SedeHorario
+   */
+  async getHorarioOperativo(id_sede: number, fechaStr: string) {
+    // Validar que la sede exista
+    await this.findById(id_sede);
+
+    // Parsear fecha en formato UTC para evitar saltos de día por zona horaria
+    const [year, month, day] = fechaStr.split('-').map(Number);
+    const fechaDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    const diaSemana = fechaDate.getUTCDay(); // 0: Domingo, 1: Lunes, ..., 6: Sábado
+
+    const { excepcion, horarioBase } =
+      await this.sedeRepository.findHorarioOperativo(
+        id_sede,
+        diaSemana,
+        fechaDate,
+      );
+
+    // Caso 1: Excepción en el Calendario (Feriado o Cierre extraordinario)
+    if (excepcion) {
+      if (excepcion.cerrado) {
+        return {
+          abierto: false,
+          hora_apertura: '00:00',
+          hora_cierre: '00:00',
+          motivo_cierre:
+            excepcion.motivo ||
+            excepcion.calendario?.descripcion ||
+            'Sede cerrada por feriado / calendario oficial',
+        };
+      }
+
+      return {
+        abierto: true,
+        hora_apertura: excepcion.hora_apertura || '08:00',
+        hora_cierre: excepcion.hora_cierre || '20:00',
+        es_horario_especial: true,
+      };
+    }
+
+    // Caso 2: Horario semanal regular de la sede (sede_horario)
+    if (horarioBase) {
+      if (!horarioBase.abierto) {
+        return {
+          abierto: false,
+          hora_apertura: '00:00',
+          hora_cierre: '00:00',
+          motivo_cierre: 'La sede no abre los días domingo / este día',
+        };
+      }
+
+      return {
+        abierto: true,
+        hora_apertura: horarioBase.hora_apertura,
+        hora_cierre: horarioBase.hora_cierre,
+      };
+    }
+
+    // Caso 3: Fallback por defecto si aún no se configuraron horarios en BD
+    return {
+      abierto: true,
+      hora_apertura: '08:00',
+      hora_cierre: '22:00',
+    };
+  }
 }

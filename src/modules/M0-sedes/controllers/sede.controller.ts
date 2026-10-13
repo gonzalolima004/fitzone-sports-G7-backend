@@ -7,11 +7,18 @@ import {
   Param,
   Body,
   Post,
+  Query,
 } from '@nestjs/common';
 import { SedeService } from '../services/sede.service';
 import { CreateSedeDto } from '../dto/create-sede.dto';
 import { UpdateSedeDto } from '../dto/update-sede.dto';
-import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 @ApiTags('Sedes')
 @Controller('sedes')
@@ -118,5 +125,31 @@ export class SedeController {
   @Delete(':id')
   async logicalDelete(@Param('id', ParseIntPipe) id_sede: number) {
     return this.sedeService.logicalDelete(id_sede);
+  }
+
+  @ApiOperation({
+    summary: 'Obtener horario operativo de una sede para una fecha',
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'ID de la sede',
+  })
+  @ApiQuery({
+    name: 'fecha',
+    type: String,
+    description: 'Fecha a consultar en formato YYYY-MM-DD',
+    example: '2026-10-13',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Horario operativo obtenido correctamente',
+  })
+  @Get(':id/horario-operativo')
+  async getHorarioOperativo(
+    @Param('id', ParseIntPipe) id_sede: number,
+    @Query('fecha') fecha: string,
+  ) {
+    return this.sedeService.getHorarioOperativo(id_sede, fecha);
   }
 }
