@@ -685,29 +685,27 @@ Tarea 6 — Métricas de Ocupación por Sede
 ---
 
 #### 03/10/2026 - 05/10/2026
+
 #### Matías Sillen | Rol: Desarrollador Backend
 
-* **Actividades:**
-* Desarrollo desde cero del módulo de autenticación (`AuthModule`) en NestJS, incluyendo la generación de tokens JWT.
-* Implementación del servicio de validación de credenciales usando `bcryptjs` para comparar contraseñas hasheadas.
-* Población de la tabla `Rol` en la base de datos de Supabase para alinear el esquema de Prisma con los perfiles del sistema (`socio`, `recepcion`, `gerente`, `admin`).
+- **Actividades:**
+- Desarrollo desde cero del módulo de autenticación (`AuthModule`) en NestJS, incluyendo la generación de tokens JWT.
+- Implementación del servicio de validación de credenciales usando `bcryptjs` para comparar contraseñas hasheadas.
+- Población de la tabla `Rol` en la base de datos de Supabase para alinear el esquema de Prisma con los perfiles del sistema (`socio`, `recepcion`, `gerente`, `admin`).
 
+- **Decisiones:**
+- Configurar los tokens JWT con una duración de 8 horas e inyectar el rol del usuario directamente en el payload para que el frontend pueda administrar permisos fácilmente.
+- Crear un DTO específico (`LoginDto`) con `class-validator` para exigir el formato correcto de email y contraseña.
 
-* **Decisiones:**
-* Configurar los tokens JWT con una duración de 8 horas e inyectar el rol del usuario directamente en el payload para que el frontend pueda administrar permisos fácilmente.
-* Crear un DTO específico (`LoginDto`) con `class-validator` para exigir el formato correcto de email y contraseña.
+- **Dificultades:**
+- El servidor se detenía en el arranque por ausencia de variables de entorno de otros servicios (`SUPABASE_URL`, `QR_TOKEN_SECRET`), resuelto unificando el archivo `.env`.
+- Error de integridad referencial en Prisma (código P2025) al registrar un nuevo usuario con roles, resuelto insertando manualmente los registros maestros faltantes en la tabla `Rol` mediante un script SQL en Supabase.
 
-
-* **Dificultades:**
-* El servidor se detenía en el arranque por ausencia de variables de entorno de otros servicios (`SUPABASE_URL`, `QR_TOKEN_SECRET`), resuelto unificando el archivo `.env`.
-* Error de integridad referencial en Prisma (código P2025) al registrar un nuevo usuario con roles, resuelto insertando manualmente los registros maestros faltantes en la tabla `Rol` mediante un script SQL en Supabase.
-
-
-* **Commits:**
-* `feat(usuarios): implementar dto de login`
-* `feat(usuarios): implementar servicio de autenticación`
-* `feat(usuarios): implementar controlador de auntenticación`
-* `feat(usuarios): actualizar modulo de usuarios`
+- **Commits:**
+- `feat(usuarios): implementar dto de login`
+- `feat(usuarios): implementar servicio de autenticación`
+- `feat(usuarios): implementar controlador de auntenticación`
+- `feat(usuarios): actualizar modulo de usuarios`
 
 ---
 
@@ -725,24 +723,51 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 ```
 
 ---
-#### 05/10/2026 
+
+#### 05/10/2026
+
 #### Matías Sillen | Rol: Desarrollador Backend
 
-* **Actividades:**
-* Configuración de la conexión del controlador de carga de imágenes con Multer.
-* Creación y configuración pública del bucket `fitzonepublic` directamente en el panel de Supabase Storage para alojar las fotos de perfil.
-* Autorización del backend para realizar escrituras en el almacenamiento en la nube sin ser bloqueado por las políticas de seguridad.
+- **Actividades:**
+- Configuración de la conexión del controlador de carga de imágenes con Multer.
+- Creación y configuración pública del bucket `fitzonepublic` directamente en el panel de Supabase Storage para alojar las fotos de perfil.
+- Autorización del backend para realizar escrituras en el almacenamiento en la nube sin ser bloqueado por las políticas de seguridad.
 
+- **Decisiones:**
+- Utilizar la clave `service_role` de Supabase a través del archivo `.env` del servidor. Esto permite que NestJS actúe con privilegios de administrador para subir los archivos al Storage, sorteando las políticas RLS sin comprometer la seguridad pública de la base de datos.
 
-* **Decisiones:**
-* Utilizar la clave `service_role` de Supabase a través del archivo `.env` del servidor. Esto permite que NestJS actúe con privilegios de administrador para subir los archivos al Storage, sorteando las políticas RLS sin comprometer la seguridad pública de la base de datos.
+- **Dificultades:**
+- Excepción `LIMIT_UNEXPECTED_FILE` lanzada por Multer al rechazar la petición inicial; se identificó que el frontend enviaba la imagen bajo la key `file` mientras el decorador `@UseInterceptors(FileInterceptor('foto'))` esperaba la key `foto`.
+- Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
+- Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
 
+- **Commits:**
+- `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
 
-* **Dificultades:**
-* Excepción `LIMIT_UNEXPECTED_FILE` lanzada por Multer al rechazar la petición inicial; se identificó que el frontend enviaba la imagen bajo la key `file` mientras el decorador `@UseInterceptors(FileInterceptor('foto'))` esperaba la key `foto`.
-* Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
-* Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
+---
 
+#### 14/10/2026
 
-* **Commits:**
-* `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Corrección de la consulta de ocupación necesaria para completar el frontend de reportes.
+- **Actividades:**
+  - Corrección de la consulta SQL incompleta de `ReportesRepository`.
+  - Agregación independiente de asistencias, reservas confirmadas de canchas y clases, sin duplicar totales por las uniones.
+  - Inclusión de sedes con reservas aunque no tengan asistencias; filtros parametrizados y fechas con límite final exclusivo.
+  - Incorporación de pruebas del servicio y un script de verificación SQL sobre PostgreSQL temporal con PGlite.
+- **Decisiones:**
+  - Mantener el contrato del endpoint y el esquema; no aplicar migraciones ni modificar datos compartidos.
+  - Devolver únicamente sedes con actividad en el período. Las métricas faltantes dentro de esas sedes se expresan con cero.
+  - Publicar la corrección en `feature/e1-fix-consulta-ocupacion`.
+- **Dificultades y resolución:**
+  - El código anterior tenía una CTE incompleta y no incorporaba correctamente las reservas de clases.
+  - La instalación local no contenía `@nestjs/jwt`, ya declarado por el equipo; se instalaron las dependencias para compilar.
+- **Verificación:** Build y typecheck aprobados; 9 pruebas aprobadas; consulta SQL comprobada con fechas límite, estados, filtros, resultados vacíos y reservas sin asistencia. No se probó una sesión completa contra la base compartida.
+- **Commits:** `d2ac371` — fix(reportes): completar metricas de ocupacion por sede.
+
+#### Facundo Agüero | Rol: Team Leader
+
+- **Actividades:** Revisión de la dependencia entre la pantalla de ocupación y el backend; separación de la corrección y sus pruebas en una entrega revisable.
+- **Decisiones:** Validar la corrección antes de la aceptación del frontend y mantener el registro de limitaciones para el traspaso del 15/10.
+- **Pendientes:** Revisión de compañeros, aceptación integrada y acuerdos de la reunión del 14/10 a las 15:00.
