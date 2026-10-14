@@ -201,6 +201,7 @@ export class MembresiasService {
       enMora: esMora,
       id_sede_origen: idSedeOrigen,
       fecha_vencimiento: membresiaActiva.fecha_fin,
+      nombre_plan: membresiaActiva.membresia_plan?.nombre, // <-- DATO AGREGADO AQUÍ
       mensaje: esMora
         ? 'Membresía vencida. El socio se encuentra en mora y no tiene permitido el acceso.'
         : 'Socio activo habilitado para acceso multi-sede y beneficios.',

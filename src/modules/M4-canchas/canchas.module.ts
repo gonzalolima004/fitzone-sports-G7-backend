@@ -18,6 +18,7 @@ import { ReservasCanchasRepository } from './repositories/reservas-canchas.repos
 import { PrecioEstandarStrategy } from './patterns/strategy/precio-estandar.strategy';
 import { DescuentoSocioStrategy } from './patterns/strategy/descuento-socio.strategy';
 import { HorarioPicoStrategy } from './patterns/strategy/horario-pico.strategy';
+import { SedesModule } from '../M0-sedes/sedes.module';
 
 @Module({
   controllers: [
@@ -37,5 +38,6 @@ import { HorarioPicoStrategy } from './patterns/strategy/horario-pico.strategy';
     HorarioPicoStrategy,
   ],
   exports: [CanchasService, ReservasCanchasService, MantenimientoService],
+  imports: [SedesModule],
 })
 export class CanchasModule {}

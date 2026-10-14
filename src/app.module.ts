@@ -12,6 +12,7 @@ import { PagosModule } from './modules/M5-pagos/pagos.module';
 import { UsuariosModule } from './modules/M1-usuarios/usuarios.module';
 import { SedesModule } from './modules/M0-sedes/sedes.module';
 import { ClasesGrupalesModule } from './modules/M3-clases-grupales/clases-grupales.module';
+import { ReportesModule } from './modules/M6-reportes/reportes.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ClasesGrupalesModule } from './modules/M3-clases-grupales/clases-grupal
     CanchasModule,
     PagosModule,
     SedesModule,
+    ReportesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

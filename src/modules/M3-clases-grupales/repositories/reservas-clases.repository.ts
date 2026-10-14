@@ -95,4 +95,40 @@ export class ReservasClasesRepository {
       },
     });
   }
+
+  /**
+   * Obtiene las reservas asociadas a un usuario, permitiendo filtrar por un rango de fechas.
+   */
+  async obtenerReservasPorUsuario(
+    id_usuario: number,
+    fechaInicioDia?: Date,
+    fechaFinDia?: Date,
+  ) {
+    const whereClause: Prisma.ClaseReservaWhereInput = {
+      id_usuario,
+    };
+
+    if (fechaInicioDia && fechaFinDia) {
+      whereClause.fecha_inicio = {
+        gte: fechaInicioDia,
+        lte: fechaFinDia,
+      };
+    }
+
+    return await this.prisma.claseReserva.findMany({
+      where: whereClause,
+      include: {
+        clase_reserva_estado: true,
+        clase: {
+          select: {
+            id_clase: true,
+            nombre: true,
+          },
+        },
+      },
+      orderBy: {
+        fecha_inicio: 'asc',
+      },
+    });
+  }
 }

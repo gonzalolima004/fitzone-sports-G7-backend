@@ -2,6 +2,13 @@ import { Exclude, Expose } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 @Exclude()
 export class PlanResponseDto {
+  @ApiProperty({
+    example: 1,
+    description: 'Alias del ID del plan para el frontend',
+  })
+  @Expose()
+  id: number;
+
   @ApiProperty({ example: 1, description: 'ID del plan' })
   @Expose()
   id_plan: number;
