@@ -44,4 +44,32 @@ export class SedeRepository {
       data: { activo: false },
     });
   }
+
+  /**
+   * Consulta la excepción de calendario y el horario semanal de la sede
+   */
+  async findHorarioOperativo(id_sede: number, dia_semana: number, fecha: Date) {
+    // 1. Verificar si hay excepción para esa fecha específica (feriado o cierre)
+    const excepcion = await this.prisma.calendario_sede.findFirst({
+      where: {
+        id_sede,
+        calendario: {
+          fecha,
+        },
+      },
+      include: {
+        calendario: true,
+      },
+    });
+
+    // 2. Obtener el horario base semanal de la sede para el día (0 = Domingo, ..., 6 = Sábado)
+    const horarioBase = await this.prisma.sede_horario.findFirst({
+      where: {
+        id_sede,
+        dia_semana,
+      },
+    });
+
+    return { excepcion, horarioBase };
+  }
 }
