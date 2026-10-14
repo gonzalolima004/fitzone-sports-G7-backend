@@ -11,12 +11,14 @@ import {
   DisponibilidadSlotResponseDto,
   SlotEstado,
 } from '../dto/disponibilidad-slot-response.dto';
+import { SedeService } from '../../M0-sedes/services/sede.service';
 
 @Injectable()
 export class CanchasService {
   constructor(
     private readonly canchasRepository: CanchasRepository,
     private readonly reservasRepository: ReservasCanchasRepository,
+    private readonly sedeService: SedeService,
   ) {}
 
   async crearCancha(dto: CrearCanchaDto) {
@@ -39,8 +41,12 @@ export class CanchasService {
     return this.canchasRepository.crear(dto);
   }
 
-  async listarCanchas() {
-    return this.canchasRepository.obtenerTodasActivas();
+  async listarCanchas(sedeId?: number) {
+    return await this.canchasRepository.obtenerTodasActivas(sedeId);
+  }
+
+  async listarTiposCancha() {
+    return await this.canchasRepository.obtenerTiposCancha();
   }
 
   async obtenerCancha(id: number) {
@@ -69,15 +75,31 @@ export class CanchasService {
     id_cancha: number,
     fechaStr: string,
   ): Promise<DisponibilidadSlotResponseDto[]> {
-    // 1. Validar existencia de la cancha
-    await this.obtenerCancha(id_cancha);
+    // 1. Validar existencia de la cancha y obtener a qué sede pertenece
+    const cancha = await this.obtenerCancha(id_cancha);
 
-    // 2. Configurar límites del día (08:00 a 23:00)
-    const fechaBase = new Date(`${fechaStr}T00:00:00Z`);
-    const inicioDia = new Date(fechaBase.setUTCHours(8, 0, 0, 0));
-    const finDia = new Date(fechaBase.setUTCHours(23, 0, 0, 0));
+    // 2. Consultar el horario operativo de la sede cruzando SedeHorario y Calendario
+    const horarioSede = await this.sedeService.getHorarioOperativo(
+      cancha.id_sede,
+      fechaStr,
+    );
 
-    // 3. Obtener bloqueos (Reservas y Mantenimientos) en paralelo para mayor velocidad
+    // Si la sede está cerrada por feriado, domingo u horario especial, retornamos 0 slots
+    if (!horarioSede.abierto) {
+      return [];
+    }
+
+    // 3. Configurar límites dinámicos del día según la apertura y cierre de la sede
+    const [horaApertura] = horarioSede.hora_apertura.split(':').map(Number);
+    const [horaCierre] = horarioSede.hora_cierre.split(':').map(Number);
+
+    const [year, month, day] = fechaStr.split('-').map(Number);
+    const inicioDia = new Date(
+      Date.UTC(year, month - 1, day, horaApertura, 0, 0),
+    );
+    const finDia = new Date(Date.UTC(year, month - 1, day, horaCierre, 0, 0));
+
+    // 4. Obtener bloqueos (Reservas y Mantenimientos) en paralelo para esa ventana
     const [reservas, mantenimientos] = await Promise.all([
       this.reservasRepository.obtenerReservasPorFecha(
         id_cancha,
@@ -91,7 +113,7 @@ export class CanchasService {
       ),
     ]);
 
-    // 4. Generar Slots en memoria (O(n))
+    // 5. Generar Slots en memoria entre hora_apertura y hora_cierre
     const slots: DisponibilidadSlotResponseDto[] = [];
     let horaActual = new Date(inicioDia);
 
@@ -99,7 +121,7 @@ export class CanchasService {
       const horaSiguiente = new Date(horaActual);
       horaSiguiente.setUTCHours(horaActual.getUTCHours() + 1);
 
-      // Evaluar colisiones
+      // Evaluar colisiones con mantenimientos y reservas
       const enMantenimiento = mantenimientos.some(
         (m) => m.fecha_inicio < horaSiguiente && m.fecha_fin > horaActual,
       );
