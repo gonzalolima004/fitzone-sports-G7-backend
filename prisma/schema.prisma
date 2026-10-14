@@ -165,11 +165,11 @@ model Clase {
   capacidad_maxima   Int
   nombre             String             @db.VarChar(100)
   descripcion        String?            @db.VarChar(255)
-  activo             Boolean            @default(true)
-  horario_fin        String?            @db.VarChar(10)
-  horario_inicio     String?            @db.VarChar(10)
   profesor           String?            @db.VarChar(100)
   sala               String?            @db.VarChar(100)
+  horario_inicio     String?            @db.VarChar(10)
+  horario_fin        String?            @db.VarChar(10)
+  activo             Boolean            @default(true)
   sede               Sede               @relation(fields: [id_sede], references: [id_sede])
   clase_lista_espera ClaseListaEspera[]
   clase_reserva      ClaseReserva[]

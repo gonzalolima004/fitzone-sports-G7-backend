@@ -36,7 +36,11 @@ export class ReservasCanchasService {
       throw new BadRequestException('Formato de fecha inválido.');
     }
 
-    if (inicio.getUTCMinutes() !== 0 || inicio.getUTCSeconds() !== 0) {
+    if (
+      inicio.getUTCMinutes() !== 0 ||
+      inicio.getUTCSeconds() !== 0 ||
+      inicio.getUTCMilliseconds() !== 0
+    ) {
       throw new BadRequestException(
         'Los turnos deben comenzar en punto (ej: 16:00, 17:00).',
       );
@@ -50,7 +54,12 @@ export class ReservasCanchasService {
     }
 
     // 3. Validar si la sede opera en ese horario
-    const fechaStr = dto.fecha_inicio.slice(0, 10);
+    const fechaStr = inicio.toISOString().slice(0, 10);
+    if (fechaStr !== fin.toISOString().slice(0, 10)) {
+      throw new BadRequestException(
+        'El turno debe comenzar y terminar en el mismo día operativo.',
+      );
+    }
     const horarioSede = await this.sedeService.getHorarioOperativo(
       cancha.id_sede,
       fechaStr,

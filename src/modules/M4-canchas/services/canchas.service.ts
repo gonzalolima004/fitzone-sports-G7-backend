@@ -90,14 +90,25 @@ export class CanchasService {
     }
 
     // 3. Configurar límites dinámicos del día según la apertura y cierre de la sede
-    const [horaApertura] = horarioSede.hora_apertura.split(':').map(Number);
-    const [horaCierre] = horarioSede.hora_cierre.split(':').map(Number);
+    const [horaApertura, minutoApertura] = horarioSede.hora_apertura
+      .split(':')
+      .map(Number);
+    const [horaCierre, minutoCierre] = horarioSede.hora_cierre
+      .split(':')
+      .map(Number);
 
     const [year, month, day] = fechaStr.split('-').map(Number);
     const inicioDia = new Date(
-      Date.UTC(year, month - 1, day, horaApertura, 0, 0),
+      Date.UTC(year, month - 1, day, horaApertura, minutoApertura, 0),
     );
-    const finDia = new Date(Date.UTC(year, month - 1, day, horaCierre, 0, 0));
+    const finDia = new Date(
+      Date.UTC(year, month - 1, day, horaCierre, minutoCierre, 0),
+    );
+
+    // Los turnos empiezan en punto y deben caber completos en la apertura.
+    if (inicioDia.getUTCMinutes() !== 0) {
+      inicioDia.setUTCHours(inicioDia.getUTCHours() + 1, 0, 0, 0);
+    }
 
     // 4. Obtener bloqueos (Reservas y Mantenimientos) en paralelo para esa ventana
     const [reservas, mantenimientos] = await Promise.all([
@@ -117,7 +128,7 @@ export class CanchasService {
     const slots: DisponibilidadSlotResponseDto[] = [];
     let horaActual = new Date(inicioDia);
 
-    while (horaActual < finDia) {
+    while (horaActual.getTime() + 60 * 60 * 1000 <= finDia.getTime()) {
       const horaSiguiente = new Date(horaActual);
       horaSiguiente.setUTCHours(horaActual.getUTCHours() + 1);
 

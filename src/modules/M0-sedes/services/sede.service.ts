@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { SedeRepository } from '../repositories/sede.repository';
 import { CiudadRepository } from '../repositories/ciudad.repository';
 import { CreateSedeDto } from '../dto/create-sede.dto';
@@ -58,6 +62,16 @@ export class SedeService {
    * Determina el horario operativo de la sede cruzando Calendario y SedeHorario
    */
   async getHorarioOperativo(id_sede: number, fechaStr: string) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaStr ?? '')) {
+      throw new BadRequestException('La fecha debe tener formato YYYY-MM-DD.');
+    }
+    const fechaValidada = new Date(`${fechaStr}T00:00:00.000Z`);
+    if (
+      Number.isNaN(fechaValidada.getTime()) ||
+      fechaValidada.toISOString().slice(0, 10) !== fechaStr
+    ) {
+      throw new BadRequestException('La fecha no existe en el calendario.');
+    }
     // Validar que la sede exista
     await this.findById(id_sede);
 
