@@ -5,79 +5,57 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as jwt from 'jsonwebtoken';
-import { createHmac } from 'crypto';
-import { generate, verify } from 'otplib';
-import { UserRepository } from '../repositories/user.repository';
+import { createHmac, timingSafeEqual } from 'crypto';
+
 import { QrDinamicoResponseDto } from '../dto/qr-dinamico-response.dto';
-import { IQrTokenPayload } from '../../../common/interfaces/qr-payload.interface';
 
 @Injectable()
 export class QrService {
   private readonly logger = new Logger(QrService.name);
   private readonly jwtSecret: string;
   private readonly EXPIRATION_SECONDS = 60;
-  private readonly TOTP_TOLERANCE_SECONDS = 5;
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly userRepository: UserRepository,
-  ) {
+  constructor(private readonly configService: ConfigService) {
     this.jwtSecret = this.configService.getOrThrow<string>('QR_TOKEN_SECRET');
   }
 
   /**
-   * Genera un secreto TOTP determinista para cada usuario.
+   * Genera una firma para el token QR.
+   *
+   * @param idUsuario - ID del usuario.
+   * @param expTimestamp - Timestamp de expiración.
+   * @returns Firma generada.
    */
-  private obtenerSecretTOTP(idUsuario: number | string): Buffer {
+  private generarFirma(idUsuario: string, expTimestamp: number): string {
     return createHmac('sha256', this.jwtSecret)
-      .update(`qr-acceso:${idUsuario}`)
-      .digest();
+      .update(`${idUsuario}:${expTimestamp}`)
+      .digest('hex')
+      .substring(0, 16); // 16 caracteres de firma son más que suficientes para QR de acceso rápido
   }
-
   /**
-   * Genera el QR dinámico del usuario.
+   * Genera un token QR dinámico para un usuario.
+   *
+   * @param idUsuario - ID del usuario al que pertenece el token.
+   * @returns Objeto con el token QR y su información de expiración.
+   * @throws `InternalServerErrorException` si ocurre un error al generar el token.
    */
-  async generarQrDinamico(
-    idUsuario: number | string,
-  ): Promise<QrDinamicoResponseDto> {
+  generarQrDinamico(idUsuario: number | string): QrDinamicoResponseDto {
     try {
       const numericUserId = Number(idUsuario);
       const fechaGeneracion = new Date();
-      const userSecret = this.obtenerSecretTOTP(numericUserId);
+      // Guardamos el timestamp EXACTO de creación (emisión) en segundos
+      const timestampCreacion = Math.floor(fechaGeneracion.getTime() / 1000);
 
-      const totpCode: string = await generate({
-        secret: userSecret,
-        period: this.EXPIRATION_SECONDS,
-      });
-
-      const payload: IQrTokenPayload = {
-        sub: String(numericUserId),
-        type: 'qr_acceso',
-        totp: totpCode,
-      };
-
-      const token: string = jwt.sign(payload, this.jwtSecret, {
-        algorithm: 'HS256',
-        expiresIn: this.EXPIRATION_SECONDS,
-      });
-
-      const baseUrl: string = this.configService.get<string>(
-        'APP_URL',
-        'http://localhost:3000',
+      const signature = this.generarFirma(
+        String(numericUserId),
+        timestampCreacion,
       );
-      const qrUrl = `${baseUrl}/access/qr/verify?token=${token}`;
 
-      // Actualización en repositorio opcional según necesidades de arquitectura apátrida
-      await this.userRepository.actualizarQrUrl(numericUserId, qrUrl);
-
-      const timestampActual = Math.floor(Date.now() / 1000);
-      const segundosRestantes =
-        this.EXPIRATION_SECONDS - (timestampActual % this.EXPIRATION_SECONDS);
+      const token = `${numericUserId}.${timestampCreacion}.${signature}`;
 
       return new QrDinamicoResponseDto({
         token,
-        expiraEnSegundos: segundosRestantes,
+        expiraEnSegundos: this.EXPIRATION_SECONDS,
         fechaGeneracion,
       });
     } catch (error: unknown) {
@@ -90,48 +68,55 @@ export class QrService {
       );
     }
   }
-
   /**
-   * Valida un QR dinámico comprobando firma, expiración y algoritmo.
+   * Valida que el token QR sea válido y no haya expirado.
+   *
+   * @param token - Token QR a validar.
+   * @param idUsuario - ID del usuario al que pertenece el token.
+   * @returns `true` si el token es válido, `false` en caso contrario.
+   * @throws `UnauthorizedException` si el token es inválido o ha expirado.
    */
-  async validarTokenEfimero(
-    token: string,
-    idUsuario: number | string,
-  ): Promise<boolean> {
+  validarTokenEfimero(token: string, idUsuario: number | string): boolean {
     try {
-      const decoded = jwt.verify(token, this.jwtSecret, {
-        algorithms: ['HS256'],
-      }) as IQrTokenPayload;
+      const partes = token.split('.');
+      if (partes.length !== 3) {
+        throw new UnauthorizedException('Formato de token inválido');
+      }
 
-      if (decoded.sub !== String(idUsuario)) {
+      const [userIdToken, timestampStr, signatureToken] = partes;
+      const tokenTimestamp = parseInt(timestampStr, 10);
+      const currentTimestamp = Math.floor(Date.now() / 1000);
+
+      if (userIdToken !== String(idUsuario)) {
         throw new UnauthorizedException('Token no válido para este usuario');
       }
 
-      if (decoded.type !== 'qr_acceso') {
-        throw new UnauthorizedException('Tipo de token inválido');
+      // Calculamos cuánto tiempo ha pasado desde que se creó el token
+      const segundosTranscurridos = currentTimestamp - tokenTimestamp;
+
+      // Si el token es del futuro (error de reloj) o pasaron más de 60 segundos
+      if (
+        isNaN(tokenTimestamp) ||
+        segundosTranscurridos < 0 ||
+        segundosTranscurridos > this.EXPIRATION_SECONDS
+      ) {
+        throw new UnauthorizedException('El código QR ha expirado');
       }
 
-      const userSecret = this.obtenerSecretTOTP(idUsuario);
+      // Reconstruimos la firma usando el mismo timestamp de creación que viajó en el token
+      const signatureEsperada = this.generarFirma(userIdToken, tokenTimestamp);
 
-      const resultado = await verify({
-        secret: userSecret,
-        token: decoded.totp,
-        period: this.EXPIRATION_SECONDS,
-        epochTolerance: [this.TOTP_TOLERANCE_SECONDS, 0],
-      });
+      const validSignature = timingSafeEqual(
+        Buffer.from(signatureToken),
+        Buffer.from(signatureEsperada),
+      );
 
-      if (!resultado.valid) {
-        throw new UnauthorizedException(
-          'El código QR ha expirado o es inválido',
-        );
+      if (!validSignature) {
+        throw new UnauthorizedException('Código QR inválido o alterado');
       }
 
       return true;
     } catch (error: unknown) {
-      if (error instanceof jwt.TokenExpiredError) {
-        throw new UnauthorizedException('El código QR ha expirado');
-      }
-
       if (error instanceof UnauthorizedException) {
         throw error;
       }

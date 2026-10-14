@@ -5,19 +5,18 @@ import {
   IsNotEmpty,
   IsPositive,
   IsDate,
+  IsString,
   IsOptional,
 } from 'class-validator';
 
 export class RegistrarEgresoDto {
   @ApiProperty({
-    description: 'ID único del usuario/socio que registra su salida física',
-    example: 42,
+    description: 'Token QR dinámico del socio que registra su salida física',
+    example: '7.179199573.3d696a27f6dfa960',
   })
-  @Type(() => Number)
-  @IsInt({ message: 'El id_usuario debe ser un número entero' })
-  @IsPositive({ message: 'El id_usuario debe ser mayor a 0' })
-  @IsNotEmpty({ message: 'El id_usuario es obligatorio' })
-  id_usuario: number;
+  @IsString({ message: 'El qrToken debe ser un texto válido' })
+  @IsNotEmpty({ message: 'El qrToken es obligatorio' })
+  qrToken: string;
 
   @ApiProperty({
     description: 'ID de la sede donde se encuentra el torniquete de egreso',

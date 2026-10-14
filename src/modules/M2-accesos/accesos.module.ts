@@ -5,7 +5,6 @@ import { AccesosController } from './controllers/accesos.controller';
 import { QrService } from './services/qr.service';
 import { AccesosService } from './services/accesos.service';
 import { AforoRealtimeService } from './services/aforo-realtime.service';
-import { UserRepository } from './repositories/user.repository';
 import { AccesosRepository } from './repositories/accesos.repository';
 import { PrismaModule } from '../../database/prisma-service/prisma.module';
 import { SupabaseModule } from '../../common/supabase/supabase.module';
@@ -15,7 +14,6 @@ import { SupabaseModule } from '../../common/supabase/supabase.module';
   controllers: [QrController, AccesosController],
   providers: [
     QrService,
-    UserRepository,
     AccesosService,
     AforoRealtimeService,
     AccesosRepository,

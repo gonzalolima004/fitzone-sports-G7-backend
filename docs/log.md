@@ -898,7 +898,16 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 #### Facundo Agüero | Rol: Team Leader
 
-- **Actividades:** Revisión de los PR backend #53 (calendario) y #55 (planes/membresías), resolución de conflictos conservando esquema y registros de autores. Integración de #53 a dev; preparación de #55 con sus verificaciones.
-- **Correcciones de revisión:** Fechas estrictas, turnos completos dentro de horarios con minutos y rechazo de cruce de día en calendario. Identificadores id/id_plan preservados en el DTO de planes junto a la conversión de Decimal.
-- **Verificación:** Calendario: build/typecheck y 17 pruebas aprobados. Se agregaron pruebas del contrato serializado de planes para el PR #55.
-- **Pendientes para el relevo:** Aceptación con entorno compartido, zona horaria y feriados, migraciones reproducibles, concurrencia, contrato de pagos, cola de espera y alineación de ADR. Se documentan en el informe de cierre; no se modificó la base compartida.
+* **Commits:**
+* `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`#### 14/10/2026
+
+#### Angelina Vialle | Rol: Backend Developer
+
+- **Actividades:** Arreglos de backend para integrarlo con el frontend.
+- **Decisiones:**
+  - Quitar el id de usuario de los dtos y usar el qr token
+  - La manera de generar el token de qr es más simple
+  - Elimine UserRepository porque no se usaba.
+  - Cambie send por httpSend porque se iba a quedar obsoleto
+- **Dificultades:** Ninguna.
+- **Commits:** `feat(M2-M1): arreglos`

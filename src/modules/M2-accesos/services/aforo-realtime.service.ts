@@ -20,7 +20,7 @@ export class AforoRealtimeService {
 
     const channel = client.channel(channelName);
 
-    await channel.send({
+    await channel.httpSend('broadcast', {
       type: 'broadcast',
       event: 'aforo_actualizado',
       payload: {
