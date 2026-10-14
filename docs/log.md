@@ -741,6 +741,15 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
 - Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
 
+
+- **Decisiones:**
+- Utilizar la clave `service_role` de Supabase a través del archivo `.env` del servidor. Esto permite que NestJS actúe con privilegios de administrador para subir los archivos al Storage, sorteando las políticas RLS sin comprometer la seguridad pública de la base de datos.
+
+- **Dificultades:**
+- Excepción `LIMIT_UNEXPECTED_FILE` lanzada por Multer al rechazar la petición inicial; se identificó que el frontend enviaba la imagen bajo la key `file` mientras el decorador `@UseInterceptors(FileInterceptor('foto'))` esperaba la key `foto`.
+- Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
+- Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
+
 - **Commits:**
 - `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
 
@@ -807,6 +816,24 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
 
 ---
+
+#### 12/10/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación del endpoint para consultar pagos pendientes de membresías y reservas de canchas.
+  - Implementación de la lógica para calcular cuotas adeudadas y turnos sin abonar por usuario.
+  - Ajuste en el guard de autenticación para validar tokens JWT de sesión.
+  - Corrección en la integración de Mercado Pago para permitir pruebas en entorno local.
+- **Decisiones:**
+  - Priorizar la ruta de pagos pendientes para evitar conflictos con la búsqueda por identificador.
+  - Permitir validación de autenticación tanto para sesiones locales como de Supabase.
+- **Dificultades:**
+  - El guard de autenticación no reconocía los tokens locales generados por la API, resuelto agregando validación directa con la clave secreta.
+  - Error al generar preferencias de Mercado Pago en entorno de desarrollo local por configuración de retorno automático.
+- **Commits:**
+  - `feat(pagos): endpoint de pagos pendientes y correccion de auth guard`
 
 #### 13/10/2026
 
