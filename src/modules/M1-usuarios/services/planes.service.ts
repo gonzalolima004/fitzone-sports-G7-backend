@@ -11,12 +11,26 @@ export class PlanesService {
 
   async create(createPlanDto: CrearPlanDto): Promise<PlanResponseDto> {
     const plan = await this.membresiasRepository.createPlan(createPlanDto);
-    return plainToInstance(PlanResponseDto, plan);
+    return plainToInstance(PlanResponseDto, {
+      ...plan,
+      id: plan.id_membresia_plan,
+      id_plan: plan.id_membresia_plan,
+      precio: Number(plan.precio),
+    });
   }
 
   async findAll(): Promise<PlanResponseDto[]> {
     const planes = await this.membresiasRepository.findAllPlanes();
-    return plainToInstance(PlanResponseDto, planes);
+
+    // Mapeamos manualmente para evitar el crasheo del Decimal de Prisma
+    const planesMapeados = planes.map((plan) => ({
+      ...plan,
+      id: plan.id_membresia_plan,
+      id_plan: plan.id_membresia_plan,
+      precio: Number(plan.precio), // Conversión segura de Decimal a Number
+    }));
+
+    return plainToInstance(PlanResponseDto, planesMapeados);
   }
 
   async findOne(id: number): Promise<PlanResponseDto> {
@@ -24,7 +38,12 @@ export class PlanesService {
     if (!plan) {
       throw new NotFoundException(`Plan con ID ${id} no encontrado`);
     }
-    return plainToInstance(PlanResponseDto, plan);
+    return plainToInstance(PlanResponseDto, {
+      ...plan,
+      id: plan.id_membresia_plan,
+      id_plan: plan.id_membresia_plan,
+      precio: Number(plan.precio),
+    });
   }
 
   async update(
@@ -33,12 +52,22 @@ export class PlanesService {
   ): Promise<PlanResponseDto> {
     await this.findOne(id); // Verifica existencia previa
     const plan = await this.membresiasRepository.updatePlan(id, updatePlanDto);
-    return plainToInstance(PlanResponseDto, plan);
+    return plainToInstance(PlanResponseDto, {
+      ...plan,
+      id: plan.id_membresia_plan,
+      id_plan: plan.id_membresia_plan,
+      precio: Number(plan.precio),
+    });
   }
 
   async remove(id: number): Promise<PlanResponseDto> {
     const plan = await this.membresiasRepository.removePlan(id);
-    return plainToInstance(PlanResponseDto, plan);
+    return plainToInstance(PlanResponseDto, {
+      ...plan,
+      id: plan.id_membresia_plan,
+      id_plan: plan.id_membresia_plan,
+      precio: Number(plan.precio),
+    });
   }
 
   async obtenerEstados(): Promise<any[]> {

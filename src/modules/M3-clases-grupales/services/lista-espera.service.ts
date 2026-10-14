@@ -74,4 +74,50 @@ export class ListaEsperaService {
       inscripcion,
     };
   }
+
+  async obtenerMisInscripciones(id_usuario: number, fecha?: string) {
+    let inicioDia: Date | undefined;
+    let finDia: Date | undefined;
+
+    if (fecha) {
+      inicioDia = new Date(`${fecha}T00:00:00.000Z`);
+      finDia = new Date(`${fecha}T23:59:59.999Z`);
+    }
+
+    const inscripciones =
+      await this.listaEsperaRepository.obtenerInscripcionesPorUsuario(
+        id_usuario,
+        inicioDia,
+        finDia,
+      );
+
+    const resultado = await Promise.all(
+      inscripciones.map(async (inscripcion) => {
+        const ordenEnCola =
+          await this.listaEsperaRepository.obtenerPosicionEnCola(
+            inscripcion.id_clase,
+            inscripcion.fecha_inicio,
+            inscripcion.fecha_fin,
+            inscripcion.id_clase_lista_espera,
+          );
+
+        return {
+          id_clase_lista_espera: inscripcion.id_clase_lista_espera,
+          id_clase: inscripcion.id_clase,
+          id_usuario: inscripcion.id_usuario,
+          fecha_inicio: inscripcion.fecha_inicio,
+          fecha_fin: inscripcion.fecha_fin,
+          orden_en_cola: ordenEnCola,
+          id_clase_lista_espera_estado:
+            inscripcion.id_clase_lista_espera_estado,
+          estado:
+            inscripcion.clase_lista_espera_estado?.descripcion?.toUpperCase() ||
+            'EN_ESPERA',
+          nombre_clase: inscripcion.clase?.nombre,
+        };
+      }),
+    );
+
+    return resultado;
+  }
 }

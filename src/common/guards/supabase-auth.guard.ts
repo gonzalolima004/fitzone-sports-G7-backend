@@ -6,7 +6,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
+import { JwtService } from '@nestjs/jwt';
 import { SupabaseService } from '../supabase/supabase.service';
 import type { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
 import { UsuariosService } from '../../modules/M1-usuarios/services/usuarios.service';
@@ -23,6 +23,7 @@ export class SupabaseAuthGuard implements CanActivate {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly usuariosService: UsuariosService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -41,43 +42,41 @@ export class SupabaseAuthGuard implements CanActivate {
       throw new UnauthorizedException('Formato de autenticacion invalido');
     }
 
-    let userEmail: string | null = null;
-    let supabaseUserId: string | null = null;
-
-    // 1. Intentar validar como JWT local emitido por AuthService (/auth/login)
+    // 1. Intentar validar como JWT local emitido por AuthService (FitZone)
     try {
-      const jwtSecret = process.env.JWT_SECRET || 'secreto_desarrollo_fitzone';
-      const decoded = jwt.verify(token, jwtSecret) as {
-        sub?: number | string;
+      const payload = this.jwtService.verify<{
+        sub: number | string;
         email?: string;
         rol?: string;
-      };
+      }>(token);
 
-      if (decoded && decoded.email) {
-        userEmail = decoded.email;
-        supabaseUserId = decoded.sub ? String(decoded.sub) : null;
+      if (payload && payload.sub) {
+        request.user = {
+          id_usuario: Number(payload.sub),
+          supabase_user_id: String(payload.sub),
+          email: payload.email ?? '',
+        };
+        return true;
       }
     } catch {
-      // Si no es un JWT local, continúa para validar con Supabase
+      // Si no es un JWT emitido localmente, procedemos a validar con Supabase Auth
     }
 
-    // 2. Si no fue un JWT local válido, validar con Supabase Auth
-    if (!userEmail) {
-      const { user, error } = await this.supabaseService.getUser(token);
+    // 2. Fallback: Validar con Supabase Auth
+    const { user, error } = await this.supabaseService.getUser(token);
 
-      if (!error && user && user.email) {
-        userEmail = user.email;
-        supabaseUserId = user.id;
-      }
-    }
-
-    // 3. Si ninguno de los proveedores validó el token, denegar acceso
-    if (!userEmail) {
+    if (error || !user) {
       throw new UnauthorizedException('Token invalido o expirado');
     }
 
+    if (!user.email) {
+      throw new UnauthorizedException(
+        'El usuario autenticado no tiene email asociado',
+      );
+    }
+
     const usuarioFitZone = await this.usuariosService
-      .findByEmail(userEmail)
+      .findByEmail(user.email)
       .catch((error: unknown) => {
         if (error instanceof NotFoundException) {
           throw new ForbiddenException(
@@ -90,8 +89,8 @@ export class SupabaseAuthGuard implements CanActivate {
 
     request.user = {
       id_usuario: usuarioFitZone.id_usuario,
-      supabase_user_id: supabaseUserId || String(usuarioFitZone.id_usuario),
-      email: usuarioFitZone.email,
+      supabase_user_id: user.id,
+      email: user.email,
     };
 
     return true;

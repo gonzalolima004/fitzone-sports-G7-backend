@@ -9,7 +9,7 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CanchasService } from '../services/canchas.service';
 import { CrearCanchaDto } from '../dto/crear-cancha.dto';
 import { ActualizarCanchaDto } from '../dto/actualizar-cancha.dto';
@@ -30,10 +30,29 @@ export class CanchasController {
 
   @Get()
   @ApiOperation({
-    summary: 'Listar todas las canchas activas con sus relaciones',
+    summary:
+      'Listar todas las canchas activas con sus relaciones con filtro opcional de sede',
   })
-  listar() {
-    return this.canchasService.listarCanchas();
+  @ApiQuery({
+    name: 'sedeId',
+    required: false,
+    type: Number,
+    description: 'Filtrar canchas por ID de sede',
+  })
+  listar(@Query('sedeId') sedeId?: string) {
+    return this.canchasService.listarCanchas(
+      sedeId ? Number(sedeId) : undefined,
+    );
+  }
+
+  @Get('tipos')
+  @ApiOperation({ summary: 'Listar todos los tipos de deportes disponibles' })
+  @ApiResponse({
+    status: 200,
+    description: 'Tipos de cancha obtenidos correctamente.',
+  })
+  listarTipos() {
+    return this.canchasService.listarTiposCancha();
   }
 
   @Get(':id')
