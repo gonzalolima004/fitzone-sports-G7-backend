@@ -1,10 +1,12 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   UseGuards,
   Delete,
   Param,
+  Query,
   ParseIntPipe,
 } from '@nestjs/common';
 import {
@@ -12,11 +14,13 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ReservasClasesService } from '../services/reservas-clases.service';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 import { ReservaClaseResponseDto } from '../dto/reserva-clase-response.dto';
 import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
+import { MiReservaClaseResponseDto } from '../dto/mis-reservas-response.dto';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { CurrentUserId } from '../../../common/decorators/current-user.decorator';
 
@@ -25,6 +29,30 @@ import { CurrentUserId } from '../../../common/decorators/current-user.decorator
 @Controller('reservas-clases')
 export class ReservasClasesController {
   constructor(private readonly reservasService: ReservasClasesService) {}
+
+  @Get('mis-reservas')
+  @UseGuards(SupabaseAuthGuard)
+  @ApiOperation({
+    summary: 'Consultar las reservas de clases del usuario autenticado',
+    description: 'Permite filtrar opcionalmente por fecha (formato YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'fecha',
+    required: false,
+    description: 'Filtrar reservas por fecha en formato YYYY-MM-DD',
+    example: '2026-10-12',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de reservas del usuario autenticado.',
+    type: [MiReservaClaseResponseDto],
+  })
+  async obtenerMisReservas(
+    @CurrentUserId() userId: number,
+    @Query('fecha') fecha?: string,
+  ) {
+    return await this.reservasService.obtenerMisReservas(userId, fecha);
+  }
 
   @Post()
   @UseGuards(SupabaseAuthGuard)
