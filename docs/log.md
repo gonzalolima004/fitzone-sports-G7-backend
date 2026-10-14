@@ -746,3 +746,36 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 * **Commits:**
 * `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
+
+---
+
+#### 13/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Frontend y Backend
+
+  **Actividades:**
+- Decidir forma de implementar un calendario y horarios de apertura y cierre independientes para cada sede, considerando feriados y días hábiles, permitiendo también generar slots de horario dinámicos para la reserva de canchas.
+- Creación de nuevas entidades Calendario, CalendarioSede, SedeHorario.
+- Creación y ejecución de script de seeding SQL para PostgreSQL/Supabase enfocado en las nuevas entidades, en canchas (con sede, tipo y tarifas diferenciadas) y en tipos de canchas para testing.
+- Configuración de algunas fechas festivas en el calendario oficial (`calendario`) y reglas de excepción por sede (`calendario_sede`) para feriados nacionales (Navidad con cierre total y Día de la Soberanía con horario reducido en Central y cierre en Norte).
+- Ajuste de endpoints en NestJS:
+- `GET /canchas/:id/disponibilidad`: generación de matriz de turnos cruzando disponibilidad de reservas existentes, bloqueos por mantenimiento y horario operativo de la sede.
+- `GET /canchas`: opción de filtrar canchas por sede para no traer todas las existentes.
+- `GET /canchas/tipos`: obtener sólo los tipos de canchas sin tener que pedir todas las canchas y luego filtrar por tipo.
+- `POST /reservas-canchas`: modificación considerable del endpoint de reservas para adaptarlo a la nueva forma de horarios con validaciones de seguridad.
+  **Decisiones:**
+- Intención de modificar lo mínimo necesario para no perjudicar al resto del equipo.
+- Crear una entidad calendario que almacene dentro de lo posible todos los días del año, incluyendo atributos de festivo y si es habil o no.
+- Permitir a cada sede definir sus propios horarios de apertura y cierre para cada día particular, definiendo horarios especiales o cierres por festivos independientemente de las otras sedes, mediante CalendarioSede, que almacenará excepciones al calendario general si las hubiera.
+- Generar slots de horario dinámicos para la reserva de canchas en función del horario operativo de cada sede y de las reservas existentes, con verificación de que seguridad de que el horario termine en 00:00 para evitar reservas en horarios no convencionales, entre otras.
+  **Dificultades:**
+- Desfase de zona horaria: Conversión entre timestamps ISO UTC y la hora local de Argentina generaba desfases de 3 horas en los horarios guardados en la base de datos.
+- Falta de endpoints necesarios y validaciones de seguridad en código preexistente.
+- Importante retraso en la delegación de responsabilidad de tareas relacionadas a esta entrada de bitácora, teniendo en cuenta el tiempo disponible y la complejidad de las tareas.
+  **Commits:**
+  - `feat(prisma): adicion de entidades para calendario y horario`
+  - `feat(M0): flujo para obtener el horario operativo de una sede`
+  - `feat(M4): Implementacion de horarios para reservas de canchas y endpoint para cancha tipos`
+  - `docs(log): actualizar log con tareas de calendario y horarios`
+
+---
