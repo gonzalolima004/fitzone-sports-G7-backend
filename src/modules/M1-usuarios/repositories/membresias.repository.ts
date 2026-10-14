@@ -8,8 +8,8 @@ import { ActualizarPlanDto } from '../dto/actualizar-plan.dto';
  * Carga las relaciones con el plan contratado, su estado actual y el usuario/socio.
  */
 export const MEMBRESIA_INCLUDE = {
-  plan: true,
-  estado: true,
+  membresia_plan: true,
+  membresia_estado: true,
   usuario: {
     select: {
       id_usuario: true,

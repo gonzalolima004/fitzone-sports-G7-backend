@@ -2,20 +2,21 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  //ForbiddenException,
-  //UnauthorizedException,
-  //ConflictException,
+  ForbiddenException,
+  UnauthorizedException,
+  ConflictException,
 } from '@nestjs/common';
-//import { RegistroAcceso } from '@prisma/client';
+import { RegistroAcceso } from '@prisma/client';
 import { AccesosRepository } from '../repositories/accesos.repository';
 import { QrService } from './qr.service';
-//import { MembresiasService } from '../../M1-usuarios/services/membresias.service';
-//import { ValidarIngresoDto } from '../dto/validar-ingreso.dto';
-//import { AccesoResponseDto } from '../dto/acceso-response.dto';
+import { MembresiasService } from '../../M1-usuarios/services/membresias.service';
+import { ValidarIngresoDto } from '../dto/validar-ingreso.dto';
+import { AccesoResponseDto } from '../dto/acceso-response.dto';
 import { RegistrarEgresoDto } from '../dto/registrar-egreso.dto';
 import { EgresoResponseDto } from '../dto/egreso-response.dto';
 import { AforoRealtimeService } from './aforo-realtime.service';
 import { AforoStatusResponseDto } from '../dto/aforo-status-response.dto';
+import { UsuariosService } from '../../M1-usuarios/services/usuarios.service';
 
 export interface PayloadQrToken {
   id_usuario: number;
@@ -28,42 +29,64 @@ export class AccesosService {
     private readonly accesosRepository: AccesosRepository,
     private readonly qrService: QrService,
     private readonly aforoRealtimeService: AforoRealtimeService,
-    //private readonly membresiasService: MembresiasService,
+    private readonly membresiasService: MembresiasService,
+    private readonly usuariosService: UsuariosService,
   ) {}
 
-  /*
-
-  async validarYRegistrarIngreso(dto: ValidarIngresoDto): Promise<AccesoResponseDto> {
-     1. Decodificar y validar vigencia/firma del token QR (< 60s)
-    let payload: PayloadQrToken;
+  /**
+   * Método auxiliar privado para extraer y validar el ID de usuario desde el token QR.
+   */
+  private extraerIdDeToken(qrToken: string): number {
+    const partes = qrToken.split('.');
+    if (partes.length !== 3) {
+      throw new UnauthorizedException('Formato de token QR inválido.');
+    }
+    const id_usuario = Number(partes[0]);
+    if (isNaN(id_usuario) || id_usuario <= 0) {
+      throw new UnauthorizedException('ID de usuario inválido en el token QR.');
+    }
+    return id_usuario;
+  }
+  /**
+   * Valida el token QR y registra el ingreso del usuario.
+   */
+  async validarYRegistrarIngreso(
+    dto: ValidarIngresoDto,
+  ): Promise<AccesoResponseDto> {
+    const id_usuario = this.extraerIdDeToken(dto.qrToken);
+    //1. Decodificar y validar vigencia / firma del token QR(<60s)
     try {
-      payload = await this.qrService.validarTokenEfimero(dto.qrToken);
+      this.qrService.validarTokenEfimero(dto.qrToken, id_usuario);
     } catch {
       throw new UnauthorizedException({
         statusCode: 401,
-        message: 'El código QR es inválido o ha expirado (vigencia máxima 60 segundos).',
+        message:
+          'El código QR es inválido o ha expirado (vigencia máxima 60 segundos).',
         error: 'Unauthorized',
       });
     }
 
-    const { id_usuario } = payload;
-
-     2. Corroborar el estado de la membresía y regla de mora (RN-03 / RF-03)
-    const estadoMembresia = await this.membresiasService.verificarEstadoMembresia(id_usuario);
+    //2. Corroborar el estado de la membresía y regla de mora(RN-03 / RF-03)
+    const estadoMembresia =
+      await this.membresiasService.verificarMembresia(id_usuario);
     if (!estadoMembresia.esSocioActivo || estadoMembresia.enMora) {
       throw new ForbiddenException({
         statusCode: 403,
-        message: 'Acceso rechazado: El usuario no cuenta con una membresía activa o se encuentra en mora.',
+        message:
+          'Acceso rechazado: El usuario no cuenta con una membresía activa o se encuentra en mora.',
         error: 'Forbidden',
       });
     }
+    //4. Obtener el nombre del usuario
+    const usuario = await this.usuariosService.findById(id_usuario);
 
-     3. Transacción atómica para prevenir race conditions y aplicar regla Anti-Doble Ingreso (RN-01)
-    const nuevoRegistro: RegistroAcceso = await this.accesosRepository.ejecutarTransaccionIngreso(
-      async (tx) => {
-    const accesoActivo = await this.accesosRepository.buscarAccesoActivoPorUsuario(id_usuario);
+    //3. Transacción atómica para prevenir race conditions y aplicar regla Anti - Doble Ingreso(RN-01)
+    const nuevoRegistro: RegistroAcceso =
+      await this.accesosRepository.ejecutarTransaccionIngreso(async (tx) => {
+        const accesoActivo =
+          await this.accesosRepository.buscarAccesoActivoPorUsuario(id_usuario);
 
-    if (accesoActivo) {
+        if (accesoActivo) {
           throw new ConflictException({
             statusCode: 409,
             message: `Acceso rechazado (RN-01): El usuario ya figura dentro de la sede '${accesoActivo.sede.nombre}' sin haber registrado su egreso.`,
@@ -72,31 +95,30 @@ export class AccesosService {
         }
 
         return this.accesosRepository.crearIngreso(id_usuario, dto.id_sede, tx);
-      },
-    );
+      });
 
     return new AccesoResponseDto({
       id_registro_acceso: nuevoRegistro.id_registro_acceso,
-      nombreUsuario: estadoMembresia.nombreUsuario,
+      nombreUsuario: usuario.nombre + ' ' + usuario.apellido,
       accesoPermitido: true,
       fechaIngreso: nuevoRegistro.fecha_ingreso,
       mensaje: 'Acceso autorizado correctamente.',
     });
   }
-  */
 
   /**
    * Procesa el egreso de un socio, verifica que tenga un acceso activo en la sede especificada
    * y calcula los minutos de permanencia en el establecimiento.
    */
   async registrarEgreso(dto: RegistrarEgresoDto): Promise<EgresoResponseDto> {
+    const id_usuario = this.extraerIdDeToken(dto.qrToken);
     const accesoActivo =
-      await this.accesosRepository.buscarAccesoActivoPorUsuario(dto.id_usuario);
+      await this.accesosRepository.buscarAccesoActivoPorUsuario(id_usuario);
 
     if (!accesoActivo) {
       throw new NotFoundException({
         statusCode: 404,
-        message: `No se encontró una entrada activa para el usuario con ID ${dto.id_usuario}.`,
+        message: `No se encontró una entrada activa para el usuario con ID ${id_usuario}.`,
         error: 'Not Found',
       });
     }
@@ -118,12 +140,6 @@ export class AccesosService {
 
     await this.notificarCambioAforo(dto.id_sede);
 
-    /* 
-        const minutosPermanencia = this.calcularMinutosPermanencia(
-          registroCerrado.fecha_ingreso,
-          registroCerrado.fecha_egreso ?? fechaSalida,
-        );*/
-
     return new EgresoResponseDto({
       id_registro_acceso: registroCerrado.id_registro_acceso,
       id_usuario: registroCerrado.id_usuario,
@@ -133,21 +149,9 @@ export class AccesosService {
       mensaje: 'Egreso registrado correctamente y aforo liberado.',
     });
   }
-  /*
-    /**
-   * Función para calcular los minutos transcurridos entre el ingreso y el egreso.
-   *
-    private calcularMinutosPermanencia(
-      fechaIngreso: Date,
-      fechaEgreso: Date,
-    ): number {
-      const ingresoMs = fechaIngreso.getTime();
-      const egresoMs = fechaEgreso.getTime();
-  
-      const diferenciaMs = Math.max(0, egresoMs - ingresoMs);
-      return Math.round(diferenciaMs / (1000 * 60));
-    }
-    */
+  /**
+   * Obtiene el estado actual del aforo en una sede específica.
+   */
   async obtenerEstadoAforo(idSede: number): Promise<AforoStatusResponseDto> {
     const aforoMaximo =
       await this.accesosRepository.obtenerAforoMaximoSede(idSede);
@@ -157,9 +161,6 @@ export class AccesosService {
     }
 
     const aforoActual = await this.accesosRepository.contarAforoActual(idSede);
-    //const porcentajeCalculado = (aforoActual / aforoMaximo) * 100;
-    //const porcentajeOcupacion = Number(porcentajeCalculado.toFixed(2));
-    //const aforoExcedido = aforoActual > aforoMaximo;
 
     return new AforoStatusResponseDto({
       idSede,
@@ -167,7 +168,9 @@ export class AccesosService {
       aforoMaximo,
     });
   }
-
+  /**
+   * Notifica el cambio de estado del aforo a los clientes.
+   */
   async notificarCambioAforo(idSede: number): Promise<void> {
     const estadoActualizado = await this.obtenerEstadoAforo(idSede);
     await this.aforoRealtimeService.emitirAforo(idSede, estadoActualizado);

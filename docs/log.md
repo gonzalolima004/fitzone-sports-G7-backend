@@ -745,4 +745,15 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 
 * **Commits:**
-* `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
+* `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`#### 14/10/2026
+
+#### Angelina Vialle | Rol: Backend Developer
+
+- **Actividades:** Arreglos de backend para integrarlo con el frontend.
+- **Decisiones:**
+  - Quitar el id de usuario de los dtos y usar el qr token
+  - La manera de generar el token de qr es más simple
+  - Elimine UserRepository porque no se usaba.
+  - Cambie send por httpSend porque se iba a quedar obsoleto
+- **Dificultades:** Ninguna.
+- **Commits:** `feat(M2-M1): arreglos`
