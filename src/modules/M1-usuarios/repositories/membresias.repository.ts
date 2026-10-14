@@ -143,12 +143,28 @@ export class MembresiasRepository {
     const ID_ESTADO_ACTIVO = 1;
     return await this.prisma.membresia.findFirst({
       where: {
-        id_usuario,
+        id_usuario: id_usuario,
         id_membresia_estado: ID_ESTADO_ACTIVO,
-        fecha_fin: { gte: new Date() },
+        fecha_fin: {
+          gte: new Date(),
+        },
       },
-      orderBy: { fecha_fin: 'desc' },
-      include: MEMBRESIA_INCLUDE,
+      orderBy: {
+        fecha_fin: 'desc',
+      },
+      include: {
+        membresia_plan: true, // Corregido: antes era 'plan'
+        membresia_estado: true, // Corregido: antes era 'estado'
+        usuario: {
+          select: {
+            id_usuario: true,
+            nombre: true,
+            apellido: true,
+            dni: true,
+            email: true,
+          },
+        },
+      },
     });
   }
   //Encontrar todas las membresías de un usuario.

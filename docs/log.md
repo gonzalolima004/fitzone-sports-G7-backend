@@ -839,3 +839,39 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `docs(log): actualizar log con tareas de calendario y horarios`
 
 ---
+
+#### 05/10/2026
+
+#### Matías Sillen | Rol: Desarrollador Backend
+
+- **Actividades:**
+- Corrección de los nombres de las relaciones de Prisma (membresia_plan y membresia_estado) en membresias.repository.ts para resolver el error 500 al consultar el estado de la membresía.
+- Modificación del servicio de membresías para exponer el nombre_plan en el DTO de respuesta de verificación, permitiendo al frontend identificar el plan actual.
+- Resolución del error de serialización (DecimalError) en planes.service.ts mapeando explícitamente el tipo Decimal de Prisma a un Number nativo antes de pasarlo por class-transformer.
+- Ejecución de script SQL directamente en Supabase para poblar las tablas membresia_plan y membresia_estado con datos reales para las pruebas de integración.
+
+- **Decisiones:**
+- Unificar el identificador de los planes bajo la clave id_membresia_plan para respetar estrictamente el esquema de la base de datos y evitar problemas de mapeo en tiempo de ejecución.
+- Interceptar y convertir los datos numéricos a nivel de servicio para prevenir crasheos de la librería plainToInstance al procesar los decimales de Prisma.
+
+- **Dificultades:**
+- La función plainToInstance crasheaba silenciosamente y arrojaba undefined al intentar procesar los objetos de tipo Decimal devueltos por Prisma, lo que requirió debuggear el flujo de transformación de datos.
+- Discrepancia entre las relaciones solicitadas inicialmente (plan, estado) y las generadas reales de Prisma, lo que bloqueaba la consulta inicial.
+
+- **Commits:**
+- `fix(membresias): corregir nombres de relaciones prisma en repositorio y exponer nombre del plan en el dto`
+- `fix(membresias): exponer nombre del plan en la respuesta de verificación de membresía`
+- `fix(planes): convertir decimal de prisma a number nativo para evitar error en class-transformer`
+
+---
+
+---
+
+#### 14/10/2026
+
+#### Facundo Agüero | Rol: Team Leader
+
+- **Actividades:** Revisión de los PR backend #53 (calendario) y #55 (planes/membresías), resolución de conflictos conservando esquema y registros de autores. Integración de #53 a dev; preparación de #55 con sus verificaciones.
+- **Correcciones de revisión:** Fechas estrictas, turnos completos dentro de horarios con minutos y rechazo de cruce de día en calendario. Identificadores id/id_plan preservados en el DTO de planes junto a la conversión de Decimal.
+- **Verificación:** Calendario: build/typecheck y 17 pruebas aprobados. Se agregaron pruebas del contrato serializado de planes para el PR #55.
+- **Pendientes para el relevo:** Aceptación con entorno compartido, zona horaria y feriados, migraciones reproducibles, concurrencia, contrato de pagos, cola de espera y alineación de ADR. Se documentan en el informe de cierre; no se modificó la base compartida.
