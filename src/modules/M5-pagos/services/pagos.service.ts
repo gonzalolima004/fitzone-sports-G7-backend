@@ -23,6 +23,7 @@ import {
   PagoDetalleResponseDto,
   PagoConceptoDto,
 } from '../dto/pago-detalle-response.dto';
+import { PagoPendienteResponseDto } from '../dto/pago-pendiente-response.dto';
 
 @Injectable()
 export class PagosService {
@@ -97,7 +98,7 @@ export class PagosService {
               id: itemId,
               title: dto.titulo,
               quantity: 1,
-              unit_price: Number(dto.monto),
+              unit_price: Math.round(Number(dto.monto)),
               currency_id: 'ARS',
             },
           ],
@@ -111,7 +112,10 @@ export class PagosService {
                 pending: backUrls.pending,
               }
             : undefined,
-          auto_return: backUrls?.success ? 'approved' : undefined,
+          auto_return:
+            backUrls?.success && !backUrls.success.includes('localhost')
+              ? 'approved'
+              : undefined,
           notification_url: notificationUrl || undefined,
           external_reference: itemId,
           metadata: {
@@ -142,7 +146,7 @@ export class PagosService {
       id_pago_estado: idPagoEstado,
       id_cancha_reserva: dto.id_cancha_reserva ?? null,
       id_membresia: dto.id_membresia ?? null,
-      monto: dto.monto,
+      monto: Math.round(Number(dto.monto)),
       token_transaccion: preference.id,
       comprobante_url: null,
     });
@@ -370,6 +374,7 @@ export class PagosService {
       const r = pago.cancha_reserva;
       const nombreCancha = r.cancha?.nombre || 'Cancha Deportiva';
       const nombreSede = r.cancha?.sede?.nombre || 'Sede Central';
+      const sedeLimpia = nombreSede.replace(/^Sede\s+/i, '');
       const fechaStr = new Date(r.fecha_inicio).toLocaleDateString('es-AR', {
         day: '2-digit',
         month: '2-digit',
@@ -378,18 +383,20 @@ export class PagosService {
       const horaInicio = new Date(r.fecha_inicio).toLocaleTimeString('es-AR', {
         hour: '2-digit',
         minute: '2-digit',
+        hour12: false,
       });
       const horaFin = new Date(r.fecha_fin).toLocaleTimeString('es-AR', {
         hour: '2-digit',
         minute: '2-digit',
+        hour12: false,
       });
 
       items.push({
         concepto: `Reserva ${nombreCancha}`,
-        detalle: `Sede ${nombreSede} - Horario: ${fechaStr} ${horaInicio} a ${horaFin} hs`,
+        detalle: `${sedeLimpia} • ${fechaStr} de ${horaInicio} a ${horaFin} hs`,
         cantidad: 1,
-        precio_unitario: Number(pago.monto),
-        subtotal: Number(pago.monto),
+        precio_unitario: Math.round(Number(pago.monto)),
+        subtotal: Math.round(Number(pago.monto)),
       });
     } else if (pago.membresia) {
       const m = pago.membresia;
@@ -402,21 +409,21 @@ export class PagosService {
         concepto: `Membresía ${nombrePlan}`,
         detalle: `Vigencia: ${inicioStr} al ${finStr} (${dias} días)`,
         cantidad: 1,
-        precio_unitario: Number(pago.monto),
-        subtotal: Number(pago.monto),
+        precio_unitario: Math.round(Number(pago.monto)),
+        subtotal: Math.round(Number(pago.monto)),
       });
     } else {
       items.push({
         concepto: 'Servicio Deportivo FitZone',
         detalle: 'Abono general registrado',
         cantidad: 1,
-        precio_unitario: Number(pago.monto),
-        subtotal: Number(pago.monto),
+        precio_unitario: Math.round(Number(pago.monto)),
+        subtotal: Math.round(Number(pago.monto)),
       });
     }
 
     const nroTicket = `FZ-PAGO-${String(pago.id_pago).padStart(8, '0')}`;
-    const montoTotal = Number(pago.monto);
+    const montoTotal = Math.round(Number(pago.monto));
 
     return {
       id_pago: pago.id_pago,
@@ -460,6 +467,7 @@ export class PagosService {
       const r = pago.cancha_reserva;
       const nombreCancha = r.cancha?.nombre || 'Cancha Deportiva';
       const nombreSede = r.cancha?.sede?.nombre || 'Sede Central';
+      const sedeLimpia = nombreSede.replace(/^Sede\s+/i, '');
       const fechaStr = new Date(r.fecha_inicio).toLocaleDateString('es-AR', {
         day: '2-digit',
         month: '2-digit',
@@ -468,30 +476,40 @@ export class PagosService {
       const horaInicio = new Date(r.fecha_inicio).toLocaleTimeString('es-AR', {
         hour: '2-digit',
         minute: '2-digit',
+        hour12: false,
       });
       const horaFin = new Date(r.fecha_fin).toLocaleTimeString('es-AR', {
         hour: '2-digit',
         minute: '2-digit',
+        hour12: false,
       });
 
       concepto = {
         tipo: 'cancha',
         id_referencia: r.id_cancha_reserva,
         titulo: `Reserva ${nombreCancha}`,
-        detalle: `Sede ${nombreSede} - Horario: ${fechaStr} ${horaInicio} a ${horaFin} hs`,
+        detalle: `${sedeLimpia} • ${fechaStr} de ${horaInicio} a ${horaFin} hs`,
       };
     } else if (pago.membresia) {
       const m = pago.membresia;
       const nombrePlan = m.membresia_plan?.nombre || 'Plan FitZone';
       const dias = m.membresia_plan?.duracion_dias || 30;
-      const inicioStr = new Date(m.fecha_inicio).toLocaleDateString('es-AR');
-      const finStr = new Date(m.fecha_fin).toLocaleDateString('es-AR');
+      const inicioStr = new Date(m.fecha_inicio).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+      const finStr = new Date(m.fecha_fin).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
 
       concepto = {
         tipo: 'membresia',
         id_referencia: m.id_membresia,
         titulo: `Membresía ${nombrePlan}`,
-        detalle: `Vigencia: ${inicioStr} al ${finStr} (${dias} días)`,
+        detalle: `Plan de ${dias} días • Vigencia: ${inicioStr} al ${finStr}`,
       };
     } else {
       concepto = {
@@ -507,7 +525,7 @@ export class PagosService {
 
     return {
       id_pago: pago.id_pago,
-      monto: Number(pago.monto),
+      monto: Math.round(Number(pago.monto)),
       fecha_pago: pago.fecha_pago,
       estado: pago.pago_estado?.descripcion || 'Pendiente',
       token_transaccion: pago.token_transaccion,
@@ -550,5 +568,93 @@ export class PagosService {
     }
 
     return this.formatearDetallePago(pago);
+  }
+
+  /**
+   * Obtiene los conceptos que el usuario tiene pendientes de abonar:
+   * - Su membresía, si está vencida o no activa y no fue renovada con un pago aprobado.
+   * - Sus reservas de cancha futuras sin pago aprobado.
+   */
+  async obtenerPendientesUsuario(
+    id_usuario: number,
+  ): Promise<PagoPendienteResponseDto[]> {
+    const pendientes: PagoPendienteResponseDto[] = [];
+
+    const membresia =
+      await this.pagosRepository.obtenerUltimaMembresiaDeUsuario(id_usuario);
+
+    if (membresia) {
+      const estadoActiva =
+        membresia.membresia_estado?.descripcion?.toLowerCase() === 'activa';
+      const vencida = new Date(membresia.fecha_fin) < new Date();
+
+      // La aprobación de un pago siempre deja la membresía 'Activa', por lo que
+      // solo una membresía vencida necesita comprobar si ya fue renovada.
+      const renovada =
+        estadoActiva && vencida
+          ? await this.pagosRepository.existePagoAprobadoDeMembresiaDesde(
+              membresia.id_membresia,
+              membresia.fecha_fin,
+            )
+          : false;
+
+      if ((!estadoActiva || vencida) && !renovada) {
+        const nombrePlan = membresia.membresia_plan?.nombre || 'Plan FitZone';
+        const dias = membresia.membresia_plan?.duracion_dias || 30;
+        const finStr = new Date(membresia.fecha_fin).toLocaleDateString(
+          'es-AR',
+          {
+            timeZone: 'UTC',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          },
+        );
+
+        pendientes.push({
+          tipo: 'membresia',
+          id_referencia: membresia.id_membresia,
+          titulo: `Membresía ${nombrePlan}`,
+          detalle: vencida
+            ? `Plan de ${dias} días • Venció el ${finStr}`
+            : `Plan de ${dias} días • Hasta ${finStr}`,
+          monto: Math.round(Number(membresia.membresia_plan?.precio ?? 0)),
+        });
+      }
+    }
+
+    const reservas =
+      await this.pagosRepository.obtenerReservasPendientesDePago(id_usuario);
+
+    for (const r of reservas) {
+      const nombreCancha = r.cancha?.nombre || 'Cancha Deportiva';
+      const nombreSede = r.cancha?.sede?.nombre || 'Sede Central';
+      const sedeLimpia = nombreSede.replace(/^Sede\s+/i, '');
+      const fechaStr = new Date(r.fecha_inicio).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+      const horaInicio = new Date(r.fecha_inicio).toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      const horaFin = new Date(r.fecha_fin).toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+
+      pendientes.push({
+        tipo: 'cancha',
+        id_referencia: r.id_cancha_reserva,
+        titulo: `Reserva ${nombreCancha}`,
+        detalle: `${sedeLimpia} • ${fechaStr} de ${horaInicio} a ${horaFin} hs`,
+        monto: Math.round(Number(r.precio_congelado)),
+      });
+    }
+
+    return pendientes;
   }
 }

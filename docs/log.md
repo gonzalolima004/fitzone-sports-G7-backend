@@ -685,29 +685,27 @@ Tarea 6 — Métricas de Ocupación por Sede
 ---
 
 #### 03/10/2026 - 05/10/2026
+
 #### Matías Sillen | Rol: Desarrollador Backend
 
-* **Actividades:**
-* Desarrollo desde cero del módulo de autenticación (`AuthModule`) en NestJS, incluyendo la generación de tokens JWT.
-* Implementación del servicio de validación de credenciales usando `bcryptjs` para comparar contraseñas hasheadas.
-* Población de la tabla `Rol` en la base de datos de Supabase para alinear el esquema de Prisma con los perfiles del sistema (`socio`, `recepcion`, `gerente`, `admin`).
+- **Actividades:**
+- Desarrollo desde cero del módulo de autenticación (`AuthModule`) en NestJS, incluyendo la generación de tokens JWT.
+- Implementación del servicio de validación de credenciales usando `bcryptjs` para comparar contraseñas hasheadas.
+- Población de la tabla `Rol` en la base de datos de Supabase para alinear el esquema de Prisma con los perfiles del sistema (`socio`, `recepcion`, `gerente`, `admin`).
 
+- **Decisiones:**
+- Configurar los tokens JWT con una duración de 8 horas e inyectar el rol del usuario directamente en el payload para que el frontend pueda administrar permisos fácilmente.
+- Crear un DTO específico (`LoginDto`) con `class-validator` para exigir el formato correcto de email y contraseña.
 
-* **Decisiones:**
-* Configurar los tokens JWT con una duración de 8 horas e inyectar el rol del usuario directamente en el payload para que el frontend pueda administrar permisos fácilmente.
-* Crear un DTO específico (`LoginDto`) con `class-validator` para exigir el formato correcto de email y contraseña.
+- **Dificultades:**
+- El servidor se detenía en el arranque por ausencia de variables de entorno de otros servicios (`SUPABASE_URL`, `QR_TOKEN_SECRET`), resuelto unificando el archivo `.env`.
+- Error de integridad referencial en Prisma (código P2025) al registrar un nuevo usuario con roles, resuelto insertando manualmente los registros maestros faltantes en la tabla `Rol` mediante un script SQL en Supabase.
 
-
-* **Dificultades:**
-* El servidor se detenía en el arranque por ausencia de variables de entorno de otros servicios (`SUPABASE_URL`, `QR_TOKEN_SECRET`), resuelto unificando el archivo `.env`.
-* Error de integridad referencial en Prisma (código P2025) al registrar un nuevo usuario con roles, resuelto insertando manualmente los registros maestros faltantes en la tabla `Rol` mediante un script SQL en Supabase.
-
-
-* **Commits:**
-* `feat(usuarios): implementar dto de login`
-* `feat(usuarios): implementar servicio de autenticación`
-* `feat(usuarios): implementar controlador de auntenticación`
-* `feat(usuarios): actualizar modulo de usuarios`
+- **Commits:**
+- `feat(usuarios): implementar dto de login`
+- `feat(usuarios): implementar servicio de autenticación`
+- `feat(usuarios): implementar controlador de auntenticación`
+- `feat(usuarios): actualizar modulo de usuarios`
 
 ---
 
@@ -725,24 +723,180 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 ```
 
 ---
-#### 05/10/2026 
+
+#### 05/10/2026
+
 #### Matías Sillen | Rol: Desarrollador Backend
 
-* **Actividades:**
-* Configuración de la conexión del controlador de carga de imágenes con Multer.
-* Creación y configuración pública del bucket `fitzonepublic` directamente en el panel de Supabase Storage para alojar las fotos de perfil.
-* Autorización del backend para realizar escrituras en el almacenamiento en la nube sin ser bloqueado por las políticas de seguridad.
+- **Actividades:**
+- Configuración de la conexión del controlador de carga de imágenes con Multer.
+- Creación y configuración pública del bucket `fitzonepublic` directamente en el panel de Supabase Storage para alojar las fotos de perfil.
+- Autorización del backend para realizar escrituras en el almacenamiento en la nube sin ser bloqueado por las políticas de seguridad.
+
+- **Decisiones:**
+- Utilizar la clave `service_role` de Supabase a través del archivo `.env` del servidor. Esto permite que NestJS actúe con privilegios de administrador para subir los archivos al Storage, sorteando las políticas RLS sin comprometer la seguridad pública de la base de datos.
+
+- **Dificultades:**
+- Excepción `LIMIT_UNEXPECTED_FILE` lanzada por Multer al rechazar la petición inicial; se identificó que el frontend enviaba la imagen bajo la key `file` mientras el decorador `@UseInterceptors(FileInterceptor('foto'))` esperaba la key `foto`.
+- Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
+- Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
 
 
-* **Decisiones:**
-* Utilizar la clave `service_role` de Supabase a través del archivo `.env` del servidor. Esto permite que NestJS actúe con privilegios de administrador para subir los archivos al Storage, sorteando las políticas RLS sin comprometer la seguridad pública de la base de datos.
+- **Decisiones:**
+- Utilizar la clave `service_role` de Supabase a través del archivo `.env` del servidor. Esto permite que NestJS actúe con privilegios de administrador para subir los archivos al Storage, sorteando las políticas RLS sin comprometer la seguridad pública de la base de datos.
 
+- **Dificultades:**
+- Excepción `LIMIT_UNEXPECTED_FILE` lanzada por Multer al rechazar la petición inicial; se identificó que el frontend enviaba la imagen bajo la key `file` mientras el decorador `@UseInterceptors(FileInterceptor('foto'))` esperaba la key `foto`.
+- Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
+- Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
 
-* **Dificultades:**
-* Excepción `LIMIT_UNEXPECTED_FILE` lanzada por Multer al rechazar la petición inicial; se identificó que el frontend enviaba la imagen bajo la key `file` mientras el decorador `@UseInterceptors(FileInterceptor('foto'))` esperaba la key `foto`.
-* Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
-* Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
+- **Commits:**
+- `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
 
+---
+
+#### 11/10/2026
+
+#### Joaquín Ribarola | Rol: Team Leader - Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del endpoint `GET /reservas-clases/mis-reservas` protegido con `SupabaseAuthGuard` e inyección del socio autenticado mediante `@CurrentUserId()`.
+  - Soporte de filtrado opcional por fecha (`YYYY-MM-DD`) para consultar las reservas correspondientes a un día específico.
+  - Creación del DTO de respuesta `MiReservaClaseResponseDto` con tipado estricto (`id_clase_reserva`, `id_clase`, `id_usuario`, fechas en ISO y estado `CONFIRMADA` / `CANCELADA`).
+  - Unificación y validación de tipos del DTO de lista de espera (`InscribirListaEsperaDto`) con `@IsDateString()` para garantizar paridad y consistencia de payloads con reservas de clases.
+  - Implementación del endpoint `GET /lista-espera/mis-inscripciones` protegido con `SupabaseAuthGuard` y `@CurrentUserId()` para consultar las inscripciones activas del socio.
+  - Cálculo dinámico del turno en fila (`orden_en_cola`) para cada inscripción activa en lista de espera.
+  - Creación del DTO de respuesta `MiInscripcionListaEsperaResponseDto`.
+  - Extensión del modelo `Clase` en Prisma (`profesor`, `sala`, `horario_inicio`, `horario_fin`) y sincronización con la base de datos de Supabase.
+  - Implementación de la agenda diaria en `GET /clases?id_sede=:id_sede&fecha=:fecha` con conteo en tiempo real de `cupos_ocupados`, `cupos_disponibles`, `en_espera` y cálculo de `estado` (`DISPONIBLE` / `COMPLETO`).
+  - Creación del DTO `ClaseAgendaResponseDto` para proveer contratos estrictos tanto de visualización (`HH:mm`) como de invocación de reservas (`ISO string`).
+- **Decisiones:**
+  - Mapear las reservas retornando tanto el código de estado como su descripción legible en mayúsculas (`CONFIRMADA`), incluyendo el nombre de la clase para evitar peticiones redundantes desde el cliente.
+  - Estandarizar la recepción de horarios en formato ISO string en todos los DTOs del módulo M3.
+  - Computar la posición en la lista de espera mediante conteo atómico de solicitudes activas anteriores para el mismo bloque de clase.
+  - Retornar en la agenda diaria tanto los horarios legibles (`horario_inicio: "18:00"`) como los timestamps ISO completos (`fecha_inicio: "2026-10-12T18:00:00.000Z"`) para simplificar el binding directo con los endpoints de reserva del Frontend sin transformaciones adicionales en el cliente.
+- **Dificultades:**
+  - Ausencia de tablas de lista de espera y estados en Supabase, resuelta sincronizando el esquema mediante `prisma db push` y sembrado del estado inicial.
+- **Commits:**
+  - `feat(clases): implementar consulta de mis-reservas y unificar validacion de payloads en m3`
+  - `feat(clases): implementar consulta de mis-inscripciones en lista de espera con orden en cola`
+  - `feat(clases): implementar agenda diaria con filtro de fecha y ocupacion real en m3`
+
+---
+
+#### 14/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Corrección de la consulta de ocupación necesaria para completar el frontend de reportes.
+- **Actividades:**
+  - Corrección de la consulta SQL incompleta de `ReportesRepository`.
+  - Agregación independiente de asistencias, reservas confirmadas de canchas y clases, sin duplicar totales por las uniones.
+  - Inclusión de sedes con reservas aunque no tengan asistencias; filtros parametrizados y fechas con límite final exclusivo.
+  - Incorporación de pruebas del servicio y un script de verificación SQL sobre PostgreSQL temporal con PGlite.
+- **Decisiones:**
+  - Mantener el contrato del endpoint y el esquema; no aplicar migraciones ni modificar datos compartidos.
+  - Devolver únicamente sedes con actividad en el período. Las métricas faltantes dentro de esas sedes se expresan con cero.
+  - Publicar la corrección en `feature/e1-fix-consulta-ocupacion`.
+- **Dificultades y resolución:**
+  - El código anterior tenía una CTE incompleta y no incorporaba correctamente las reservas de clases.
+  - La instalación local no contenía `@nestjs/jwt`, ya declarado por el equipo; se instalaron las dependencias para compilar.
+- **Verificación:** Build y typecheck aprobados; 9 pruebas aprobadas; consulta SQL comprobada con fechas límite, estados, filtros, resultados vacíos y reservas sin asistencia. No se probó una sesión completa contra la base compartida.
+- **Commits:** `d2ac371` — fix(reportes): completar metricas de ocupacion por sede.
+
+#### Facundo Agüero | Rol: Team Leader
+
+- **Actividades:** Revisión de la dependencia entre la pantalla de ocupación y el backend; separación de la corrección y sus pruebas en una entrega revisable.
+- **Decisiones:** Validar la corrección antes de la aceptación del frontend y mantener el registro de limitaciones para el traspaso del 15/10.
+- **Pendientes:** Revisión de compañeros, aceptación integrada y acuerdos de la reunión del 14/10 a las 15:00.
+
+---
+
+- **Commits:**
+- `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
+
+---
+
+#### 12/10/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación del endpoint para consultar pagos pendientes de membresías y reservas de canchas.
+  - Implementación de la lógica para calcular cuotas adeudadas y turnos sin abonar por usuario.
+  - Ajuste en el guard de autenticación para validar tokens JWT de sesión.
+  - Corrección en la integración de Mercado Pago para permitir pruebas en entorno local.
+- **Decisiones:**
+  - Priorizar la ruta de pagos pendientes para evitar conflictos con la búsqueda por identificador.
+  - Permitir validación de autenticación tanto para sesiones locales como de Supabase.
+- **Dificultades:**
+  - El guard de autenticación no reconocía los tokens locales generados por la API, resuelto agregando validación directa con la clave secreta.
+  - Error al generar preferencias de Mercado Pago en entorno de desarrollo local por configuración de retorno automático.
+- **Commits:**
+  - `feat(pagos): endpoint de pagos pendientes y correccion de auth guard`
+
+#### 13/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Frontend y Backend
+
+**Actividades:**
+
+- Decidir forma de implementar un calendario y horarios de apertura y cierre independientes para cada sede, considerando feriados y días hábiles, permitiendo también generar slots de horario dinámicos para la reserva de canchas.
+- Creación de nuevas entidades Calendario, CalendarioSede, SedeHorario.
+- Creación y ejecución de script de seeding SQL para PostgreSQL/Supabase enfocado en las nuevas entidades, en canchas (con sede, tipo y tarifas diferenciadas) y en tipos de canchas para testing.
+- Configuración de algunas fechas festivas en el calendario oficial (`calendario`) y reglas de excepción por sede (`calendario_sede`) para feriados nacionales (Navidad con cierre total y Día de la Soberanía con horario reducido en Central y cierre en Norte).
+- Ajuste de endpoints en NestJS:
+- `GET /canchas/:id/disponibilidad`: generación de matriz de turnos cruzando disponibilidad de reservas existentes, bloqueos por mantenimiento y horario operativo de la sede.
+- `GET /canchas`: opción de filtrar canchas por sede para no traer todas las existentes.
+- `GET /canchas/tipos`: obtener sólo los tipos de canchas sin tener que pedir todas las canchas y luego filtrar por tipo.
+- `POST /reservas-canchas`: modificación considerable del endpoint de reservas para adaptarlo a la nueva forma de horarios con validaciones de seguridad.
+  **Decisiones:**
+- Intención de modificar lo mínimo necesario para no perjudicar al resto del equipo.
+- Crear una entidad calendario que almacene dentro de lo posible todos los días del año, incluyendo atributos de festivo y si es habil o no.
+- Permitir a cada sede definir sus propios horarios de apertura y cierre para cada día particular, definiendo horarios especiales o cierres por festivos independientemente de las otras sedes, mediante CalendarioSede, que almacenará excepciones al calendario general si las hubiera.
+- Generar slots de horario dinámicos para la reserva de canchas en función del horario operativo de cada sede y de las reservas existentes, con verificación de que seguridad de que el horario termine en 00:00 para evitar reservas en horarios no convencionales, entre otras.
+  **Dificultades:**
+- Desfase de zona horaria: Conversión entre timestamps ISO UTC y la hora local de Argentina generaba desfases de 3 horas en los horarios guardados en la base de datos.
+- Falta de endpoints necesarios y validaciones de seguridad en código preexistente.
+- Importante retraso en la delegación de responsabilidad de tareas relacionadas a esta entrada de bitácora, teniendo en cuenta el tiempo disponible y la complejidad de las tareas.
+  **Commits:**
+  - `feat(prisma): adicion de entidades para calendario y horario`
+  - `feat(M0): flujo para obtener el horario operativo de una sede`
+  - `feat(M4): Implementacion de horarios para reservas de canchas y endpoint para cancha tipos`
+  - `docs(log): actualizar log con tareas de calendario y horarios`
+
+---
+
+#### 05/10/2026
+
+#### Matías Sillen | Rol: Desarrollador Backend
+
+- **Actividades:**
+- Corrección de los nombres de las relaciones de Prisma (membresia_plan y membresia_estado) en membresias.repository.ts para resolver el error 500 al consultar el estado de la membresía.
+- Modificación del servicio de membresías para exponer el nombre_plan en el DTO de respuesta de verificación, permitiendo al frontend identificar el plan actual.
+- Resolución del error de serialización (DecimalError) en planes.service.ts mapeando explícitamente el tipo Decimal de Prisma a un Number nativo antes de pasarlo por class-transformer.
+- Ejecución de script SQL directamente en Supabase para poblar las tablas membresia_plan y membresia_estado con datos reales para las pruebas de integración.
+
+- **Decisiones:**
+- Unificar el identificador de los planes bajo la clave id_membresia_plan para respetar estrictamente el esquema de la base de datos y evitar problemas de mapeo en tiempo de ejecución.
+- Interceptar y convertir los datos numéricos a nivel de servicio para prevenir crasheos de la librería plainToInstance al procesar los decimales de Prisma.
+
+- **Dificultades:**
+- La función plainToInstance crasheaba silenciosamente y arrojaba undefined al intentar procesar los objetos de tipo Decimal devueltos por Prisma, lo que requirió debuggear el flujo de transformación de datos.
+- Discrepancia entre las relaciones solicitadas inicialmente (plan, estado) y las generadas reales de Prisma, lo que bloqueaba la consulta inicial.
+
+- **Commits:**
+- `fix(membresias): corregir nombres de relaciones prisma en repositorio y exponer nombre del plan en el dto`
+- `fix(membresias): exponer nombre del plan en la respuesta de verificación de membresía`
+- `fix(planes): convertir decimal de prisma a number nativo para evitar error en class-transformer`
+
+---
+
+---
+
+#### 14/10/2026
+
+#### Facundo Agüero | Rol: Team Leader
 
 * **Commits:**
 * `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`#### 14/10/2026
