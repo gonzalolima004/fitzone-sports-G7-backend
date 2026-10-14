@@ -772,3 +772,31 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(clases): implementar consulta de mis-reservas y unificar validacion de payloads en m3`
   - `feat(clases): implementar consulta de mis-inscripciones en lista de espera con orden en cola`
   - `feat(clases): implementar agenda diaria con filtro de fecha y ocupacion real en m3`
+
+---
+
+#### 14/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Corrección de la consulta de ocupación necesaria para completar el frontend de reportes.
+- **Actividades:**
+  - Corrección de la consulta SQL incompleta de `ReportesRepository`.
+  - Agregación independiente de asistencias, reservas confirmadas de canchas y clases, sin duplicar totales por las uniones.
+  - Inclusión de sedes con reservas aunque no tengan asistencias; filtros parametrizados y fechas con límite final exclusivo.
+  - Incorporación de pruebas del servicio y un script de verificación SQL sobre PostgreSQL temporal con PGlite.
+- **Decisiones:**
+  - Mantener el contrato del endpoint y el esquema; no aplicar migraciones ni modificar datos compartidos.
+  - Devolver únicamente sedes con actividad en el período. Las métricas faltantes dentro de esas sedes se expresan con cero.
+  - Publicar la corrección en `feature/e1-fix-consulta-ocupacion`.
+- **Dificultades y resolución:**
+  - El código anterior tenía una CTE incompleta y no incorporaba correctamente las reservas de clases.
+  - La instalación local no contenía `@nestjs/jwt`, ya declarado por el equipo; se instalaron las dependencias para compilar.
+- **Verificación:** Build y typecheck aprobados; 9 pruebas aprobadas; consulta SQL comprobada con fechas límite, estados, filtros, resultados vacíos y reservas sin asistencia. No se probó una sesión completa contra la base compartida.
+- **Commits:** `d2ac371` — fix(reportes): completar metricas de ocupacion por sede.
+
+#### Facundo Agüero | Rol: Team Leader
+
+- **Actividades:** Revisión de la dependencia entre la pantalla de ocupación y el backend; separación de la corrección y sus pruebas en una entrega revisable.
+- **Decisiones:** Validar la corrección antes de la aceptación del frontend y mantener el registro de limitaciones para el traspaso del 15/10.
+- **Pendientes:** Revisión de compañeros, aceptación integrada y acuerdos de la reunión del 14/10 a las 15:00.
