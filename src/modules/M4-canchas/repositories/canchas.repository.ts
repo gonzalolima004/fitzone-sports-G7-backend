@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
-import { Prisma, Cancha, CanchaMantenimiento } from '@prisma/client';
+import {
+  Prisma,
+  Cancha,
+  CanchaMantenimiento,
+  CanchaTipo,
+} from '@prisma/client';
 
 /**
  * PATRÓN REPOSITORY: Centraliza y encapsula todas las consultas a la base de datos
@@ -16,14 +21,18 @@ export class CanchasRepository {
     });
   }
 
-  async obtenerTodasActivas(): Promise<Cancha[]> {
+  async obtenerTodasActivas(sedeId?: number): Promise<Cancha[]> {
     return this.prisma.cancha.findMany({
-      where: { activo: true },
+      where: { activo: true, ...(sedeId ? { id_sede: sedeId } : {}) },
       include: {
         sede: true,
         cancha_tipo: true,
       },
     });
+  }
+
+  async obtenerTiposCancha(): Promise<CanchaTipo[]> {
+    return this.prisma.canchaTipo.findMany();
   }
 
   async obtenerPorId(id_cancha: number): Promise<Cancha | null> {

@@ -207,4 +207,33 @@ export class ReservasClasesService {
       };
     });
   }
+
+  async obtenerMisReservas(id_usuario: number, fecha?: string) {
+    let inicioDia: Date | undefined;
+    let finDia: Date | undefined;
+
+    if (fecha) {
+      inicioDia = new Date(`${fecha}T00:00:00.000Z`);
+      finDia = new Date(`${fecha}T23:59:59.999Z`);
+    }
+
+    const reservas = await this.reservasRepository.obtenerReservasPorUsuario(
+      id_usuario,
+      inicioDia,
+      finDia,
+    );
+
+    return reservas.map((r) => ({
+      id_clase_reserva: r.id_clase_reserva,
+      id_clase: r.id_clase,
+      id_usuario: r.id_usuario,
+      fecha_inicio: r.fecha_inicio,
+      fecha_fin: r.fecha_fin,
+      id_clase_reserva_estado: r.id_clase_reserva_estado,
+      estado:
+        r.clase_reserva_estado?.descripcion?.toUpperCase() ||
+        (r.id_clase_reserva_estado === 1 ? 'CONFIRMADA' : 'CANCELADA'),
+      nombre_clase: r.clase?.nombre,
+    }));
+  }
 }

@@ -13,6 +13,8 @@ export class PlanesService {
     const plan = await this.membresiasRepository.createPlan(createPlanDto);
     return plainToInstance(PlanResponseDto, {
       ...plan,
+      id: plan.id_membresia_plan,
+      id_plan: plan.id_membresia_plan,
       precio: Number(plan.precio),
     });
   }
@@ -23,7 +25,8 @@ export class PlanesService {
     // Mapeamos manualmente para evitar el crasheo del Decimal de Prisma
     const planesMapeados = planes.map((plan) => ({
       ...plan,
-      id: plan.id_membresia_plan, // Mapeo de conveniencia para el frontend
+      id: plan.id_membresia_plan,
+      id_plan: plan.id_membresia_plan,
       precio: Number(plan.precio), // Conversión segura de Decimal a Number
     }));
 
@@ -37,6 +40,8 @@ export class PlanesService {
     }
     return plainToInstance(PlanResponseDto, {
       ...plan,
+      id: plan.id_membresia_plan,
+      id_plan: plan.id_membresia_plan,
       precio: Number(plan.precio),
     });
   }
@@ -49,6 +54,8 @@ export class PlanesService {
     const plan = await this.membresiasRepository.updatePlan(id, updatePlanDto);
     return plainToInstance(PlanResponseDto, {
       ...plan,
+      id: plan.id_membresia_plan,
+      id_plan: plan.id_membresia_plan,
       precio: Number(plan.precio),
     });
   }
@@ -57,6 +64,8 @@ export class PlanesService {
     const plan = await this.membresiasRepository.removePlan(id);
     return plainToInstance(PlanResponseDto, {
       ...plan,
+      id: plan.id_membresia_plan,
+      id_plan: plan.id_membresia_plan,
       precio: Number(plan.precio),
     });
   }

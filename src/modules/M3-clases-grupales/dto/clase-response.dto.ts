@@ -32,6 +32,30 @@ export class ClaseResponseDto {
   })
   capacidad_maxima: number;
 
+  @ApiPropertyOptional({
+    description: 'Nombre del profesor o instructor asignado',
+    example: 'Martín González',
+  })
+  profesor?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Sala o espacio asignado',
+    example: 'Sala 1 - Ciclismo',
+  })
+  sala?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Horario habitual de inicio',
+    example: '18:00',
+  })
+  horario_inicio?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Horario habitual de fin',
+    example: '19:00',
+  })
+  horario_fin?: string | null;
+
   @ApiProperty({
     description: 'Indica si la clase está activa',
     example: true,

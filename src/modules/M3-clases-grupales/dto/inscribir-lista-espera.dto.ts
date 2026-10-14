@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty } from 'class-validator';
+import { IsDateString, IsInt, IsNotEmpty } from 'class-validator';
 
 export class InscribirListaEsperaDto {
   @ApiProperty({
@@ -10,11 +10,19 @@ export class InscribirListaEsperaDto {
   @IsNotEmpty()
   id_clase: number;
 
-  @ApiProperty({ description: 'Fecha y hora de inicio de la clase' })
+  @ApiProperty({
+    description: 'Fecha y hora de inicio de la clase (formato ISO)',
+    example: '2026-10-12T18:30:00.000Z',
+  })
+  @IsDateString()
   @IsNotEmpty()
-  fecha_inicio: Date;
+  fecha_inicio: string;
 
-  @ApiProperty({ description: 'Fecha y hora de fin de la clase' })
+  @ApiProperty({
+    description: 'Fecha y hora de fin de la clase (formato ISO)',
+    example: '2026-10-12T19:30:00.000Z',
+  })
+  @IsDateString()
   @IsNotEmpty()
-  fecha_fin: Date;
+  fecha_fin: string;
 }
