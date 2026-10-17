@@ -32,10 +32,9 @@ export class UsuariosService {
       );
     }
 
-    const passwordHasheada = await bcrypt.hash(
-      dto.contrasenia,
-      this.SALT_ROUNDS,
-    );
+    const passwordHasheada = dto.contrasenia
+      ? await bcrypt.hash(dto.contrasenia, this.SALT_ROUNDS)
+      : '';
 
     //NOTA: Debe coincidir con el correcto en la base.
     const ID_ESTADO_ACTIVO = 1;
