@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
+import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 import { ListaEsperaSubject } from '../patterns/observer/lista-espera.subject';
 import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
@@ -25,12 +26,25 @@ export class ReservasClasesService {
     private readonly prisma: PrismaService,
     private readonly reservasRepository: ReservasClasesRepository,
     private readonly listaEsperaSubject: ListaEsperaSubject,
+    private readonly listaEsperaRepository: ListaEsperaRepository,
   ) {}
 
   async crearReserva(data: CrearReservaClaseDto, id_usuario: number) {
     const fechaInicio = new Date(data.fecha_inicio);
     const fechaFin = new Date(data.fecha_fin);
     const ahora = new Date();
+
+    if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
+      throw new BadRequestException(
+        'Las fechas proporcionadas no son válidas.',
+      );
+    }
+
+    if (fechaFin <= fechaInicio) {
+      throw new BadRequestException(
+        'La fecha de fin debe ser posterior a la fecha de inicio.',
+      );
+    }
 
     // 1. Validación de hasta 48h antes del inicio
     const diffHoras =
@@ -171,30 +185,63 @@ export class ReservasClasesService {
           tx,
         );
 
-      // 3. Buscar si hay alguien en lista de espera (estado 2) para esa clase y horario exacto
-      const primerEnEspera =
-        await this.reservasRepository.obtenerPrimerEnEspera(
+      // 3. Buscar si hay alguien en lista de espera para esa clase y horario exacto
+      // Prioridad 1: Tabla oficial clase_lista_espera
+      let idUsuarioPromovido: number | null = null;
+      const primerInscriptoLista =
+        await this.listaEsperaRepository.obtenerPrimerInscriptoActivo(
           reserva.id_clase,
           reserva.fecha_inicio,
           reserva.fecha_fin,
           tx,
         );
 
-      // 4. Si hay alguien, se promueve y se notifica
-      if (primerEnEspera) {
-        // Promover a Confirmada (estado 1)
-        await this.reservasRepository.actualizarEstadoReserva(
-          primerEnEspera.id_clase_reserva,
-          1,
+      if (primerInscriptoLista) {
+        idUsuarioPromovido = primerInscriptoLista.id_usuario;
+        // Creamos la nueva reserva confirmada para el socio promovido
+        await this.reservasRepository.crearReserva(
+          {
+            id_clase: reserva.id_clase,
+            fecha_inicio: reserva.fecha_inicio.toISOString(),
+            fecha_fin: reserva.fecha_fin.toISOString(),
+          },
+          idUsuarioPromovido,
+          1, // Confirmada
           tx,
         );
+        // Actualizamos estado en lista de espera (2 = Promovida / Procesada)
+        await this.listaEsperaRepository.actualizarEstadoInscripcion(
+          primerInscriptoLista.id_clase_lista_espera,
+          2,
+          tx,
+        );
+      } else {
+        // Fallback: buscar si existía en clase_reserva con estado 2 (En Espera)
+        const primerEnEsperaReserva =
+          await this.reservasRepository.obtenerPrimerEnEspera(
+            reserva.id_clase,
+            reserva.fecha_inicio,
+            reserva.fecha_fin,
+            tx,
+          );
 
-        // Disparar evento a los observadores
+        if (primerEnEsperaReserva) {
+          idUsuarioPromovido = primerEnEsperaReserva.id_usuario;
+          await this.reservasRepository.actualizarEstadoReserva(
+            primerEnEsperaReserva.id_clase_reserva,
+            1,
+            tx,
+          );
+        }
+      }
+
+      // 4. Si se promovió a alguien, notificar a los observadores
+      if (idUsuarioPromovido) {
         await this.listaEsperaSubject.notify({
           id_clase: reserva.id_clase,
           fecha_inicio: reserva.fecha_inicio,
           fecha_fin: reserva.fecha_fin,
-          id_usuario_promovido: primerEnEspera.id_usuario,
+          id_usuario_promovido: idUsuarioPromovido,
         });
       }
 
@@ -204,7 +251,7 @@ export class ReservasClasesService {
           ? 'Reserva cancelada con penalidad (fuera de término, menos de 2 horas de anticipación).'
           : 'Reserva cancelada exitosamente sin penalidad.',
         reserva: reservaCancelada,
-        cupo_reasignado: !!primerEnEspera,
+        cupo_reasignado: idUsuarioPromovido !== null,
       };
     });
   }
