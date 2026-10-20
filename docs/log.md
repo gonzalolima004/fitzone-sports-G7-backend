@@ -835,6 +835,8 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   - `feat(pagos): endpoint de pagos pendientes y correccion de auth guard`
 
+---
+
 #### 13/10/2026
 
 #### Marcos Caraballo | Rol: Desarrollador Frontend y Backend
@@ -911,3 +913,24 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Cambie send por httpSend porque se iba a quedar obsoleto
 - **Dificultades:** Ninguna.
 - **Commits:** `feat(M2-M1): arreglos`
+
+---
+
+#### 20/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Diseño e implementación de endpoint para consulta de disponibilidad masiva por sede (GET /canchas/disponibilidad con parametros sede y fecha ), optimizando la entrega para la grilla horaria para todas las canchas activas en una sola petición.
+  - Implementación de endpoint de consulta individual de reserva por identificador (GET /reservas-canchas/:id), permitiendo recuperar la entidad con sus relaciones completas (cancha, sede, cancha_tipo, cancha_reserva_estado) para el flujo de confirmación y pago.
+  - Refactorización y desacoplamiento del cálculo de tarifas: aseguramiento de congruencia entre la cotización del backend y la información consumida por el cliente.
+- **Decisiones:**
+  - Priorizar la reutilización de los métodos de repositorio y cálculo existentes sin alterar métodos innecesariamente, ni la estabilidad de las funcionalidades ya utilizadas por el resto del equipo.
+  - Mantener el endpoint unitario por cancha (GET /canchas/:id/disponibilidad) para chequeos puntuales y añadir el endpoint en lote para optimizar las vistas de grilla general.
+- **Dificultades:**
+  - Falta de endpoints necesarios, lo que justifica esta serie de modificaciones.
+- **Commits:**
+  - `feat(M4): nuevos endpoints para reserva canchas y disponibilidad por sede y cancha`
+  - `docs(log): actualizacion de bitacora`
+
+---
