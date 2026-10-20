@@ -1,4 +1,11 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  ParseIntPipe,
+  Get,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -30,5 +37,10 @@ export class ReservasCanchasController {
   ) {
     const idUsuarioMock = 1; // Temporal para testing local sin JWT
     return this.reservasService.crearReserva(dto, idUsuarioMock);
+  }
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener detalle de una reserva por ID' })
+  obtenerReserva(@Param('id', ParseIntPipe) id: number) {
+    return this.reservasService.obtenerReservaPorId(id);
   }
 }

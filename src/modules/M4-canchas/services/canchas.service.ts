@@ -156,4 +156,27 @@ export class CanchasService {
 
     return slots;
   }
+
+  async obtenerDisponibilidadPorSede(sedeId: number, fechaStr: string) {
+    // 1. Obtiene las canchas de la sede mediante el repositorio existente
+    const canchas = await this.canchasRepository.obtenerTodasActivas(sedeId);
+
+    // 2. Ejecuta la disponibilidad en paralelo reutilizando la función que ya tienen
+    const resultados = await Promise.all(
+      canchas.map(async (cancha) => {
+        const slots = await this.obtenerDisponibilidad(
+          cancha.id_cancha,
+          fechaStr,
+        );
+        return {
+          id_cancha: cancha.id_cancha,
+          nombre_cancha: cancha.nombre,
+          costo_base: Number(cancha.costo_base),
+          slots,
+        };
+      }),
+    );
+
+    return resultados;
+  }
 }

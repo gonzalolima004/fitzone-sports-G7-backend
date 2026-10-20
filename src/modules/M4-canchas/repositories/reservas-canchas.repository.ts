@@ -33,6 +33,22 @@ export class ReservasCanchasRepository {
       },
     });
   }
+
+  async obtenerPorId(id: number) {
+    return this.prisma.canchaReserva.findUnique({
+      where: { id_cancha_reserva: id },
+      include: {
+        cancha: {
+          include: {
+            sede: true,
+            cancha_tipo: true,
+          },
+        },
+        cancha_reserva_estado: true,
+      },
+    });
+  }
+
   /**
    * Ejecuta la validación de solapamiento y la inserción de manera atómica (RN-02).
    */
