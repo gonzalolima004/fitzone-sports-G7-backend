@@ -48,13 +48,18 @@ export class SupabaseAuthGuard implements CanActivate {
         sub: number | string;
         email?: string;
         rol?: string;
+        roles?: string[];
       }>(token);
 
       if (payload && payload.sub) {
+        const roles =
+          payload.roles ?? (payload.rol ? [payload.rol] : ['socio']);
         request.user = {
           id_usuario: Number(payload.sub),
           supabase_user_id: String(payload.sub),
           email: payload.email ?? '',
+          rol: payload.rol ?? roles[0] ?? 'socio',
+          roles: roles,
         };
         return true;
       }
@@ -76,7 +81,7 @@ export class SupabaseAuthGuard implements CanActivate {
     }
 
     const usuarioFitZone = await this.usuariosService
-      .findByEmail(user.email)
+      .findEntityByEmail(user.email)
       .catch((error: unknown) => {
         if (error instanceof NotFoundException) {
           throw new ForbiddenException(
@@ -87,10 +92,22 @@ export class SupabaseAuthGuard implements CanActivate {
         throw error;
       });
 
+    if (!usuarioFitZone) {
+      throw new ForbiddenException(
+        'Usuario autenticado sin cuenta asociada a FitZone',
+      );
+    }
+
+    const userRoles =
+      usuarioFitZone.usuario_rol?.map((ur) => ur.rol?.nombre).filter(Boolean) ??
+      [];
+
     request.user = {
       id_usuario: usuarioFitZone.id_usuario,
       supabase_user_id: user.id,
       email: user.email,
+      rol: userRoles[0] ?? 'socio',
+      roles: userRoles.length > 0 ? userRoles : ['socio'],
     };
 
     return true;

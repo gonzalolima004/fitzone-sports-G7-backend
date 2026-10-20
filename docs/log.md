@@ -741,7 +741,6 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
 - Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
 
-
 - **Decisiones:**
 - Utilizar la clave `service_role` de Supabase a través del archivo `.env` del servidor. Esto permite que NestJS actúe con privilegios de administrador para subir los archivos al Storage, sorteando las políticas RLS sin comprometer la seguridad pública de la base de datos.
 
@@ -898,8 +897,8 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 #### Facundo Agüero | Rol: Team Leader
 
-* **Commits:**
-* `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`#### 14/10/2026
+- **Commits:**
+- `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`#### 14/10/2026
 
 #### Angelina Vialle | Rol: Backend Developer
 
@@ -911,3 +910,28 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Cambie send por httpSend porque se iba a quedar obsoleto
 - **Dificultades:** Ninguna.
 - **Commits:** `feat(M2-M1): arreglos`
+
+---
+
+#### 20/10/2026
+
+#### Joaquín Ribarola | Rol: Team Leader - Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del CRUD completo de clases grupales en el módulo M3 (`POST`, `GET`, `GET :id`, `PATCH`, `PUT` y `DELETE`).
+  - Creación del endpoint `DELETE /clases/:id` con baja lógica (`activo: false`) y cancelación preventiva atómica en base de datos de las reservas activas y cupos en espera a futuro.
+  - Implementación del endpoint `PUT /clases/:id` para reemplazo idempotente total de datos de una clase grupal.
+  - Creación del decorador de metadatos `@Roles()` y del guardia de autorización `RolesGuard` (`roles.guard.ts`) con soporte de validación case-insensitive.
+  - Actualización de `SupabaseAuthGuard` e interfaz `AuthenticatedUser` para poblar dinámicamente `rol` y `roles` tanto desde el JWT emitido localmente por FitZone como en el fallback de Supabase Auth con relaciones de roles de base de datos.
+  - Protección de todos los endpoints mutadores (`POST`, `PUT`, `PATCH`, `DELETE`) de `/clases` restringiéndolos exclusivamente a usuarios con roles `admin` o `gerente`.
+  - Creación del script ejecutable e idempotente de seed para usuario Gerente (`src/database/seeds/gerente.seed.ts`) con contraseña hasheada en `bcryptjs`, asignación de `rol: "gerente"` y vinculación a sede activa por defecto (`id_sede: 1`).
+  - Incorporación del comando `npm run seed:gerente` y configuración de `prisma.seed` en `package.json`.
+  - Creación de suites de pruebas unitarias exhaustivas para `ClasesService`, `ClasesController`, `RolesGuard` y `SupabaseAuthGuard` alcanzando 46/46 pruebas exitosas.
+- **Decisiones:**
+  - Emplear baja lógica en clases para mantener la integridad referencial histórica de asistencias, pagos y auditorías.
+  - Cancelar automáticamente en una transacción las reservas a futuro vinculadas al dar de baja una clase para proteger a los socios y notificar el conteo en `EliminarClaseResponseDto`.
+  - Asegurar la idempotencia del seed de Gerente permitiendo reejecutarlo sin duplicar usuarios ni corromper llaves únicas de DNI o email.
+- **Dificultades:**
+  - Necesidad de asegurar compatibilidad del cliente de Prisma v7 con `@prisma/adapter-pg` dentro del script de seed aislado, resuelta instanciando el pool de conexión con el adaptador correspondiente.
+- **Commits:**
+  - `feat(clases): implementar crud completo con seguridad de roles y seed de gerente`

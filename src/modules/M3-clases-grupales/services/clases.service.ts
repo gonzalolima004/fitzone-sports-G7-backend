@@ -1,13 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { ClasesRepository } from '../repositories/clases.repository';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { CreateClaseDto } from '../dto/create-clase.dto';
 import { UpdateClaseDto } from '../dto/update-clase.dto';
+import { EliminarClaseResponseDto } from '../dto/eliminar-clase-response.dto';
 
 @Injectable()
 export class ClasesService {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly clasesRepository: ClasesRepository,
     private readonly reservasRepository: ReservasClasesRepository,
     private readonly listaEsperaRepository: ListaEsperaRepository,
@@ -96,5 +99,42 @@ export class ClasesService {
       id_clase,
       updateClaseDto,
     );
+  }
+
+  async reemplazarClase(id_clase: number, createClaseDto: CreateClaseDto) {
+    // Verificamos que la clase exista antes de intentar reemplazarla
+    await this.obtenerClasePorId(id_clase);
+
+    return await this.clasesRepository.reemplazarClase(
+      id_clase,
+      createClaseDto,
+    );
+  }
+
+  async eliminarClase(id_clase: number): Promise<EliminarClaseResponseDto> {
+    // 1. Verificar existencia de la clase
+    await this.obtenerClasePorId(id_clase);
+
+    const ahora = new Date();
+
+    // 2. Transacción para cancelar reservas activas a futuro y realizar la baja lógica
+    const reservasCanceladas = await this.prisma.$transaction(async (tx) => {
+      const canceladas = await this.clasesRepository.cancelarReservasFuturas(
+        id_clase,
+        ahora,
+        tx,
+      );
+
+      await this.clasesRepository.darDeBajaClase(id_clase, tx);
+
+      return canceladas;
+    });
+
+    return {
+      mensaje: 'Clase dada de baja exitosamente.',
+      id_clase,
+      activo: false,
+      reservas_canceladas: reservasCanceladas,
+    };
   }
 }
