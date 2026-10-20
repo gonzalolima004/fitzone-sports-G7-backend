@@ -935,3 +935,23 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Necesidad de asegurar compatibilidad del cliente de Prisma v7 con `@prisma/adapter-pg` dentro del script de seed aislado, resuelta instanciando el pool de conexión con el adaptador correspondiente.
 - **Commits:**
   - `feat(clases): implementar crud completo con seguridad de roles y seed de gerente`
+
+---
+
+#### 20/10/2026
+
+#### Joaquín Ribarola | Rol: Team Leader - Desarrollador Backend
+
+- **Actividades:**
+  - Creación de la utilidad centralizada de fechas y zona horaria `date-time.util.ts` (`TIMEZONE_ARGENTINA_OFFSET = '-03:00'`, `crearFechaArgentina`, `normalizarHorarioHHmm`, `obtenerRangoDiaArgentina`, `obtenerFechaHoyArgentina`).
+  - Estandarización de los DTOs de salida (`ClaseAgendaResponseDto`, `ClaseResponseDto`) para exponer consistentemente `fecha_inicio` y `fecha_fin` en formato ISO 8601 estricto (`.toISOString()`), y `horario_inicio` y `horario_fin` en formato `HH:mm`.
+  - Eliminación del desfase de 3 horas por concatenación manual de sufijo `Z` (UTC) en los servicios `ClasesService`, `ReservasClasesService` y `ListaEsperaService`, garantizando la correcta persistencia y cálculo de ocupación respecto al huso horario oficial de Argentina.
+  - Tipado estricto de retornos en `ClasesController` (`Promise<ClaseResponseDto>`, `Promise<ClaseResponseDto[] | ClaseAgendaResponseDto[]>`).
+  - Creación de pruebas unitarias exhaustivas en `date-time.util.spec.ts` y ampliación de tests en `clases.service.spec.ts` y `clases.controller.spec.ts` con cobertura al 100% (52 pruebas unitarias pasando).
+- **Decisiones:**
+  - Exponer tanto los horarios habituales de clase en formato `HH:mm` como los timestamps calculados `fecha_inicio` y `fecha_fin` en ISO 8601 en todas las variantes de consulta del catálogo (`ClaseResponseDto`) y de la agenda diaria (`ClaseAgendaResponseDto`).
+  - Centralizar toda operación de fecha del módulo en `date-time.util.ts` para evitar duplicación y discrepancias entre módulos.
+- **Dificultades:**
+  - Desfase de zona horaria histórico producido por tratar la hora local argentina como UTC mediante sufijo `Z`, resuelto aplicando explícitamente el offset `-03:00` en la creación de fechas.
+- **Commits:**
+  - `feat(clases): estandarizar fechas iso 8601 y horarios hh:mm en dtos de clases y reservas`

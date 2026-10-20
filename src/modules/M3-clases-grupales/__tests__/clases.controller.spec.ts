@@ -5,14 +5,22 @@ import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CreateClaseDto } from '../dto/create-clase.dto';
 import { UpdateClaseDto } from '../dto/update-clase.dto';
+import { ClaseResponseDto } from '../dto/clase-response.dto';
 
 describe('ClasesController', () => {
   let controller: ClasesController;
 
-  const mockClase = {
+  const mockClase: ClaseResponseDto = {
     id_clase: 1,
     id_sede: 1,
     nombre: 'Spinning Funcional',
+    descripcion: 'Clase de spinning funcional',
+    profesor: 'Martín González',
+    sala: 'Sala 1',
+    horario_inicio: '18:00',
+    horario_fin: '19:00',
+    fecha_inicio: '2026-10-20T21:00:00.000Z',
+    fecha_fin: '2026-10-20T22:00:00.000Z',
     capacidad_maxima: 20,
     activo: true,
   };

@@ -11,6 +11,7 @@ import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 import { ListaEsperaSubject } from '../patterns/observer/lista-espera.subject';
 import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
 import { Subject } from 'rxjs';
+import { obtenerRangoDiaArgentina } from '../../../common/utils/date-time.util';
 
 @Injectable()
 export class ReservasClasesService {
@@ -213,8 +214,9 @@ export class ReservasClasesService {
     let finDia: Date | undefined;
 
     if (fecha) {
-      inicioDia = new Date(`${fecha}T00:00:00.000Z`);
-      finDia = new Date(`${fecha}T23:59:59.999Z`);
+      const rango = obtenerRangoDiaArgentina(fecha);
+      inicioDia = rango.inicioDia;
+      finDia = rango.finDia;
     }
 
     const reservas = await this.reservasRepository.obtenerReservasPorUsuario(
@@ -227,8 +229,8 @@ export class ReservasClasesService {
       id_clase_reserva: r.id_clase_reserva,
       id_clase: r.id_clase,
       id_usuario: r.id_usuario,
-      fecha_inicio: r.fecha_inicio,
-      fecha_fin: r.fecha_fin,
+      fecha_inicio: r.fecha_inicio.toISOString(),
+      fecha_fin: r.fecha_fin.toISOString(),
       id_clase_reserva_estado: r.id_clase_reserva_estado,
       estado:
         r.clase_reserva_estado?.descripcion?.toUpperCase() ||

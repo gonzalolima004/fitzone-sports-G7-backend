@@ -6,6 +6,7 @@ import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { CreateClaseDto } from '../dto/create-clase.dto';
 import { UpdateClaseDto } from '../dto/update-clase.dto';
+import { ClaseResponseDto } from '../dto/clase-response.dto';
 import { ClaseAgendaResponseDto } from '../dto/clase-agenda-response.dto';
 
 describe('ClasesService - CRUD y Lógica de Negocio', () => {
@@ -81,6 +82,14 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
 
       expect(resultado).toBeDefined();
       expect(mockClasesRepo.crearClase).toHaveBeenCalledWith(dto);
+      expect(resultado.horario_inicio).toBe('09:00');
+      expect(resultado.horario_fin).toBe('10:00');
+      expect(resultado.fecha_inicio).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
+      expect(resultado.fecha_fin).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
     });
   });
 
@@ -91,7 +100,18 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
       );
 
       const resultado = await service.obtenerClasePorId(1);
-      expect(resultado).toEqual(mockClase);
+      expect(resultado).toMatchObject({
+        id_clase: 1,
+        nombre: 'Spinning Funcional',
+        horario_inicio: '18:00',
+        horario_fin: '19:00',
+      });
+      expect(resultado.fecha_inicio).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
+      expect(resultado.fecha_fin).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
     });
 
     it('debe lanzar NotFoundException si la clase no existe', async () => {
@@ -99,6 +119,28 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
 
       await expect(service.obtenerClasePorId(999)).rejects.toThrow(
         NotFoundException,
+      );
+    });
+  });
+
+  describe('obtenerClasesPorSede sin fecha (catálogo base)', () => {
+    it('debe retornar catálogo con fechas normalizadas en formato ISO 8601 y horarios HH:mm', async () => {
+      (mockClasesRepo.obtenerClasesPorSede as jest.Mock).mockResolvedValue([
+        mockClase,
+      ]);
+
+      const clases = (await service.obtenerClasesPorSede(
+        1,
+      )) as ClaseResponseDto[];
+
+      expect(clases).toHaveLength(1);
+      expect(clases[0].horario_inicio).toBe('18:00');
+      expect(clases[0].horario_fin).toBe('19:00');
+      expect(clases[0].fecha_inicio).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
+      expect(clases[0].fecha_fin).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
       );
     });
   });
@@ -149,6 +191,29 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
       expect(agenda[0].en_espera).toBe(3);
       expect(agenda[0].estado).toBe('COMPLETO');
     });
+
+    it('debe reflejar la hora exacta en zona horaria ART (UTC-03:00) en el ISO generado', async () => {
+      (mockClasesRepo.obtenerClasesPorSede as jest.Mock).mockResolvedValue([
+        mockClase, // horario_inicio: '18:00', horario_fin: '19:00'
+      ]);
+      (
+        mockReservasRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(0);
+      (
+        mockListaEsperaRepo.contarInscriptosActivos as jest.Mock
+      ).mockResolvedValue(0);
+
+      const agenda = (await service.obtenerClasesPorSede(
+        1,
+        '2026-10-12',
+      )) as ClaseAgendaResponseDto[];
+
+      expect(agenda[0].horario_inicio).toBe('18:00');
+      expect(agenda[0].horario_fin).toBe('19:00');
+      // 18:00 ART (-03:00) corresponde a 21:00 UTC (Z)
+      expect(agenda[0].fecha_inicio).toBe('2026-10-12T21:00:00.000Z');
+      expect(agenda[0].fecha_fin).toBe('2026-10-12T22:00:00.000Z');
+    });
   });
 
   describe('actualizarClase (PATCH)', () => {
@@ -166,6 +231,11 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
 
       expect(mockClasesRepo.actualizarClase).toHaveBeenCalledWith(1, updateDto);
       expect(resultado.nombre).toBe('Spinning Pro');
+      expect(resultado.horario_inicio).toBe('18:00');
+      expect(resultado.horario_fin).toBe('19:00');
+      expect(resultado.fecha_inicio).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
     });
 
     it('debe lanzar NotFoundException si no existe la clase a actualizar', async () => {
@@ -202,6 +272,14 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
         replaceDto,
       );
       expect(resultado.capacidad_maxima).toBe(25);
+      expect(resultado.horario_inicio).toBe('19:00');
+      expect(resultado.horario_fin).toBe('20:00');
+      expect(resultado.fecha_inicio).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
+      expect(resultado.fecha_fin).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
     });
 
     it('debe lanzar NotFoundException si no existe la clase a reemplazar', async () => {

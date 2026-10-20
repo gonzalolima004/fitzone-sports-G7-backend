@@ -54,7 +54,9 @@ export class ClasesController {
     status: 403,
     description: 'Acceso denegado: se requiere rol admin o gerente.',
   })
-  async crearClase(@Body() createClaseDto: CreateClaseDto) {
+  async crearClase(
+    @Body() createClaseDto: CreateClaseDto,
+  ): Promise<ClaseResponseDto> {
     return await this.clasesService.crearClase(createClaseDto);
   }
 
@@ -88,7 +90,7 @@ export class ClasesController {
   async obtenerClasesPorSede(
     @Query('id_sede', ParseIntPipe) id_sede: number,
     @Query('fecha') fecha?: string,
-  ) {
+  ): Promise<ClaseResponseDto[] | ClaseAgendaResponseDto[]> {
     return await this.clasesService.obtenerClasesPorSede(id_sede, fecha);
   }
 
@@ -106,7 +108,9 @@ export class ClasesController {
     type: ClaseResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Clase no encontrada.' })
-  async obtenerClasePorId(@Param('id', ParseIntPipe) id: number) {
+  async obtenerClasePorId(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ClaseResponseDto> {
     return await this.clasesService.obtenerClasePorId(id);
   }
 
@@ -141,7 +145,7 @@ export class ClasesController {
   async actualizarClase(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateClaseDto: UpdateClaseDto,
-  ) {
+  ): Promise<ClaseResponseDto> {
     return await this.clasesService.actualizarClase(id, updateClaseDto);
   }
 
@@ -176,7 +180,7 @@ export class ClasesController {
   async reemplazarClase(
     @Param('id', ParseIntPipe) id: number,
     @Body() createClaseDto: CreateClaseDto,
-  ) {
+  ): Promise<ClaseResponseDto> {
     return await this.clasesService.reemplazarClase(id, createClaseDto);
   }
 
@@ -209,7 +213,9 @@ export class ClasesController {
     description: 'Acceso denegado: se requiere rol admin o gerente.',
   })
   @ApiResponse({ status: 404, description: 'Clase no encontrada.' })
-  async eliminarClase(@Param('id', ParseIntPipe) id: number) {
+  async eliminarClase(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<EliminarClaseResponseDto> {
     return await this.clasesService.eliminarClase(id);
   }
 }
