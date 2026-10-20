@@ -21,7 +21,15 @@ export async function seedGerente() {
 
   try {
     const email = process.env.GERENTE_SEED_EMAIL || 'gerente@fitzone.com';
-    const rawPassword = process.env.GERENTE_SEED_PASSWORD || 'Gerente123!';
+    const rawPassword = process.env.GERENTE_SEED_PASSWORD;
+
+    if (!rawPassword) {
+      throw new Error(
+        '❌ [SEGURIDAD] La variable de entorno GERENTE_SEED_PASSWORD no está definida en el archivo .env. ' +
+          'Por favor, define una contraseña segura en tu .env antes de ejecutar este seed.',
+      );
+    }
+
     const dni = process.env.GERENTE_SEED_DNI || '10000003';
     const nombre = 'Gerente';
     const apellido = 'FitZone';
@@ -138,7 +146,9 @@ export async function seedGerente() {
     }
 
     console.log('🎉 Seed de Gerente completado exitosamente.');
-    console.log(`   Credenciales: ${email} / ${rawPassword}`);
+    console.log(
+      `   Usuario aprovisionado: ${email} (contraseña configurada desde .env)`,
+    );
   } catch (error) {
     console.error('❌ Error durante la ejecución del seed de gerente:', error);
     throw error;

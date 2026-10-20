@@ -6,6 +6,7 @@ import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { CreateClaseDto } from '../dto/create-clase.dto';
 import { UpdateClaseDto } from '../dto/update-clase.dto';
+import { ClaseAgendaResponseDto } from '../dto/clase-agenda-response.dto';
 
 describe('ClasesService - CRUD y Lógica de Negocio', () => {
   let service: ClasesService;
@@ -47,9 +48,11 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
     };
 
     mockPrisma = {
-      $transaction: jest.fn((callback: (tx: unknown) => Promise<unknown>) =>
-        callback(mockPrisma),
-      ),
+      $transaction: jest
+        .fn()
+        .mockImplementation((callback: (tx: unknown) => Promise<unknown>) =>
+          callback(mockPrisma),
+        ),
     };
 
     service = new ClasesService(
@@ -112,7 +115,10 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
         mockListaEsperaRepo.contarInscriptosActivos as jest.Mock
       ).mockResolvedValue(0);
 
-      const agenda = await service.obtenerClasesPorSede(1, '2026-10-12');
+      const agenda = (await service.obtenerClasesPorSede(
+        1,
+        '2026-10-12',
+      )) as ClaseAgendaResponseDto[];
 
       expect(agenda).toHaveLength(1);
       expect(agenda[0].cupos_ocupados).toBe(5);
@@ -132,7 +138,10 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
         mockListaEsperaRepo.contarInscriptosActivos as jest.Mock
       ).mockResolvedValue(3);
 
-      const agenda = await service.obtenerClasesPorSede(1, '2026-10-12');
+      const agenda = (await service.obtenerClasesPorSede(
+        1,
+        '2026-10-12',
+      )) as ClaseAgendaResponseDto[];
 
       expect(agenda).toHaveLength(1);
       expect(agenda[0].cupos_ocupados).toBe(20);
