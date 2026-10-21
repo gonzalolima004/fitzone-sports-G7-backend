@@ -22,6 +22,8 @@ describe('ClasesController', () => {
     fecha_inicio: '2026-10-20T21:00:00.000Z',
     fecha_fin: '2026-10-20T22:00:00.000Z',
     capacidad_maxima: 20,
+    dias_semana: [1, 3, 5],
+    fecha: null,
     activo: true,
   };
 
