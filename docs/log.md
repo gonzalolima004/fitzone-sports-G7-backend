@@ -955,3 +955,36 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Desfase de zona horaria histórico producido por tratar la hora local argentina como UTC mediante sufijo `Z`, resuelto aplicando explícitamente el offset `-03:00` en la creación de fechas.
 - **Commits:**
   - `feat(clases): estandarizar fechas iso 8601 y horarios hh:mm en dtos de clases y reservas`
+
+---
+
+#### 20/10/2026
+
+#### Joaquín Ribarola | Rol: Team Leader - Desarrollador Backend
+
+- **Actividades:**
+  - Creación de la rama de trabajo `feature/clases-testing`.
+  - Refactorización de `ReservasClasesService`:
+    - Incorporación de validación estricta de fechas (`isNaN`, `fechaFin > fechaInicio`).
+    - Conexión transaccional y reasignación automática de vacantes vinculando `clase_lista_espera` con `clase_reserva` al cancelar una reserva, con soporte de fallback a `clase_reserva` con estado 2.
+    - Notificación en tiempo real al observador de Supabase con el socio promovido.
+  - Refactorización de `ListaEsperaService`:
+    - Validación cronológica de fechas de inicio y fin, previniendo inscripciones a clases pasadas o con rangos invertidos.
+  - Refactorización de `ListaEsperaRepository`:
+    - Incorporación de soporte transaccional (`tx?: Prisma.TransactionClient`).
+    - Creación de métodos `obtenerPrimerInscriptoActivo` y `actualizarEstadoInscripcion` para procesamiento atómico de colas.
+  - Creación de suites de pruebas unitarias exhaustivas con cobertura del 100% de sentencias en todo el módulo M3 (`src/modules/M3-clases-grupales/__tests__/`):
+    - `reservas-clases.service.spec.ts` (18 tests: validación 48h, mora RN-03, superposiciones, capacidad, cancelaciones, penalidad, promociones y consultas).
+    - `lista-espera.service.spec.ts` (8 tests: clases inexistentes, validaciones temporales, duplicados, clases no agotadas, orden en cola).
+    - `reservas-clases.controller.spec.ts` (3 tests: `mis-reservas`, `crearReserva`, `cancelarReserva`).
+    - `lista-espera.controller.spec.ts` (2 tests: `mis-inscripciones`, `inscribir`).
+    - `repositories.spec.ts` (16 tests para `ClasesRepository`, `ReservasClasesRepository` y `ListaEsperaRepository`).
+    - `observer.spec.ts` (5 tests para `ListaEsperaSubject` y `NotificacionRealtimeObserver`).
+  - Total de pruebas unitarias del backend elevadas a **16 suites pasando y 109 pruebas exitosas** (100% de cobertura en M3).
+- **Decisiones:**
+  - Priorizar la reasignación automática de cupos desde la tabla oficial `clase_lista_espera` creando la reserva confirmada correspondiente y actualizando el estado de la solicitud en lista de espera, manteniendo compatibilidad hacia atrás.
+  - Asegurar tipado riguroso en mocks de pruebas sin recurrir al tipo `any`, cumpliendo con las reglas más estrictas de ESLint.
+- **Dificultades:**
+  - Desconexión previa entre la tabla `clase_lista_espera` (usada en inscripciones) y la lógica de cancelación en `clase_reserva`, resuelta unificando la búsqueda y promoviendo atómicamente al primer inscripto de la cola.
+- **Commits:**
+  - `test(clases): suites unitarias para servicios, controladores, repositorios y observer de m3`

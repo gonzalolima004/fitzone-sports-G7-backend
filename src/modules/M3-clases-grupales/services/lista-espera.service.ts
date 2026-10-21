@@ -26,6 +26,25 @@ export class ListaEsperaService {
     // Convertimos las fechas a Date si vienen como string
     const fechaInicio = new Date(data.fecha_inicio);
     const fechaFin = new Date(data.fecha_fin);
+    const ahora = new Date();
+
+    if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
+      throw new BadRequestException(
+        'Las fechas proporcionadas no son válidas.',
+      );
+    }
+
+    if (fechaFin <= fechaInicio) {
+      throw new BadRequestException(
+        'La fecha de fin debe ser posterior a la fecha de inicio.',
+      );
+    }
+
+    if (fechaInicio <= ahora) {
+      throw new BadRequestException(
+        'No se puede inscribir en lista de espera para una clase que ya comenzó.',
+      );
+    }
 
     // Verificamos si ya está inscripto
     const inscripcionExistente =
