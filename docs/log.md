@@ -1009,3 +1009,18 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Desconexión previa entre la tabla `clase_lista_espera` (usada en inscripciones) y la lógica de cancelación en `clase_reserva`, resuelta unificando la búsqueda y promoviendo atómicamente al primer inscripto de la cola.
 - **Commits:**
   - `test(clases): suites unitarias para servicios, controladores, repositorios y observer de m3`
+
+---
+
+#### 22/10/2026
+#### Marcos Caraballo | Rol: Desarrollador Frontend
+- **Actividades**:
+  - Actualización de los DTOs para crear y actualizar canchas, incorporando el atributo booleano opcional `disponible`.
+- **Decisiones**:
+  - Incorporar `disponible` en los DTOs de creación y actualización para permitir definir la disponibilidad operativa de la cancha desde su alta o modificarla puntualmente según necesidades de la sede.
+- **Dificultades**: Ninguna
+- **Commits:**
+- `feat(M4): incorporar atributo disponible en dts para su modificacion`
+- `docs(log): actualizacion de bitacora`
+
+---
