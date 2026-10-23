@@ -16,10 +16,22 @@ export type MetricaOcupacionAgrupadaPorSede = {
   total_reservas_clases: number;
 };
 
+type SedeDelPago = { id_sede: number; nombre: string };
+
 @Injectable()
 export class ReportesRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
+  /**
+   * Ingresos de pagos en el estado indicado dentro de
+   * [fechaDesde, fechaHastaExclusiva), agrupados por sede.
+   *
+   * Un pago llega a una sede por dos caminos: membresía → usuario → sede y
+   * reserva de cancha → cancha → sede. Prisma no agrupa por campos de tablas
+   * relacionadas, así que se consultan los pagos con sus relaciones (solo los
+   * campos necesarios) y se suman por sede en memoria con Prisma.Decimal para
+   * no perder precisión. Ver ADR-018.
+   */
   async obtenerIngresosPorSede(
     fechaDesde: Date,
     fechaHastaExclusiva: Date,
@@ -27,70 +39,83 @@ export class ReportesRepository {
     idSede?: number,
     concepto?: 'cancha' | 'membresia',
   ): Promise<IngresoAgrupadoPorSede[]> {
-    const filtroSede = idSede
-      ? Prisma.sql`AND ingresos.id_sede = ${idSede}`
-      : Prisma.empty;
+    const incluirMembresias = concepto !== 'cancha';
+    const incluirCanchas = concepto !== 'membresia';
 
-    const filtroConcepto = concepto
-      ? Prisma.sql`AND ingresos.concepto = ${concepto}`
-      : Prisma.empty;
+    const caminos: Prisma.PagoWhereInput[] = [];
+    if (incluirMembresias) {
+      caminos.push(
+        idSede === undefined
+          ? { id_membresia: { not: null } }
+          : { membresia: { is: { usuario: { is: { id_sede: idSede } } } } },
+      );
+    }
+    if (incluirCanchas) {
+      caminos.push(
+        idSede === undefined
+          ? { id_cancha_reserva: { not: null } }
+          : { cancha_reserva: { is: { cancha: { is: { id_sede: idSede } } } } },
+      );
+    }
 
-    return this.prismaService.$queryRaw<IngresoAgrupadoPorSede[]>(
-      Prisma.sql`
-        WITH pagos_validos AS (
-          SELECT p.*
-          FROM pago p
-          INNER JOIN pago_estado pe
-            ON pe.id_pago_estado = p.id_pago_estado
-          WHERE p.fecha_pago >= ${fechaDesde}
-            AND p.fecha_pago < ${fechaHastaExclusiva}
-            AND LOWER(pe.descripcion) = LOWER(${estadoPagoValido})
-        ),
+    const pagos = await this.prismaService.pago.findMany({
+      where: {
+        fecha_pago: { gte: fechaDesde, lt: fechaHastaExclusiva },
+        pago_estado: {
+          descripcion: {
+            equals: estadoPagoValido,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
+        OR: caminos,
+      },
+      select: {
+        monto: true,
+        membresia: {
+          select: {
+            usuario: {
+              select: { sede: { select: { id_sede: true, nombre: true } } },
+            },
+          },
+        },
+        cancha_reserva: {
+          select: {
+            cancha: {
+              select: { sede: { select: { id_sede: true, nombre: true } } },
+            },
+          },
+        },
+      },
+    });
 
-        ingresos AS (
-          SELECT
-            s.id_sede,
-            s.nombre AS nombre_sede,
-            p.monto,
-            'membresia' AS concepto
-          FROM pagos_validos p
-          INNER JOIN membresia m
-            ON m.id_membresia = p.id_membresia
-          INNER JOIN usuario u
-            ON u.id_usuario = m.id_usuario
-          INNER JOIN sede s
-            ON s.id_sede = u.id_sede
-          WHERE p.id_membresia IS NOT NULL
+    const totalesPorSede = new Map<number, IngresoAgrupadoPorSede>();
+    const acumular = (
+      sede: SedeDelPago | undefined,
+      monto: Prisma.Decimal,
+    ): void => {
+      if (!sede || (idSede !== undefined && sede.id_sede !== idSede)) {
+        return;
+      }
+      const acumulado = totalesPorSede.get(sede.id_sede);
+      totalesPorSede.set(sede.id_sede, {
+        id_sede: sede.id_sede,
+        nombre_sede: sede.nombre,
+        total_ingresos: acumulado
+          ? acumulado.total_ingresos.add(monto)
+          : new Prisma.Decimal(monto),
+      });
+    };
 
-          UNION ALL
+    for (const pago of pagos) {
+      if (incluirMembresias) {
+        acumular(pago.membresia?.usuario.sede, pago.monto);
+      }
+      if (incluirCanchas) {
+        acumular(pago.cancha_reserva?.cancha.sede, pago.monto);
+      }
+    }
 
-          SELECT
-            s.id_sede,
-            s.nombre AS nombre_sede,
-            p.monto,
-            'cancha' AS concepto
-          FROM pagos_validos p
-          INNER JOIN cancha_reserva cr
-            ON cr.id_cancha_reserva = p.id_cancha_reserva
-          INNER JOIN cancha c
-            ON c.id_cancha = cr.id_cancha
-          INNER JOIN sede s
-            ON s.id_sede = c.id_sede
-          WHERE p.id_cancha_reserva IS NOT NULL
-        )
-
-        SELECT
-          ingresos.id_sede,
-          ingresos.nombre_sede,
-          SUM(ingresos.monto) AS total_ingresos
-        FROM ingresos
-        WHERE 1 = 1
-          ${filtroSede}
-          ${filtroConcepto}
-        GROUP BY ingresos.id_sede, ingresos.nombre_sede
-        ORDER BY ingresos.id_sede
-      `,
-    );
+    return [...totalesPorSede.values()].sort((a, b) => a.id_sede - b.id_sede);
   }
 
   async obtenerMetricasOcupacionPorSede(
