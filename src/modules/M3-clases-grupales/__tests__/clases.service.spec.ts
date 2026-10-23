@@ -26,6 +26,8 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
     sala: 'Sala 1',
     horario_inicio: '18:00',
     horario_fin: '19:00',
+    dias_semana: [1, 3, 5],
+    fecha: null,
     activo: true,
   };
 
@@ -213,6 +215,55 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
       // 18:00 ART (-03:00) corresponde a 21:00 UTC (Z)
       expect(agenda[0].fecha_inicio).toBe('2026-10-12T21:00:00.000Z');
       expect(agenda[0].fecha_fin).toBe('2026-10-12T22:00:00.000Z');
+      expect(agenda[0].dias_semana).toEqual([1, 3, 5]);
+    });
+
+    it('debe filtrar y excluir clases que no correspondan al día de la semana consultado', async () => {
+      // mockClase se dicta lunes, miércoles y viernes (dias_semana: [1, 3, 5])
+      (mockClasesRepo.obtenerClasesPorSede as jest.Mock).mockResolvedValue([
+        mockClase,
+      ]);
+
+      // 2026-10-13 es Martes (2)
+      const agenda = (await service.obtenerClasesPorSede(
+        1,
+        '2026-10-13',
+      )) as ClaseAgendaResponseDto[];
+
+      expect(agenda).toHaveLength(0);
+    });
+
+    it('debe filtrar e incluir clases con fecha puntual solo cuando coincida la fecha exacta', async () => {
+      const clasePuntual = {
+        ...mockClase,
+        id_clase: 2,
+        dias_semana: [],
+        fecha: new Date('2026-10-25T00:00:00.000Z'),
+      };
+      (mockClasesRepo.obtenerClasesPorSede as jest.Mock).mockResolvedValue([
+        clasePuntual,
+      ]);
+      (
+        mockReservasRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(0);
+      (
+        mockListaEsperaRepo.contarInscriptosActivos as jest.Mock
+      ).mockResolvedValue(0);
+
+      // Fecha que coincide
+      const agendaCoincide = (await service.obtenerClasesPorSede(
+        1,
+        '2026-10-25',
+      )) as ClaseAgendaResponseDto[];
+      expect(agendaCoincide).toHaveLength(1);
+      expect(agendaCoincide[0].fecha).toBe('2026-10-25');
+
+      // Fecha distinta
+      const agendaDiferente = (await service.obtenerClasesPorSede(
+        1,
+        '2026-10-26',
+      )) as ClaseAgendaResponseDto[];
+      expect(agendaDiferente).toHaveLength(0);
     });
   });
 
