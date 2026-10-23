@@ -18,6 +18,20 @@ export type MetricaOcupacionAgrupadaPorSede = {
 
 type SedeDelPago = { id_sede: number; nombre: string };
 
+type ConteosDeOcupacion = Omit<
+  MetricaOcupacionAgrupadaPorSede,
+  'id_sede' | 'nombre_sede'
+>;
+
+/** Estado de reserva que cuenta para la ocupación (se compara sin mayúsculas). */
+const ESTADO_RESERVA_CONFIRMADA = 'confirmada';
+
+const sinConteos = (): ConteosDeOcupacion => ({
+  total_asistencias: 0,
+  total_reservas_canchas: 0,
+  total_reservas_clases: 0,
+});
+
 @Injectable()
 export class ReportesRepository {
   constructor(private readonly prismaService: PrismaService) {}
@@ -118,66 +132,137 @@ export class ReportesRepository {
     return [...totalesPorSede.values()].sort((a, b) => a.id_sede - b.id_sede);
   }
 
+  /**
+   * Asistencias y reservas confirmadas de canchas y clases dentro de
+   * [fechaDesde, fechaHastaExclusiva), por sede. Solo devuelve sedes con
+   * actividad en el período; las métricas sin datos valen 0.
+   *
+   * Los conteos se hacen en la base con groupBy: asistencias por id_sede
+   * (registro_accesos tiene la sede) y reservas por id_cancha / id_clase,
+   * que luego se traducen a su sede. Ver ADR-018.
+   */
   async obtenerMetricasOcupacionPorSede(
     fechaDesde: Date,
     fechaHastaExclusiva: Date,
     idSede?: number,
   ): Promise<MetricaOcupacionAgrupadaPorSede[]> {
-    const filtroSede = idSede
-      ? Prisma.sql`AND s.id_sede = ${idSede}`
-      : Prisma.empty;
+    const rango = { gte: fechaDesde, lt: fechaHastaExclusiva };
+    const estadoConfirmada = {
+      descripcion: {
+        equals: ESTADO_RESERVA_CONFIRMADA,
+        mode: Prisma.QueryMode.insensitive,
+      },
+    };
+    const filtrarPorSede = idSede !== undefined;
 
-    return this.prismaService.$queryRaw<MetricaOcupacionAgrupadaPorSede[]>(
-      Prisma.sql`
-        WITH asistencias AS (
-          SELECT ra.id_sede, COUNT(*)::int AS total_asistencias
-          FROM registro_accesos ra
-          INNER JOIN sede s ON s.id_sede = ra.id_sede
-          WHERE ra.fecha_ingreso >= ${fechaDesde}
-            AND ra.fecha_ingreso < ${fechaHastaExclusiva}
-            ${filtroSede}
-          GROUP BY ra.id_sede
-        ),
-        reservas_canchas AS (
-          SELECT c.id_sede, COUNT(*)::int AS total_reservas_canchas
-          FROM cancha_reserva cr
-          INNER JOIN cancha c ON c.id_cancha = cr.id_cancha
-          INNER JOIN sede s ON s.id_sede = c.id_sede
-          INNER JOIN cancha_reserva_estado cre
-            ON cre.id_cancha_reserva_estado = cr.id_cancha_reserva_estado
-          WHERE cr.fecha_inicio >= ${fechaDesde}
-            AND cr.fecha_inicio < ${fechaHastaExclusiva}
-            AND LOWER(cre.descripcion) = 'confirmada'
-            ${filtroSede}
-          GROUP BY c.id_sede
-        ),
-        reservas_clases AS (
-          SELECT c.id_sede, COUNT(*)::int AS total_reservas_clases
-          FROM clase_reserva cr
-          INNER JOIN clase c ON c.id_clase = cr.id_clase
-          INNER JOIN sede s ON s.id_sede = c.id_sede
-          INNER JOIN clase_reserva_estado cre
-            ON cre.id_clase_reserva_estado = cr.id_clase_reserva_estado
-          WHERE cr.fecha_inicio >= ${fechaDesde}
-            AND cr.fecha_inicio < ${fechaHastaExclusiva}
-            AND LOWER(cre.descripcion) = 'confirmada'
-            ${filtroSede}
-          GROUP BY c.id_sede
-        )
-        SELECT
-          s.id_sede,
-          s.nombre AS nombre_sede,
-          COALESCE(a.total_asistencias, 0)::int AS total_asistencias,
-          COALESCE(rc.total_reservas_canchas, 0)::int AS total_reservas_canchas,
-          COALESCE(rcl.total_reservas_clases, 0)::int AS total_reservas_clases
-        FROM sede s
-        LEFT JOIN asistencias a ON a.id_sede = s.id_sede
-        LEFT JOIN reservas_canchas rc ON rc.id_sede = s.id_sede
-        LEFT JOIN reservas_clases rcl ON rcl.id_sede = s.id_sede
-        WHERE (a.id_sede IS NOT NULL OR rc.id_sede IS NOT NULL OR rcl.id_sede IS NOT NULL)
-          ${filtroSede}
-        ORDER BY s.id_sede
-      `,
-    );
+    const [asistencias, reservasCanchas, reservasClases] = await Promise.all([
+      this.prismaService.registroAcceso.groupBy({
+        by: ['id_sede'],
+        where: {
+          fecha_ingreso: rango,
+          ...(filtrarPorSede ? { id_sede: idSede } : {}),
+        },
+        _count: { _all: true },
+      }),
+      this.prismaService.canchaReserva.groupBy({
+        by: ['id_cancha'],
+        where: {
+          fecha_inicio: rango,
+          cancha_reserva_estado: estadoConfirmada,
+          ...(filtrarPorSede ? { cancha: { id_sede: idSede } } : {}),
+        },
+        _count: { _all: true },
+      }),
+      this.prismaService.claseReserva.groupBy({
+        by: ['id_clase'],
+        where: {
+          fecha_inicio: rango,
+          clase_reserva_estado: estadoConfirmada,
+          ...(filtrarPorSede ? { clase: { id_sede: idSede } } : {}),
+        },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const [sedeDeCancha, sedeDeClase] = await Promise.all([
+      this.obtenerSedesDeCanchas(reservasCanchas.map((r) => r.id_cancha)),
+      this.obtenerSedesDeClases(reservasClases.map((r) => r.id_clase)),
+    ]);
+
+    const conteosPorSede = new Map<number, ConteosDeOcupacion>();
+    const sumar = (
+      idSedeDelConteo: number | undefined,
+      metrica: keyof ConteosDeOcupacion,
+      cantidad: number,
+    ): void => {
+      if (idSedeDelConteo === undefined) {
+        return;
+      }
+      const conteos = conteosPorSede.get(idSedeDelConteo) ?? sinConteos();
+      conteos[metrica] += cantidad;
+      conteosPorSede.set(idSedeDelConteo, conteos);
+    };
+
+    for (const fila of asistencias) {
+      sumar(fila.id_sede, 'total_asistencias', fila._count._all);
+    }
+    for (const fila of reservasCanchas) {
+      sumar(
+        sedeDeCancha.get(fila.id_cancha),
+        'total_reservas_canchas',
+        fila._count._all,
+      );
+    }
+    for (const fila of reservasClases) {
+      sumar(
+        sedeDeClase.get(fila.id_clase),
+        'total_reservas_clases',
+        fila._count._all,
+      );
+    }
+
+    if (conteosPorSede.size === 0) {
+      return [];
+    }
+
+    const sedes = await this.prismaService.sede.findMany({
+      where: { id_sede: { in: [...conteosPorSede.keys()] } },
+      select: { id_sede: true, nombre: true },
+      orderBy: { id_sede: 'asc' },
+    });
+
+    return sedes.map((sede) => ({
+      id_sede: sede.id_sede,
+      nombre_sede: sede.nombre,
+      ...(conteosPorSede.get(sede.id_sede) ?? sinConteos()),
+    }));
+  }
+
+  /** id_cancha → id_sede de las canchas indicadas. */
+  private async obtenerSedesDeCanchas(
+    idsCanchas: number[],
+  ): Promise<Map<number, number>> {
+    if (idsCanchas.length === 0) {
+      return new Map();
+    }
+    const canchas = await this.prismaService.cancha.findMany({
+      where: { id_cancha: { in: idsCanchas } },
+      select: { id_cancha: true, id_sede: true },
+    });
+    return new Map(canchas.map((cancha) => [cancha.id_cancha, cancha.id_sede]));
+  }
+
+  /** id_clase → id_sede de las clases indicadas. */
+  private async obtenerSedesDeClases(
+    idsClases: number[],
+  ): Promise<Map<number, number>> {
+    if (idsClases.length === 0) {
+      return new Map();
+    }
+    const clases = await this.prismaService.clase.findMany({
+      where: { id_clase: { in: idsClases } },
+      select: { id_clase: true, id_sede: true },
+    });
+    return new Map(clases.map((clase) => [clase.id_clase, clase.id_sede]));
   }
 }
