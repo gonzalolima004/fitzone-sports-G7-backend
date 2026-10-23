@@ -6,6 +6,7 @@ import {
 import { CanchasRepository } from '../repositories/canchas.repository';
 import { CrearCanchaDto } from '../dto/crear-cancha.dto';
 import { ActualizarCanchaDto } from '../dto/actualizar-cancha.dto';
+import { ActualizarTipoCanchaDto } from '../dto/actualizar-tipo-cancha.dto';
 import { ReservasCanchasRepository } from '../repositories/reservas-canchas.repository';
 import {
   DisponibilidadSlotResponseDto,
@@ -45,8 +46,60 @@ export class CanchasService {
     return await this.canchasRepository.obtenerTodasActivas(sedeId);
   }
 
-  async listarTiposCancha() {
-    return await this.canchasRepository.obtenerTiposCancha();
+  async listarTiposCancha(inactivos?: boolean) {
+    return await this.canchasRepository.obtenerTiposCancha(inactivos);
+  }
+
+  async crearTipoCancha(descripcion: string) {
+    const descripcionLimpia = descripcion?.trim();
+    if (!descripcionLimpia) {
+      throw new BadRequestException(
+        'La descripción del tipo de cancha es obligatoria.',
+      );
+    }
+    return await this.canchasRepository.crearTipoCancha(descripcionLimpia);
+  }
+
+  async actualizarTipoCancha(id: number, dto: ActualizarTipoCanchaDto) {
+    const tipoValido = await this.canchasRepository.existeTipoCancha(id);
+    if (!tipoValido) {
+      throw new NotFoundException(`El tipo de cancha con ID ${id} no existe.`);
+    }
+
+    if (dto.descripcion !== undefined) {
+      const descripcionLimpia = dto.descripcion.trim();
+      if (!descripcionLimpia) {
+        throw new BadRequestException(
+          'La descripción del tipo de cancha no puede estar vacía.',
+        );
+      }
+      dto.descripcion = descripcionLimpia;
+    }
+
+    if (dto.descripcion === undefined && dto.activo === undefined) {
+      throw new BadRequestException(
+        'Debe enviar al menos un campo para actualizar (descripción o activo).',
+      );
+    }
+
+    return await this.canchasRepository.actualizarTipoCancha(id, dto);
+  }
+
+  async eliminarTipoCancha(id: number) {
+    const tipoValido = await this.canchasRepository.existeTipoCancha(id);
+    if (!tipoValido) {
+      throw new NotFoundException(`El tipo de cancha con ID ${id} no existe.`);
+    }
+
+    const canchasActivas =
+      await this.canchasRepository.contarCanchasActivasPorTipo(id);
+    if (canchasActivas > 0) {
+      throw new BadRequestException(
+        `No es posible dar de baja el tipo de cancha porque tiene ${canchasActivas} cancha(s) activa(s) asociada(s).`,
+      );
+    }
+
+    return await this.canchasRepository.borradoLogicoTipoCancha(id);
   }
 
   async obtenerCancha(id: number) {
