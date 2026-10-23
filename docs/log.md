@@ -1032,8 +1032,38 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - `fix(usuarios): hacer contrasenia y foto_url opcionales en CreateUsuarioDto`
 - `feat(usuarios): omitir hasheo si la contraseña es delegada a Supabase`
 - `feat(auth): agregar endpoint /auth/me para verificar existencia de perfil local`
+
+---
+
+#### 23/10/2026
+
+#### Matías Sillen | Rol: Desarrollador Backend
+
+- **Actividades:**
+- Implementación de pruebas unitarias para `AuthService` utilizando Jest, cubriendo flujos de inicio de sesión local exitosos, credenciales inválidas y asignación de roles por defecto.
+- Creación de pruebas de integración HTTP con Supertest para validar el comportamiento real de `ValidationPipe` sobre `CreateUsuarioDto`, verificando transformaciones, regex de DNI y reglas de negocio.
+- Refactorización de `AuthService`, extrayendo la validación de credenciales contra la base de datos y la comprobación con `bcrypt` a un método privado independiente (`validateLocalUser`).
+- Refactorización de `UsuariosService`, aislando la lógica de hasheo de contraseñas (para registros de administrador) y la asignación de placeholder (para Supabase) en el método privado `generatePasswordHash`.
+
+- **Decisiones:**
+- Levantar un controlador efímero (dummy) en la suite de pruebas de integración del DTO para poder golpear el pipeline HTTP real de NestJS sin depender de los endpoints de los controladores productivos.
+- Aplicar el Principio de Responsabilidad Única (SRP) en los servicios, separando de forma clara la validación de identidad en la base de datos de la emisión y firmado de tokens JWT.
+
+- **Dificultades:**
+- Estructurar los mocks del repositorio `UsuariosRepository` y dependencias externas como `bcrypt` de forma estrictamente tipada en Jest para cumplir con la regla de no utilizar `any` en las pruebas unitarias.
+
+- **Commits:**
+- `test(auth): agregar pruebas unitarias de Auth Service`
+- `test(users): cubrir validaciones del DTO de creación mediante ValidationPipe`
+- `refactor(auth): separar validacion de credenciales en AuthService`
+- `refactor(users): aislar logica de hasheo de contraseñas de la creacion base`
+
+---
+
 #### 22/10/2026
+
 #### Marcos Caraballo | Rol: Desarrollador Frontend
+
 - **Actividades**:
   - Actualización de los DTOs para crear y actualizar canchas, incorporando el atributo booleano opcional `disponible`.
 - **Decisiones**:
@@ -1044,6 +1074,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - `docs(log): actualizacion de bitacora`
 
 ---
+
 #### 21/10/2026
 
 #### Joaquín Ribarola | Rol: Desarrollador Backend

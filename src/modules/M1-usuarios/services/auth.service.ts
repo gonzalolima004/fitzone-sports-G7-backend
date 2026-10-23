@@ -14,36 +14,43 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(dto: LoginDto) {
-    // 1. Buscar usuario por email (el repositorio incluye las relaciones)
-    const usuario: UsuarioConRoles | null =
-      await this.usuariosRepository.findByEmail(dto.email);
+  /**
+   * Extrae la responsabilidad de verificar contra base de datos
+   * y desencriptar usando bcrypt.
+   */
+  private async validateLocalUser(
+    email: string,
+    pass: string,
+  ): Promise<UsuarioConRoles> {
+    const usuario = await this.usuariosRepository.findByEmail(email);
 
     if (!usuario) {
       throw new UnauthorizedException('Credenciales incorrectas');
     }
 
-    // 2. Verificar que la contraseña coincida con el hash de la base de datos
-    const isPasswordValid = await bcrypt.compare(
-      dto.password,
-      usuario.password,
-    );
-
+    const isPasswordValid = await bcrypt.compare(pass, usuario.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credenciales incorrectas');
     }
 
-    // 3. Extraer el rol (asumimos el primer rol de la relación, o 'socio' por defecto)
+    return usuario;
+  }
+
+  async login(dto: LoginDto) {
+    // 1. Validar usuario y obtener entidad real
+    const usuario = await this.validateLocalUser(dto.email, dto.password);
+
+    // 2. Extraer el rol primario o fallback
     const rol: string = usuario.usuario_rol?.[0]?.rol?.nombre ?? 'socio';
 
-    // 4. Armar el payload del JWT
+    // 3. Armar el payload
     const payload = {
       sub: usuario.id_usuario,
       email: usuario.email,
       rol: rol,
     };
 
-    // 5. Retornar los datos con la estructura que configuramos en Vue
+    // 4. Retornar sesión JWT y DTO del usuario
     return {
       token: this.jwtService.sign(payload),
       usuario: {
