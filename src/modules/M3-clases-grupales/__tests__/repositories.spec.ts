@@ -82,6 +82,29 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
       expect(res.id_clase).toBe(1);
     });
 
+    it('crearClase debe convertir fecha string a Date si está presente', async () => {
+      const data: CreateClaseDto = {
+        id_sede: 1,
+        nombre: 'Masterclass Yoga',
+        capacidad_maxima: 20,
+        fecha: '2026-10-25',
+        dias_semana: [0],
+      };
+      mockPrisma.clase.create.mockResolvedValue({ id_clase: 10, ...data });
+
+      await repo.crearClase(data);
+
+      expect(mockPrisma.clase.create).toHaveBeenCalledWith({
+        data: {
+          id_sede: 1,
+          nombre: 'Masterclass Yoga',
+          capacidad_maxima: 20,
+          dias_semana: [0],
+          fecha: new Date('2026-10-25'),
+        },
+      });
+    });
+
     it('obtenerClasesPorSede debe filtrar por id_sede y activo: true', async () => {
       mockPrisma.clase.findMany.mockResolvedValue([{ id_clase: 1 }]);
 

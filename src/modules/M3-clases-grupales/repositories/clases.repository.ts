@@ -9,8 +9,14 @@ export class ClasesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async crearClase(data: CreateClaseDto) {
+    const { fecha, ...resto } = data;
     return await this.prisma.clase.create({
-      data,
+      data: {
+        ...resto,
+        ...(fecha !== undefined
+          ? { fecha: fecha ? new Date(fecha) : null }
+          : {}),
+      },
     });
   }
 
@@ -32,20 +38,32 @@ export class ClasesRepository {
   }
 
   async actualizarClase(id_clase: number, data: UpdateClaseDto) {
+    const { fecha, ...resto } = data;
     return await this.prisma.clase.update({
       where: {
         id_clase,
       },
-      data,
+      data: {
+        ...resto,
+        ...(fecha !== undefined
+          ? { fecha: fecha ? new Date(fecha) : null }
+          : {}),
+      },
     });
   }
 
   async reemplazarClase(id_clase: number, data: CreateClaseDto) {
+    const { fecha, ...resto } = data;
     return await this.prisma.clase.update({
       where: {
         id_clase,
       },
-      data,
+      data: {
+        ...resto,
+        ...(fecha !== undefined
+          ? { fecha: fecha ? new Date(fecha) : null }
+          : {}),
+      },
     });
   }
 

@@ -92,4 +92,25 @@ export class ClaseAgendaResponseDto {
     enum: ['DISPONIBLE', 'COMPLETO'],
   })
   estado: 'DISPONIBLE' | 'COMPLETO';
+
+  @ApiProperty({
+    description:
+      'Días de la semana en los que se dicta la clase (0 = Domingo, 1 = Lunes, ..., 6 = Sábado)',
+    example: [1, 3, 5],
+    type: [Number],
+  })
+  dias_semana: number[];
+
+  @ApiPropertyOptional({
+    description:
+      'Fecha puntual de la clase en formato YYYY-MM-DD (para clases de única edición o eventos especiales)',
+    example: '2026-10-25',
+  })
+  fecha?: string | null;
+
+  @ApiProperty({
+    description: 'Indica si la clase está activa',
+    example: true,
+  })
+  activo: boolean;
 }

@@ -9,6 +9,7 @@ import { ClaseResponseDto } from '../dto/clase-response.dto';
 import { ClaseAgendaResponseDto } from '../dto/clase-agenda-response.dto';
 import { EliminarClaseResponseDto } from '../dto/eliminar-clase-response.dto';
 import {
+  claseAplicaEnFecha,
   crearFechaArgentina,
   normalizarHorarioHHmm,
   obtenerFechaHoyArgentina,
@@ -34,11 +35,19 @@ export class ClasesService {
       sala?: string | null;
       horario_inicio?: string | null;
       horario_fin?: string | null;
+      dias_semana?: number[];
+      fecha?: Date | string | null;
       activo: boolean;
     },
     fechaBase?: string,
   ): ClaseResponseDto {
-    const fechaRef = fechaBase || obtenerFechaHoyArgentina();
+    const fechaPuntualStr = clase.fecha
+      ? clase.fecha instanceof Date
+        ? clase.fecha.toISOString().slice(0, 10)
+        : String(clase.fecha).slice(0, 10)
+      : null;
+
+    const fechaRef = fechaBase || fechaPuntualStr || obtenerFechaHoyArgentina();
     const horarioInicio = normalizarHorarioHHmm(clase.horario_inicio, '09:00');
     const horarioFin = normalizarHorarioHHmm(clase.horario_fin, '10:00');
 
@@ -57,6 +66,8 @@ export class ClasesService {
       horario_fin: horarioFin,
       fecha_inicio: fechaInicioDate.toISOString(),
       fecha_fin: fechaFinDate.toISOString(),
+      dias_semana: clase.dias_semana ?? [],
+      fecha: fechaPuntualStr,
       activo: clase.activo,
     };
   }
@@ -76,9 +87,14 @@ export class ClasesService {
       return clases.map((clase) => this.formatearClaseResponse(clase));
     }
 
-    // Si se envía fecha (YYYY-MM-DD), calculamos la agenda del día con ocupación real:
+    // Filtrar únicamente las clases que se dictan en la fecha o día consultado
+    const clasesFiltradas = clases.filter((clase) =>
+      claseAplicaEnFecha(clase, fecha),
+    );
+
+    // Calculamos la agenda del día con ocupación real para las clases que aplican en esa fecha:
     const agenda: ClaseAgendaResponseDto[] = await Promise.all(
-      clases.map(async (clase) => {
+      clasesFiltradas.map(async (clase) => {
         const horaInicioStr = normalizarHorarioHHmm(
           clase.horario_inicio,
           '09:00',
@@ -109,6 +125,12 @@ export class ClasesService {
         const estado: 'DISPONIBLE' | 'COMPLETO' =
           cuposDisponibles > 0 ? 'DISPONIBLE' : 'COMPLETO';
 
+        const fechaPuntualStr = clase.fecha
+          ? clase.fecha instanceof Date
+            ? clase.fecha.toISOString().slice(0, 10)
+            : String(clase.fecha).slice(0, 10)
+          : null;
+
         return {
           id_clase: clase.id_clase,
           id_sede: clase.id_sede,
@@ -125,6 +147,9 @@ export class ClasesService {
           cupos_disponibles: cuposDisponibles,
           en_espera: enEspera,
           estado,
+          dias_semana: clase.dias_semana ?? [],
+          fecha: fechaPuntualStr,
+          activo: clase.activo,
         };
       }),
     );

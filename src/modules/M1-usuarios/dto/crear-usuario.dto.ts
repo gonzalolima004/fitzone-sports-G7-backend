@@ -11,6 +11,15 @@ import {
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
+const capitalizarPalabras = (value: unknown): unknown => {
+  if (typeof value !== 'string') return value;
+
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 export class CreateUsuarioDto {
   @ApiProperty({ example: '43434343', description: 'DNI del usuario' })
   @IsString()
@@ -34,13 +43,14 @@ export class CreateUsuarioDto {
 
   @ApiProperty({
     example: 'Password123',
-    description: 'Contraseña del usuario',
+    description: 'Contraseña del usuario (Opcional si la gestiona Supabase)',
+    required: false,
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'La contraseña no puede estar vacía' })
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   @MaxLength(16, { message: 'La contraseña debe tener menos de 16 caracteres' })
-  contrasenia: string;
+  contrasenia?: string;
 
   @ApiProperty({ example: 'Juan', description: 'Nombre del usuario' })
   @IsString()
@@ -60,34 +70,29 @@ export class CreateUsuarioDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'El teléfono no puede estar vacío' })
-  //@IsPhoneNumber("AR", { message: 'El teléfono debe ser un número de teléfono válido' }) no va por ahora
   telefono: string;
 
   @ApiProperty({
     example: 'https://example.com/foto.jpg',
-    description: 'URL de la foto del usuario',
+    description: 'URL de la foto del usuario (Opcional)',
+    required: false,
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'La URL de la foto no puede estar vacía' })
-  foto_url: string;
+  foto_url?: string;
 
   @ApiProperty({ example: '1', description: 'ID de la sede del usuario' })
   @IsNotEmpty()
   @IsString()
   id_sede: string;
 
-  @ApiProperty({ example: [1, 2], description: 'IDs de los roles del usuario' })
+  @ApiProperty({
+    example: [1, 2],
+    description: 'IDs de los roles del usuario',
+    required: false,
+  })
   @IsOptional()
   @IsArray()
   @IsNumber({}, { each: true })
   roles?: number[];
 }
-
-const capitalizarPalabras = (value: unknown): unknown => {
-  if (typeof value !== 'string') return value;
-
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-};

@@ -935,7 +935,9 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `docs(log): actualizacion de bitacora`
 
 ---
+
 #### 20/10/2026
+
 #### Joaquín Ribarola | Rol: Desarrollador Backend
 
 - **Actividades:**
@@ -1012,8 +1014,56 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 17/10/2026 - 22/10/2026
+
+#### Matías Sillen | Rol: Desarrollador Backend
+
+- **Actividades:**
+- Desarrollo del endpoint proactivo `GET /auth/me` para la validación cruzada de existencia de perfil local de usuarios provenientes de Identity Providers externos (Google).
+
+- **Decisiones:**
+- Delegar la gestión de la identidad y contraseñas completamente a Supabase, manteniendo en la base de datos local de PostgreSQL únicamente los datos de negocio requeridos por FitZone (DNI, Sede, Teléfono).
+- Descartar intervenciones sobre los errores de tipo `P1017` (ConnectionClosed) de Prisma, asumiendo el comportamiento natural del Hot-Reload de NestJS en entornos de desarrollo local.
+
+- **Dificultades:**
+- Resolución de conflictos de integridad referencial (claves foráneas) en PostgreSQL al intentar eliminar usuarios de prueba manualmente para depurar el flujo de Google OAuth. Se optó por el uso de `prisma studio` y `prisma migrate reset` para mantener el entorno de desarrollo consistente.
+
+- **Commits:**
+- `fix(usuarios): hacer contrasenia y foto_url opcionales en CreateUsuarioDto`
+- `feat(usuarios): omitir hasheo si la contraseña es delegada a Supabase`
+- `feat(auth): agregar endpoint /auth/me para verificar existencia de perfil local`
+
+---
+
+#### 23/10/2026
+
+#### Matías Sillen | Rol: Desarrollador Backend
+
+- **Actividades:**
+- Implementación de pruebas unitarias para `AuthService` utilizando Jest, cubriendo flujos de inicio de sesión local exitosos, credenciales inválidas y asignación de roles por defecto.
+- Creación de pruebas de integración HTTP con Supertest para validar el comportamiento real de `ValidationPipe` sobre `CreateUsuarioDto`, verificando transformaciones, regex de DNI y reglas de negocio.
+- Refactorización de `AuthService`, extrayendo la validación de credenciales contra la base de datos y la comprobación con `bcrypt` a un método privado independiente (`validateLocalUser`).
+- Refactorización de `UsuariosService`, aislando la lógica de hasheo de contraseñas (para registros de administrador) y la asignación de placeholder (para Supabase) en el método privado `generatePasswordHash`.
+
+- **Decisiones:**
+- Levantar un controlador efímero (dummy) en la suite de pruebas de integración del DTO para poder golpear el pipeline HTTP real de NestJS sin depender de los endpoints de los controladores productivos.
+- Aplicar el Principio de Responsabilidad Única (SRP) en los servicios, separando de forma clara la validación de identidad en la base de datos de la emisión y firmado de tokens JWT.
+
+- **Dificultades:**
+- Estructurar los mocks del repositorio `UsuariosRepository` y dependencias externas como `bcrypt` de forma estrictamente tipada en Jest para cumplir con la regla de no utilizar `any` en las pruebas unitarias.
+
+- **Commits:**
+- `test(auth): agregar pruebas unitarias de Auth Service`
+- `test(users): cubrir validaciones del DTO de creación mediante ValidationPipe`
+- `refactor(auth): separar validacion de credenciales en AuthService`
+- `refactor(users): aislar logica de hasheo de contraseñas de la creacion base`
+
+---
+
 #### 22/10/2026
+
 #### Marcos Caraballo | Rol: Desarrollador Frontend
+
 - **Actividades**:
   - Actualización de los DTOs para crear y actualizar canchas, incorporando el atributo booleano opcional `disponible`.
 - **Decisiones**:
@@ -1051,3 +1101,25 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `docs(log): actualizacion de bitacora`
 
 ---
+#### 21/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación de la rama de trabajo `feature/clases-dias-semana`.
+  - Corrección de la asignación indiscriminada de clases a todos los días de la semana:
+    - Modificación del modelo `Clase` en `prisma/schema.prisma` incorporando `dias_semana Int[] @default([])` y `fecha DateTime? @db.Date`.
+    - Sincronización exitosa con la base de datos PostgreSQL de Supabase mediante `npx prisma db push` y regeneración del cliente con `npx prisma generate`.
+    - Ampliación de utilidades en `date-time.util.ts`: incorporación de `obtenerDiaSemana` (estandarizado de 0 = Domingo a 6 = Sábado) y `claseAplicaEnFecha` para evaluar coincidencia de fecha puntual o días de la semana con fallback a clases legacy sin restricciones.
+    - Actualización de los DTOs `CreateClaseDto`, `UpdateClaseDto`, `ClaseResponseDto` y `ClaseAgendaResponseDto` para recibir y exponer `dias_semana: number[]`, `fecha?: string | null` y `activo: boolean`.
+    - Adaptación de `ClasesRepository` gestionando la conversión transparente de fechas de entrada en formato string a objetos `Date` requeridos por Prisma.
+    - Refactorización de `ClasesService.obtenerClasesPorSede` para filtrar únicamente las clases aplicables al día de la semana o fecha específica consultada al solicitar la agenda.
+    - Blindaje de consistencia en `ReservasClasesService.crearReserva` y `ListaEsperaService.inscribir`: rechazo preventivo (`BadRequestException`) cuando un socio intenta reservar o solicitar lista de espera para un día o fecha en que la clase no se dicta.
+    - Ampliación y robustecimiento de la suite de pruebas unitarias (`date-time.util.spec.ts`, `clases.service.spec.ts`, `reservas-clases.service.spec.ts`, `lista-espera.service.spec.ts`, `repositories.spec.ts`, `clases.controller.spec.ts`), alcanzando **16 suites y 120 pruebas unitarias pasando al 100%**.
+- **Decisiones:**
+  - Emplear un array de enteros nativo de PostgreSQL (`dias_semana Int[]`) estandarizado con la convención del proyecto (0 = Domingo a 6 = Sábado) junto con un campo opcional `fecha` para soportar tanto clases semanales recurrentes (ej. lunes, miércoles y viernes) como clases o masterclasses de fecha única.
+  - Asegurar la compatibilidad hacia atrás en consultas y reservas de clases ya existentes en la base de datos mediante la lógica de fallback de `claseAplicaEnFecha`.
+- **Dificultades:**
+  - Prevenir que socios pudieran generar reservas huérfanas en días donde la clase no está programada, resuelto reutilizando la misma regla de aplicación temporal tanto en la grilla diaria como en el servicio transaccional de reservas y lista de espera.
+- **Commits:**
+  - `feat(clases): implementar dias_semana y fecha para programacion de clases y filtrado de agenda`

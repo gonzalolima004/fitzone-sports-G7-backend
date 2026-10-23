@@ -60,6 +60,39 @@ describe('ListaEsperaService', () => {
       );
     });
 
+    it('debe lanzar BadRequestException si la clase no se dicta en el día de la solicitud', async () => {
+      const fechaInicio = new Date(Date.now() + 3600000);
+      const fechaFin = new Date(Date.now() + 7200000);
+      const fechaStr = fechaInicio.toISOString().slice(0, 10);
+      const diaSemana = new Date(
+        Date.UTC(
+          Number(fechaStr.slice(0, 4)),
+          Number(fechaStr.slice(5, 7)) - 1,
+          Number(fechaStr.slice(8, 10)),
+          12,
+          0,
+          0,
+        ),
+      ).getUTCDay();
+      const diasDistintos = [(diaSemana + 1) % 7, (diaSemana + 2) % 7];
+
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue({
+        ...mockClase,
+        dias_semana: diasDistintos,
+        fecha: null,
+      });
+
+      const dto: InscribirListaEsperaDto = {
+        id_clase: 1,
+        fecha_inicio: fechaInicio.toISOString(),
+        fecha_fin: fechaFin.toISOString(),
+      };
+
+      await expect(service.inscribir(dto, idUsuario)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it('debe lanzar BadRequestException si las fechas son inválidas', async () => {
       (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
         mockClase,
