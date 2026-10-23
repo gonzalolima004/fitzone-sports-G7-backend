@@ -3,7 +3,10 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { UsuariosRepository } from '../repositories/usuarios.repository';
+import {
+  UsuariosRepository,
+  UsuarioConRoles,
+} from '../repositories/usuarios.repository';
 import { Prisma, Usuario } from '@prisma/client';
 import { ActualizarUsuarioDto } from '../dto/actualizar-usuario.dto';
 import { CreateUsuarioDto } from '../dto/crear-usuario.dto';
@@ -32,10 +35,11 @@ export class UsuariosService {
       );
     }
 
-    const passwordHasheada = await bcrypt.hash(
-      dto.contrasenia,
-      this.SALT_ROUNDS,
-    );
+    // Si viene contraseña (ej. desde un admin interno), la hasheamos.
+    // Si no viene (porque el frontend usó Supabase Auth), guardamos un identificador ciego.
+    const passwordHasheada = dto.contrasenia
+      ? await bcrypt.hash(dto.contrasenia, this.SALT_ROUNDS)
+      : 'SUPABASE_MANAGED_AUTH';
 
     //NOTA: Debe coincidir con el correcto en la base.
     const ID_ESTADO_ACTIVO = 1;
@@ -47,7 +51,7 @@ export class UsuariosService {
       nombre: dto.nombre,
       apellido: dto.apellido,
       telefono: dto.telefono,
-      foto_url: dto.foto_url,
+      foto_url: dto.foto_url || null, // Guardamos nulo si no subió foto
       sede: { connect: { id_sede: Number(dto.id_sede) } },
       qr_url: null,
       ...(dto.roles && dto.roles.length > 0
@@ -70,6 +74,7 @@ export class UsuariosService {
     const usuarios = await this.repository.findAll(id_sede);
     return plainToInstance(UsuarioResponseDto, usuarios);
   }
+
   async findById(id: number): Promise<UsuarioResponseDto> {
     const user = await this.repository.findById(id);
     if (!user)
@@ -83,6 +88,10 @@ export class UsuariosService {
     if (!user) throw new NotFoundException('Usuario con email no encontrado');
 
     return plainToInstance(UsuarioResponseDto, user);
+  }
+
+  async findEntityByEmail(email: string): Promise<UsuarioConRoles | null> {
+    return await this.repository.findByEmail(email);
   }
 
   async update(

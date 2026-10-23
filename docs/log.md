@@ -741,7 +741,6 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
 - Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
 
-
 - **Decisiones:**
 - Utilizar la clave `service_role` de Supabase a través del archivo `.env` del servidor. Esto permite que NestJS actúe con privilegios de administrador para subir los archivos al Storage, sorteando las políticas RLS sin comprometer la seguridad pública de la base de datos.
 
@@ -835,6 +834,8 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   - `feat(pagos): endpoint de pagos pendientes y correccion de auth guard`
 
+---
+
 #### 13/10/2026
 
 #### Marcos Caraballo | Rol: Desarrollador Frontend y Backend
@@ -898,8 +899,10 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 #### Facundo Agüero | Rol: Team Leader
 
-* **Commits:**
-* `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`#### 14/10/2026
+- **Commits:**
+- `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
+
+#### 14/10/2026
 
 #### Angelina Vialle | Rol: Backend Developer
 
@@ -911,3 +914,155 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Cambie send por httpSend porque se iba a quedar obsoleto
 - **Dificultades:** Ninguna.
 - **Commits:** `feat(M2-M1): arreglos`
+
+---
+
+#### 20/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Diseño e implementación de endpoint para consulta de disponibilidad masiva por sede (GET /canchas/disponibilidad con parametros sede y fecha ), optimizando la entrega para la grilla horaria para todas las canchas activas en una sola petición.
+  - Implementación de endpoint de consulta individual de reserva por identificador (GET /reservas-canchas/:id), permitiendo recuperar la entidad con sus relaciones completas (cancha, sede, cancha_tipo, cancha_reserva_estado) para el flujo de confirmación y pago.
+  - Refactorización y desacoplamiento del cálculo de tarifas: aseguramiento de congruencia entre la cotización del backend y la información consumida por el cliente.
+- **Decisiones:**
+  - Priorizar la reutilización de los métodos de repositorio y cálculo existentes sin alterar métodos innecesariamente, ni la estabilidad de las funcionalidades ya utilizadas por el resto del equipo.
+  - Mantener el endpoint unitario por cancha (GET /canchas/:id/disponibilidad) para chequeos puntuales y añadir el endpoint en lote para optimizar las vistas de grilla general.
+- **Dificultades:**
+  - Falta de endpoints necesarios, lo que justifica esta serie de modificaciones.
+- **Commits:**
+  - `feat(M4): nuevos endpoints para reserva canchas y disponibilidad por sede y cancha`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
+#### 20/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del CRUD completo de clases grupales en el módulo M3 (`POST`, `GET`, `GET :id`, `PATCH`, `PUT` y `DELETE`).
+  - Creación del endpoint `DELETE /clases/:id` con baja lógica (`activo: false`) y cancelación preventiva atómica en base de datos de las reservas activas y cupos en espera a futuro.
+  - Implementación del endpoint `PUT /clases/:id` para reemplazo idempotente total de datos de una clase grupal.
+  - Creación del decorador de metadatos `@Roles()` y del guardia de autorización `RolesGuard` (`roles.guard.ts`) con soporte de validación case-insensitive.
+  - Actualización de `SupabaseAuthGuard` e interfaz `AuthenticatedUser` para poblar dinámicamente `rol` y `roles` tanto desde el JWT emitido localmente por FitZone como en el fallback de Supabase Auth con relaciones de roles de base de datos.
+  - Protección de todos los endpoints mutadores (`POST`, `PUT`, `PATCH`, `DELETE`) de `/clases` restringiéndolos exclusivamente a usuarios con roles `admin` o `gerente`.
+  - Creación del script ejecutable e idempotente de seed para usuario Gerente (`src/database/seeds/gerente.seed.ts`) con contraseña hasheada en `bcryptjs`, asignación de `rol: "gerente"` y vinculación a sede activa por defecto (`id_sede: 1`).
+  - Incorporación del comando `npm run seed:gerente` y configuración de `prisma.seed` en `package.json`.
+  - Creación de suites de pruebas unitarias exhaustivas para `ClasesService`, `ClasesController`, `RolesGuard` y `SupabaseAuthGuard` alcanzando 46/46 pruebas exitosas.
+- **Decisiones:**
+  - Emplear baja lógica en clases para mantener la integridad referencial histórica de asistencias, pagos y auditorías.
+  - Cancelar automáticamente en una transacción las reservas a futuro vinculadas al dar de baja una clase para proteger a los socios y notificar el conteo en `EliminarClaseResponseDto`.
+  - Asegurar la idempotencia del seed de Gerente permitiendo reejecutarlo sin duplicar usuarios ni corromper llaves únicas de DNI o email.
+- **Dificultades:**
+  - Necesidad de asegurar compatibilidad del cliente de Prisma v7 con `@prisma/adapter-pg` dentro del script de seed aislado, resuelta instanciando el pool de conexión con el adaptador correspondiente.
+- **Commits:**
+  - `feat(clases): implementar crud completo con seguridad de roles y seed de gerente`
+
+---
+
+#### 20/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación de la utilidad centralizada de fechas y zona horaria `date-time.util.ts` (`TIMEZONE_ARGENTINA_OFFSET = '-03:00'`, `crearFechaArgentina`, `normalizarHorarioHHmm`, `obtenerRangoDiaArgentina`, `obtenerFechaHoyArgentina`).
+  - Estandarización de los DTOs de salida (`ClaseAgendaResponseDto`, `ClaseResponseDto`) para exponer consistentemente `fecha_inicio` y `fecha_fin` en formato ISO 8601 estricto (`.toISOString()`), y `horario_inicio` y `horario_fin` en formato `HH:mm`.
+  - Eliminación del desfase de 3 horas por concatenación manual de sufijo `Z` (UTC) en los servicios `ClasesService`, `ReservasClasesService` y `ListaEsperaService`, garantizando la correcta persistencia y cálculo de ocupación respecto al huso horario oficial de Argentina.
+  - Tipado estricto de retornos en `ClasesController` (`Promise<ClaseResponseDto>`, `Promise<ClaseResponseDto[] | ClaseAgendaResponseDto[]>`).
+  - Creación de pruebas unitarias exhaustivas en `date-time.util.spec.ts` y ampliación de tests en `clases.service.spec.ts` y `clases.controller.spec.ts` con cobertura al 100% (52 pruebas unitarias pasando).
+- **Decisiones:**
+  - Exponer tanto los horarios habituales de clase en formato `HH:mm` como los timestamps calculados `fecha_inicio` y `fecha_fin` en ISO 8601 en todas las variantes de consulta del catálogo (`ClaseResponseDto`) y de la agenda diaria (`ClaseAgendaResponseDto`).
+  - Centralizar toda operación de fecha del módulo en `date-time.util.ts` para evitar duplicación y discrepancias entre módulos.
+- **Dificultades:**
+  - Desfase de zona horaria histórico producido por tratar la hora local argentina como UTC mediante sufijo `Z`, resuelto aplicando explícitamente el offset `-03:00` en la creación de fechas.
+- **Commits:**
+  - `feat(clases): estandarizar fechas iso 8601 y horarios hh:mm en dtos de clases y reservas`
+
+---
+
+#### 20/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación de la rama de trabajo `feature/clases-testing`.
+  - Refactorización de `ReservasClasesService`:
+    - Incorporación de validación estricta de fechas (`isNaN`, `fechaFin > fechaInicio`).
+    - Conexión transaccional y reasignación automática de vacantes vinculando `clase_lista_espera` con `clase_reserva` al cancelar una reserva, con soporte de fallback a `clase_reserva` con estado 2.
+    - Notificación en tiempo real al observador de Supabase con el socio promovido.
+  - Refactorización de `ListaEsperaService`:
+    - Validación cronológica de fechas de inicio y fin, previniendo inscripciones a clases pasadas o con rangos invertidos.
+  - Refactorización de `ListaEsperaRepository`:
+    - Incorporación de soporte transaccional (`tx?: Prisma.TransactionClient`).
+    - Creación de métodos `obtenerPrimerInscriptoActivo` y `actualizarEstadoInscripcion` para procesamiento atómico de colas.
+  - Creación de suites de pruebas unitarias exhaustivas con cobertura del 100% de sentencias en todo el módulo M3 (`src/modules/M3-clases-grupales/__tests__/`):
+    - `reservas-clases.service.spec.ts` (18 tests: validación 48h, mora RN-03, superposiciones, capacidad, cancelaciones, penalidad, promociones y consultas).
+    - `lista-espera.service.spec.ts` (8 tests: clases inexistentes, validaciones temporales, duplicados, clases no agotadas, orden en cola).
+    - `reservas-clases.controller.spec.ts` (3 tests: `mis-reservas`, `crearReserva`, `cancelarReserva`).
+    - `lista-espera.controller.spec.ts` (2 tests: `mis-inscripciones`, `inscribir`).
+    - `repositories.spec.ts` (16 tests para `ClasesRepository`, `ReservasClasesRepository` y `ListaEsperaRepository`).
+    - `observer.spec.ts` (5 tests para `ListaEsperaSubject` y `NotificacionRealtimeObserver`).
+  - Total de pruebas unitarias del backend elevadas a **16 suites pasando y 109 pruebas exitosas** (100% de cobertura en M3).
+- **Decisiones:**
+  - Priorizar la reasignación automática de cupos desde la tabla oficial `clase_lista_espera` creando la reserva confirmada correspondiente y actualizando el estado de la solicitud en lista de espera, manteniendo compatibilidad hacia atrás.
+  - Asegurar tipado riguroso en mocks de pruebas sin recurrir al tipo `any`, cumpliendo con las reglas más estrictas de ESLint.
+- **Dificultades:**
+  - Desconexión previa entre la tabla `clase_lista_espera` (usada en inscripciones) y la lógica de cancelación en `clase_reserva`, resuelta unificando la búsqueda y promoviendo atómicamente al primer inscripto de la cola.
+- **Commits:**
+  - `test(clases): suites unitarias para servicios, controladores, repositorios y observer de m3`
+
+---
+
+#### 17/10/2026 - 22/10/2026
+
+#### Matías Sillen | Rol: Desarrollador Backend
+
+- **Actividades:**
+- Desarrollo del endpoint proactivo `GET /auth/me` para la validación cruzada de existencia de perfil local de usuarios provenientes de Identity Providers externos (Google).
+
+- **Decisiones:**
+- Delegar la gestión de la identidad y contraseñas completamente a Supabase, manteniendo en la base de datos local de PostgreSQL únicamente los datos de negocio requeridos por FitZone (DNI, Sede, Teléfono).
+- Descartar intervenciones sobre los errores de tipo `P1017` (ConnectionClosed) de Prisma, asumiendo el comportamiento natural del Hot-Reload de NestJS en entornos de desarrollo local.
+
+- **Dificultades:**
+- Resolución de conflictos de integridad referencial (claves foráneas) en PostgreSQL al intentar eliminar usuarios de prueba manualmente para depurar el flujo de Google OAuth. Se optó por el uso de `prisma studio` y `prisma migrate reset` para mantener el entorno de desarrollo consistente.
+
+- **Commits:**
+- `fix(usuarios): hacer contrasenia y foto_url opcionales en CreateUsuarioDto`
+- `feat(usuarios): omitir hasheo si la contraseña es delegada a Supabase`
+- `feat(auth): agregar endpoint /auth/me para verificar existencia de perfil local`
+#### 22/10/2026
+#### Marcos Caraballo | Rol: Desarrollador Frontend
+- **Actividades**:
+  - Actualización de los DTOs para crear y actualizar canchas, incorporando el atributo booleano opcional `disponible`.
+- **Decisiones**:
+  - Incorporar `disponible` en los DTOs de creación y actualización para permitir definir la disponibilidad operativa de la cancha desde su alta o modificarla puntualmente según necesidades de la sede.
+- **Dificultades**: Ninguna
+- **Commits:**
+- `feat(M4): incorporar atributo disponible en dts para su modificacion`
+- `docs(log): actualizacion de bitacora`
+
+---
+#### 21/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación de la rama de trabajo `feature/clases-dias-semana`.
+  - Corrección de la asignación indiscriminada de clases a todos los días de la semana:
+    - Modificación del modelo `Clase` en `prisma/schema.prisma` incorporando `dias_semana Int[] @default([])` y `fecha DateTime? @db.Date`.
+    - Sincronización exitosa con la base de datos PostgreSQL de Supabase mediante `npx prisma db push` y regeneración del cliente con `npx prisma generate`.
+    - Ampliación de utilidades en `date-time.util.ts`: incorporación de `obtenerDiaSemana` (estandarizado de 0 = Domingo a 6 = Sábado) y `claseAplicaEnFecha` para evaluar coincidencia de fecha puntual o días de la semana con fallback a clases legacy sin restricciones.
+    - Actualización de los DTOs `CreateClaseDto`, `UpdateClaseDto`, `ClaseResponseDto` y `ClaseAgendaResponseDto` para recibir y exponer `dias_semana: number[]`, `fecha?: string | null` y `activo: boolean`.
+    - Adaptación de `ClasesRepository` gestionando la conversión transparente de fechas de entrada en formato string a objetos `Date` requeridos por Prisma.
+    - Refactorización de `ClasesService.obtenerClasesPorSede` para filtrar únicamente las clases aplicables al día de la semana o fecha específica consultada al solicitar la agenda.
+    - Blindaje de consistencia en `ReservasClasesService.crearReserva` y `ListaEsperaService.inscribir`: rechazo preventivo (`BadRequestException`) cuando un socio intenta reservar o solicitar lista de espera para un día o fecha en que la clase no se dicta.
+    - Ampliación y robustecimiento de la suite de pruebas unitarias (`date-time.util.spec.ts`, `clases.service.spec.ts`, `reservas-clases.service.spec.ts`, `lista-espera.service.spec.ts`, `repositories.spec.ts`, `clases.controller.spec.ts`), alcanzando **16 suites y 120 pruebas unitarias pasando al 100%**.
+- **Decisiones:**
+  - Emplear un array de enteros nativo de PostgreSQL (`dias_semana Int[]`) estandarizado con la convención del proyecto (0 = Domingo a 6 = Sábado) junto con un campo opcional `fecha` para soportar tanto clases semanales recurrentes (ej. lunes, miércoles y viernes) como clases o masterclasses de fecha única.
+  - Asegurar la compatibilidad hacia atrás en consultas y reservas de clases ya existentes en la base de datos mediante la lógica de fallback de `claseAplicaEnFecha`.
+- **Dificultades:**
+  - Prevenir que socios pudieran generar reservas huérfanas en días donde la clase no está programada, resuelto reutilizando la misma regla de aplicación temporal tanto en la grilla diaria como en el servicio transaccional de reservas y lista de espera.
+- **Commits:**
+  - `feat(clases): implementar dias_semana y fecha para programacion de clases y filtrado de agenda`

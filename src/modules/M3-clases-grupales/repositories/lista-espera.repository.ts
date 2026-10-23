@@ -11,8 +11,10 @@ export class ListaEsperaRepository {
     id_usuario: number,
     fecha_inicio: Date,
     fecha_fin: Date,
+    tx?: Prisma.TransactionClient,
   ) {
-    return await this.prisma.claseListaEspera.create({
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseListaEspera.create({
       data: {
         id_clase,
         id_usuario,
@@ -28,8 +30,10 @@ export class ListaEsperaRepository {
     id_usuario: number,
     fecha_inicio: Date,
     fecha_fin: Date,
+    tx?: Prisma.TransactionClient,
   ) {
-    return await this.prisma.claseListaEspera.findFirst({
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseListaEspera.findFirst({
       where: {
         id_clase,
         id_usuario,
@@ -44,14 +48,48 @@ export class ListaEsperaRepository {
     id_clase: number,
     fecha_inicio: Date,
     fecha_fin: Date,
+    tx?: Prisma.TransactionClient,
   ): Promise<number> {
-    return await this.prisma.claseListaEspera.count({
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseListaEspera.count({
       where: {
         id_clase,
         fecha_inicio,
         fecha_fin,
         id_clase_lista_espera_estado: 1, // En espera
       },
+    });
+  }
+
+  async obtenerPrimerInscriptoActivo(
+    id_clase: number,
+    fecha_inicio: Date,
+    fecha_fin: Date,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseListaEspera.findFirst({
+      where: {
+        id_clase,
+        fecha_inicio,
+        fecha_fin,
+        id_clase_lista_espera_estado: 1, // En espera
+      },
+      orderBy: {
+        id_clase_lista_espera: 'asc',
+      },
+    });
+  }
+
+  async actualizarEstadoInscripcion(
+    id_clase_lista_espera: number,
+    id_estado: number,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseListaEspera.update({
+      where: { id_clase_lista_espera },
+      data: { id_clase_lista_espera_estado: id_estado },
     });
   }
 
