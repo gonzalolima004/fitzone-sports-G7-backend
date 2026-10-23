@@ -6,7 +6,10 @@ import {
   IsString,
   MaxLength,
   Min,
+  Max,
   IsBoolean,
+  IsArray,
+  IsDateString,
 } from 'class-validator';
 
 export class CreateClaseDto {
@@ -88,6 +91,28 @@ export class CreateClaseDto {
   @IsOptional()
   @MaxLength(10)
   horario_fin?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Días de la semana en los que se dicta la clase (0 = Domingo, 1 = Lunes, ..., 6 = Sábado)',
+    example: [1, 3, 5],
+    type: [Number],
+  })
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  @IsOptional()
+  dias_semana?: number[];
+
+  @ApiPropertyOptional({
+    description:
+      'Fecha puntual de la clase en formato YYYY-MM-DD (para clases de única edición o eventos especiales)',
+    example: '2026-10-25',
+  })
+  @IsDateString()
+  @IsOptional()
+  fecha?: string;
 
   @ApiPropertyOptional({
     description: 'Indica si la clase está activa para recibir reservas',

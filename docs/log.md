@@ -935,7 +935,9 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `docs(log): actualizacion de bitacora`
 
 ---
+
 #### 20/10/2026
+
 #### Joaquín Ribarola | Rol: Desarrollador Backend
 
 - **Actividades:**
@@ -1024,3 +1026,25 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - `docs(log): actualizacion de bitacora`
 
 ---
+#### 21/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación de la rama de trabajo `feature/clases-dias-semana`.
+  - Corrección de la asignación indiscriminada de clases a todos los días de la semana:
+    - Modificación del modelo `Clase` en `prisma/schema.prisma` incorporando `dias_semana Int[] @default([])` y `fecha DateTime? @db.Date`.
+    - Sincronización exitosa con la base de datos PostgreSQL de Supabase mediante `npx prisma db push` y regeneración del cliente con `npx prisma generate`.
+    - Ampliación de utilidades en `date-time.util.ts`: incorporación de `obtenerDiaSemana` (estandarizado de 0 = Domingo a 6 = Sábado) y `claseAplicaEnFecha` para evaluar coincidencia de fecha puntual o días de la semana con fallback a clases legacy sin restricciones.
+    - Actualización de los DTOs `CreateClaseDto`, `UpdateClaseDto`, `ClaseResponseDto` y `ClaseAgendaResponseDto` para recibir y exponer `dias_semana: number[]`, `fecha?: string | null` y `activo: boolean`.
+    - Adaptación de `ClasesRepository` gestionando la conversión transparente de fechas de entrada en formato string a objetos `Date` requeridos por Prisma.
+    - Refactorización de `ClasesService.obtenerClasesPorSede` para filtrar únicamente las clases aplicables al día de la semana o fecha específica consultada al solicitar la agenda.
+    - Blindaje de consistencia en `ReservasClasesService.crearReserva` y `ListaEsperaService.inscribir`: rechazo preventivo (`BadRequestException`) cuando un socio intenta reservar o solicitar lista de espera para un día o fecha en que la clase no se dicta.
+    - Ampliación y robustecimiento de la suite de pruebas unitarias (`date-time.util.spec.ts`, `clases.service.spec.ts`, `reservas-clases.service.spec.ts`, `lista-espera.service.spec.ts`, `repositories.spec.ts`, `clases.controller.spec.ts`), alcanzando **16 suites y 120 pruebas unitarias pasando al 100%**.
+- **Decisiones:**
+  - Emplear un array de enteros nativo de PostgreSQL (`dias_semana Int[]`) estandarizado con la convención del proyecto (0 = Domingo a 6 = Sábado) junto con un campo opcional `fecha` para soportar tanto clases semanales recurrentes (ej. lunes, miércoles y viernes) como clases o masterclasses de fecha única.
+  - Asegurar la compatibilidad hacia atrás en consultas y reservas de clases ya existentes en la base de datos mediante la lógica de fallback de `claseAplicaEnFecha`.
+- **Dificultades:**
+  - Prevenir que socios pudieran generar reservas huérfanas en días donde la clase no está programada, resuelto reutilizando la misma regla de aplicación temporal tanto en la grilla diaria como en el servicio transaccional de reservas y lista de espera.
+- **Commits:**
+  - `feat(clases): implementar dias_semana y fecha para programacion de clases y filtrado de agenda`
