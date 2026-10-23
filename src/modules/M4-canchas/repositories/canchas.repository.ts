@@ -123,7 +123,7 @@ export class CanchasRepository {
     // Descomentar la llamada a Prisma cuando el campo 'activo' exista en cancha_tipo:
     return this.prisma.canchaTipo.update({
       where: { id_cancha_tipo },
-      data: { activo: false } as unknown as Prisma.CanchaTipoUpdateInput,
+      data: { activo: false },
     });
   }
 }

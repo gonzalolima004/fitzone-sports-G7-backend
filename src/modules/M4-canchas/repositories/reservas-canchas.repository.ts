@@ -34,20 +34,20 @@ export class ReservasCanchasRepository {
     });
   }
   async obtenerReservasPorCanchasYFecha(
-  idsCanchas: number[],
-  inicioDia: Date,
-  finDia: Date,
-): Promise<CanchaReserva[]> {
-  if (idsCanchas.length === 0) return [];
+    idsCanchas: number[],
+    inicioDia: Date,
+    finDia: Date,
+  ): Promise<CanchaReserva[]> {
+    if (idsCanchas.length === 0) return [];
 
-  return this.prisma.canchaReserva.findMany({
-    where: {
-      id_cancha: { in: idsCanchas },
-      fecha_inicio: { gte: inicioDia },
-      fecha_fin: { lte: finDia },
-    },
-  });
-}
+    return this.prisma.canchaReserva.findMany({
+      where: {
+        id_cancha: { in: idsCanchas },
+        fecha_inicio: { gte: inicioDia },
+        fecha_fin: { lte: finDia },
+      },
+    });
+  }
 
   async obtenerMantenimientosPorCanchasYFecha(
     idsCanchas: number[],
