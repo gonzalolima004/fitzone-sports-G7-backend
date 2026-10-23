@@ -1,10 +1,12 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
   IsNumber,
   IsPositive,
   MaxLength,
+  IsBoolean,
+  IsOptional,
 } from 'class-validator';
 
 export class CrearCanchaDto {
@@ -37,4 +39,12 @@ export class CrearCanchaDto {
   @IsNumber()
   @IsPositive()
   id_sede: number;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Indica si la cancha está disponible para reservas',
+  })
+  @IsBoolean()
+  @IsOptional()
+  disponible?: boolean;
 }
