@@ -1014,6 +1014,24 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 17/10/2026 - 22/10/2026
+
+#### Matías Sillen | Rol: Desarrollador Backend
+
+- **Actividades:**
+- Desarrollo del endpoint proactivo `GET /auth/me` para la validación cruzada de existencia de perfil local de usuarios provenientes de Identity Providers externos (Google).
+
+- **Decisiones:**
+- Delegar la gestión de la identidad y contraseñas completamente a Supabase, manteniendo en la base de datos local de PostgreSQL únicamente los datos de negocio requeridos por FitZone (DNI, Sede, Teléfono).
+- Descartar intervenciones sobre los errores de tipo `P1017` (ConnectionClosed) de Prisma, asumiendo el comportamiento natural del Hot-Reload de NestJS en entornos de desarrollo local.
+
+- **Dificultades:**
+- Resolución de conflictos de integridad referencial (claves foráneas) en PostgreSQL al intentar eliminar usuarios de prueba manualmente para depurar el flujo de Google OAuth. Se optó por el uso de `prisma studio` y `prisma migrate reset` para mantener el entorno de desarrollo consistente.
+
+- **Commits:**
+- `fix(usuarios): hacer contrasenia y foto_url opcionales en CreateUsuarioDto`
+- `feat(usuarios): omitir hasheo si la contraseña es delegada a Supabase`
+- `feat(auth): agregar endpoint /auth/me para verificar existencia de perfil local`
 #### 22/10/2026
 #### Marcos Caraballo | Rol: Desarrollador Frontend
 - **Actividades**:
