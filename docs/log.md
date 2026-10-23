@@ -1031,3 +1031,4 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
 - `fix(usuarios): hacer contrasenia y foto_url opcionales en CreateUsuarioDto`
 - `feat(usuarios): omitir hasheo si la contraseña es delegada a Supabase`
+- `feat(auth): agregar endpoint /auth/me para verificar existencia de perfil local`
