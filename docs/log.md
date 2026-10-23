@@ -1029,5 +1029,5 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - Resolución de conflictos de integridad referencial (claves foráneas) en PostgreSQL al intentar eliminar usuarios de prueba manualmente para depurar el flujo de Google OAuth. Se optó por el uso de `prisma studio` y `prisma migrate reset` para mantener el entorno de desarrollo consistente.
 
 - **Commits:**
-- `feat(auth): agregar endpoint /auth/me para verificar existencia de perfil local`
-- `feat(roles): extender acceso en decoradores @Roles para incluir autorizaciones de gerente`
+- `fix(usuarios): hacer contrasenia y foto_url opcionales en CreateUsuarioDto`
+- `feat(usuarios): omitir hasheo si la contraseña es delegada a Supabase`
