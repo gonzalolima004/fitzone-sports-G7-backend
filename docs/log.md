@@ -1014,6 +1014,18 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 22/10/2026
+#### Marcos Caraballo | Rol: Desarrollador Frontend
+- **Actividades**:
+  - Actualización de los DTOs para crear y actualizar canchas, incorporando el atributo booleano opcional `disponible`.
+- **Decisiones**:
+  - Incorporar `disponible` en los DTOs de creación y actualización para permitir definir la disponibilidad operativa de la cancha desde su alta o modificarla puntualmente según necesidades de la sede.
+- **Dificultades**: Ninguna
+- **Commits:**
+- `feat(M4): incorporar atributo disponible en dts para su modificacion`
+- `docs(log): actualizacion de bitacora`
+
+---
 #### 21/10/2026
 
 #### Joaquín Ribarola | Rol: Desarrollador Backend
