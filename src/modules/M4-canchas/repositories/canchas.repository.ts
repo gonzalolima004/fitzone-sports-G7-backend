@@ -7,12 +7,6 @@ import {
   CanchaTipo,
 } from '@prisma/client';
 
-export type CanchaConRelaciones = Prisma.CanchaGetPayload<{
-  include: {
-    sede: true;
-    cancha_tipo: true;
-  };
-}>;
 /**
  * PATRÓN REPOSITORY: Centraliza y encapsula todas las consultas a la base de datos
  * para la entidad Cancha. La lógica de negocio (Service) no debe conocer detalles de Prisma.
@@ -28,13 +22,14 @@ export class CanchasRepository {
   }
 
   async obtenerTodasActivas(sedeId?: number): Promise<Cancha[]> {
-    return this.prisma.cancha.findMany({
+    const temp = await this.prisma.cancha.findMany({
       where: { activo: true, ...(sedeId ? { id_sede: sedeId } : {}) },
       include: {
         sede: true,
         cancha_tipo: true,
       },
     });
+    return temp;
   }
 
   async obtenerTiposCancha(inactivos?: boolean): Promise<CanchaTipo[]> {

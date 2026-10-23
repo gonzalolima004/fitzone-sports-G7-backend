@@ -72,6 +72,9 @@ export class SedeService {
     ) {
       throw new BadRequestException('La fecha no existe en el calendario.');
     }
+
+    const diaSemana = fechaValidada.getUTCDay();
+    /*
     // Validar que la sede exista
     await this.findById(id_sede);
 
@@ -79,12 +82,12 @@ export class SedeService {
     const [year, month, day] = fechaStr.split('-').map(Number);
     const fechaDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
     const diaSemana = fechaDate.getUTCDay(); // 0: Domingo, 1: Lunes, ..., 6: Sábado
-
+  */
     const { excepcion, horarioBase } =
       await this.sedeRepository.findHorarioOperativo(
         id_sede,
         diaSemana,
-        fechaDate,
+        fechaValidada,
       );
 
     // Caso 1: Excepción en el Calendario (Feriado o Cierre extraordinario)
