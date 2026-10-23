@@ -8,6 +8,7 @@ import {
   Delete,
   ParseIntPipe,
   Query,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CanchasService } from '../services/canchas.service';
@@ -15,6 +16,8 @@ import { CrearCanchaDto } from '../dto/crear-cancha.dto';
 import { ActualizarCanchaDto } from '../dto/actualizar-cancha.dto';
 import { DisponibilidadSlotResponseDto } from '../dto/disponibilidad-slot-response.dto';
 import { ConsultaDisponibilidadQueryDto } from '../dto/consulta-disponibilidad-query.dto';
+import { CrearTipoCanchaDto } from '../dto/crear-tipo-cancha.dto';
+import { ActualizarTipoCanchaDto } from '../dto/actualizar-tipo-cancha.dto';
 
 @ApiTags('Canchas Deportivas')
 @Controller('canchas')
@@ -47,12 +50,59 @@ export class CanchasController {
 
   @Get('tipos')
   @ApiOperation({ summary: 'Listar todos los tipos de deportes disponibles' })
+  @ApiQuery({
+    name: 'inactivos',
+    required: false,
+    type: Boolean,
+    description: 'Indica si se deben incluir los tipos de cancha inactivos',
+  })
   @ApiResponse({
     status: 200,
     description: 'Tipos de cancha obtenidos correctamente.',
   })
-  listarTipos() {
-    return this.canchasService.listarTiposCancha();
+  listarTipos(
+    @Query('inactivos', new ParseBoolPipe({ optional: true }))
+    inactivos?: boolean,
+  ) {
+    return this.canchasService.listarTiposCancha(inactivos);
+  }
+
+  @Post('tipos')
+  @ApiOperation({ summary: 'Crear un nuevo tipo de cancha' })
+  @ApiResponse({
+    status: 201,
+    description: 'Tipo de cancha creado exitosamente.',
+  })
+  crearTipo(@Body() dto: CrearTipoCanchaDto) {
+    return this.canchasService.crearTipoCancha(dto.descripcion);
+  }
+
+  @Patch('tipos/:id')
+  @ApiOperation({
+    summary: 'Actualizar un tipo de cancha existente',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tipo de cancha actualizado correctamente.',
+  })
+  actualizarTipo(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ActualizarTipoCanchaDto,
+  ) {
+    return this.canchasService.actualizarTipoCancha(id, dto);
+  }
+
+  @Delete('tipos/:id')
+  @ApiOperation({
+    summary:
+      'Realizar un borrado lógico del tipo de cancha verificando que no posea canchas activas',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tipo de cancha dado de baja correctamente.',
+  })
+  eliminarTipo(@Param('id', ParseIntPipe) id: number) {
+    return this.canchasService.eliminarTipoCancha(id);
   }
 
   @Get('disponibilidad')

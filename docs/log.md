@@ -1075,6 +1075,32 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 23/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del CRUD completo para tipos de cancha (`CanchaTipo`) en el módulo M4 (`POST /canchas/tipos`, `GET /canchas/tipos`, `PATCH /canchas/tipos/:id` y `DELETE /canchas/tipos/:id`).
+  - Creación de DTOs (`CrearTipoCanchaDto`, `ActualizarTipoCanchaDto`).
+  - Implementación de borrado lógico preventivo para tipos de cancha, validando que no existan canchas activas asociadas antes de permitir la baja.
+  - Optimización de rendimiento en el endpoint de disponibilidad masiva por sede (`GET /canchas/disponibilidad`), eliminando el problema de consultas redundantes.
+  - Reestructuración de consultas en paralelo mediante `Promise.all` y lectura por lote de reservas y mantenimientos del día para todas las canchas de la sede en una única consulta.
+  - Procesamiento y cálculo de la matriz de slots horarios (disponible, reservado, mantenimiento) en memoria mediante maps para acelerar el tiempo de respuesta.
+  - Optimización en `SedeService` y repositorios para la resolución de horarios operativos sin consultas redundantes.
+- **Decisiones:**
+  - Aplicar borrado lógico en `CanchaTipo` para preservar el historial referencial, impidiendo la baja si existen canchas activas que dependan de dicha disciplina.
+  - Permitir listar tipos inactivos opcionalmente mediante el query param `?inactivos=true`, manteniendo por defecto solo los activos para no alterar el comportamiento de cara al usuario final.
+  - Eliminar los cuellos de botella de red trayendo todas las reservas y mantenimientos de la sede en bloque y delegando el filtrado y armado de slots a la memoria RAM del servidor.
+- **Dificultades:**
+  - Tiempos de respuesta lentos en la consulta de grilla de disponibilidad debido a la ejecución de consultas repetitivas a la base de datos por cada cancha; resuelto agrupando las peticiones por lote y procesando los rangos en memoria.
+  - Dificultad para medir los tiempos de respuesta por problemas con el navegador; resuelto descargando uno diferente.
+- **Commits:**
+  - `feat(M4): Crud de cancha tipos funcionando`
+  - `refactor(M4): Optimizacion de consultas lentas en modulo de canchas`
+  - `chore(M4): formato con prettier`
+  - `docs(log): actualizacion de bitacora`
+
+---
 #### 21/10/2026
 
 #### Joaquín Ribarola | Rol: Desarrollador Backend
