@@ -3,7 +3,10 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { UsuariosRepository } from '../repositories/usuarios.repository';
+import {
+  UsuariosRepository,
+  UsuarioConRoles,
+} from '../repositories/usuarios.repository';
 import { Prisma, Usuario } from '@prisma/client';
 import { ActualizarUsuarioDto } from '../dto/actualizar-usuario.dto';
 import { CreateUsuarioDto } from '../dto/crear-usuario.dto';
@@ -85,6 +88,10 @@ export class UsuariosService {
     if (!user) throw new NotFoundException('Usuario con email no encontrado');
 
     return plainToInstance(UsuarioResponseDto, user);
+  }
+
+  async findEntityByEmail(email: string): Promise<UsuarioConRoles | null> {
+    return await this.repository.findByEmail(email);
   }
 
   async update(

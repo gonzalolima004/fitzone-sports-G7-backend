@@ -12,3 +12,4 @@ package
 skills-lock.json
 pnpm-workspace.yaml
 pnpm-lock.yaml
+coverage/

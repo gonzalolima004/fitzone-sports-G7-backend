@@ -55,6 +55,18 @@ export class CanchasController {
     return this.canchasService.listarTiposCancha();
   }
 
+  @Get('disponibilidad')
+  @ApiOperation({
+    summary:
+      'Consultar grilla horaria de todas las canchas de una sede (Opción A)',
+  })
+  obtenerDisponibilidadPorSede(
+    @Query('sedeId', ParseIntPipe) sedeId: number,
+    @Query('fecha') fecha: string,
+  ) {
+    return this.canchasService.obtenerDisponibilidadPorSede(sedeId, fecha);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener el detalle de una cancha específica' })
   obtener(@Param('id', ParseIntPipe) id: number) {

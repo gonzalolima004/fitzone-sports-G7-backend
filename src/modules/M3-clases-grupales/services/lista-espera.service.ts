@@ -7,6 +7,7 @@ import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { ClasesRepository } from '../repositories/clases.repository';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { InscribirListaEsperaDto } from '../dto/inscribir-lista-espera.dto';
+import { obtenerRangoDiaArgentina } from '../../../common/utils/date-time.util';
 
 @Injectable()
 export class ListaEsperaService {
@@ -25,6 +26,25 @@ export class ListaEsperaService {
     // Convertimos las fechas a Date si vienen como string
     const fechaInicio = new Date(data.fecha_inicio);
     const fechaFin = new Date(data.fecha_fin);
+    const ahora = new Date();
+
+    if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
+      throw new BadRequestException(
+        'Las fechas proporcionadas no son válidas.',
+      );
+    }
+
+    if (fechaFin <= fechaInicio) {
+      throw new BadRequestException(
+        'La fecha de fin debe ser posterior a la fecha de inicio.',
+      );
+    }
+
+    if (fechaInicio <= ahora) {
+      throw new BadRequestException(
+        'No se puede inscribir en lista de espera para una clase que ya comenzó.',
+      );
+    }
 
     // Verificamos si ya está inscripto
     const inscripcionExistente =
@@ -80,8 +100,9 @@ export class ListaEsperaService {
     let finDia: Date | undefined;
 
     if (fecha) {
-      inicioDia = new Date(`${fecha}T00:00:00.000Z`);
-      finDia = new Date(`${fecha}T23:59:59.999Z`);
+      const rango = obtenerRangoDiaArgentina(fecha);
+      inicioDia = rango.inicioDia;
+      finDia = rango.finDia;
     }
 
     const inscripciones =
@@ -105,8 +126,8 @@ export class ListaEsperaService {
           id_clase_lista_espera: inscripcion.id_clase_lista_espera,
           id_clase: inscripcion.id_clase,
           id_usuario: inscripcion.id_usuario,
-          fecha_inicio: inscripcion.fecha_inicio,
-          fecha_fin: inscripcion.fecha_fin,
+          fecha_inicio: inscripcion.fecha_inicio.toISOString(),
+          fecha_fin: inscripcion.fecha_fin.toISOString(),
           orden_en_cola: ordenEnCola,
           id_clase_lista_espera_estado:
             inscripcion.id_clase_lista_espera_estado,
