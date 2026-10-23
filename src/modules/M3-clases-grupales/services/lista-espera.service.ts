@@ -7,7 +7,10 @@ import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { ClasesRepository } from '../repositories/clases.repository';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { InscribirListaEsperaDto } from '../dto/inscribir-lista-espera.dto';
-import { obtenerRangoDiaArgentina } from '../../../common/utils/date-time.util';
+import {
+  claseAplicaEnFecha,
+  obtenerRangoDiaArgentina,
+} from '../../../common/utils/date-time.util';
 
 @Injectable()
 export class ListaEsperaService {
@@ -21,6 +24,13 @@ export class ListaEsperaService {
     const clase = await this.clasesRepository.obtenerClasePorId(data.id_clase);
     if (!clase) {
       throw new NotFoundException('La clase no existe.');
+    }
+
+    const fechaInscripcionStr = data.fecha_inicio.slice(0, 10);
+    if (!claseAplicaEnFecha(clase, fechaInscripcionStr)) {
+      throw new BadRequestException(
+        'La clase no se dicta en el día o fecha seleccionada.',
+      );
     }
 
     // Convertimos las fechas a Date si vienen como string

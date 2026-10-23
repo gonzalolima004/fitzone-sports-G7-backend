@@ -12,7 +12,10 @@ import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 import { ListaEsperaSubject } from '../patterns/observer/lista-espera.subject';
 import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
 import { Subject } from 'rxjs';
-import { obtenerRangoDiaArgentina } from '../../../common/utils/date-time.util';
+import {
+  claseAplicaEnFecha,
+  obtenerRangoDiaArgentina,
+} from '../../../common/utils/date-time.util';
 
 @Injectable()
 export class ReservasClasesService {
@@ -108,6 +111,13 @@ export class ReservasClasesService {
       if (!clase) {
         throw new NotFoundException(
           `La clase con ID ${data.id_clase} no existe.`,
+        );
+      }
+
+      const fechaReservaStr = data.fecha_inicio.slice(0, 10);
+      if (!claseAplicaEnFecha(clase, fechaReservaStr)) {
+        throw new BadRequestException(
+          'La clase no se dicta en el día o fecha seleccionada.',
         );
       }
 
