@@ -935,7 +935,9 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `docs(log): actualizacion de bitacora`
 
 ---
+
 #### 20/10/2026
+
 #### Joaquín Ribarola | Rol: Desarrollador Backend
 
 - **Actividades:**
@@ -1009,3 +1011,23 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Desconexión previa entre la tabla `clase_lista_espera` (usada en inscripciones) y la lógica de cancelación en `clase_reserva`, resuelta unificando la búsqueda y promoviendo atómicamente al primer inscripto de la cola.
 - **Commits:**
   - `test(clases): suites unitarias para servicios, controladores, repositorios y observer de m3`
+
+---
+
+#### 17/10/2026 - 22/10/2026
+
+#### Matías Sillen | Rol: Desarrollador Backend
+
+- **Actividades:**
+- Desarrollo del endpoint proactivo `GET /auth/me` para la validación cruzada de existencia de perfil local de usuarios provenientes de Identity Providers externos (Google).
+
+- **Decisiones:**
+- Delegar la gestión de la identidad y contraseñas completamente a Supabase, manteniendo en la base de datos local de PostgreSQL únicamente los datos de negocio requeridos por FitZone (DNI, Sede, Teléfono).
+- Descartar intervenciones sobre los errores de tipo `P1017` (ConnectionClosed) de Prisma, asumiendo el comportamiento natural del Hot-Reload de NestJS en entornos de desarrollo local.
+
+- **Dificultades:**
+- Resolución de conflictos de integridad referencial (claves foráneas) en PostgreSQL al intentar eliminar usuarios de prueba manualmente para depurar el flujo de Google OAuth. Se optó por el uso de `prisma studio` y `prisma migrate reset` para mantener el entorno de desarrollo consistente.
+
+- **Commits:**
+- `feat(auth): agregar endpoint /auth/me para verificar existencia de perfil local`
+- `feat(roles): extender acceso en decoradores @Roles para incluir autorizaciones de gerente`
