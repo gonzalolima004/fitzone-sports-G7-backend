@@ -22,9 +22,9 @@ import { SedesModule } from '../M0-sedes/sedes.module';
 
 @Module({
   controllers: [
+    MantenimientoController,
     CanchasController,
     ReservasCanchasController,
-    MantenimientoController,
   ],
   providers: [
     CanchasService,

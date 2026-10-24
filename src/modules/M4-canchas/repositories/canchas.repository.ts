@@ -93,6 +93,54 @@ export class CanchasRepository {
     });
   }
 
+  /**
+   * Obtiene la lista de mantenimientos aplicando filtros opcionales (sede, cancha y rango de fechas)
+   * de forma directa y optimizada en una sola consulta a la base de datos.
+   */
+  async obtenerMantenimientos(filtros: {
+    sedeId?: number;
+    canchaId?: number;
+    fechaInicio?: Date;
+    fechaFin?: Date;
+  }): Promise<CanchaMantenimiento[]> {
+    const where: Prisma.CanchaMantenimientoWhereInput = {};
+
+    if (filtros.canchaId) {
+      where.id_cancha = filtros.canchaId;
+    }
+
+    if (filtros.sedeId) {
+      where.cancha = {
+        id_sede: filtros.sedeId,
+      };
+    }
+
+    if (filtros.fechaInicio && filtros.fechaFin) {
+      // Solapamiento de rangos: inicia antes o durante fin de rango y finaliza después o durante inicio de rango
+      where.fecha_inicio = { lte: filtros.fechaFin };
+      where.fecha_fin = { gte: filtros.fechaInicio };
+    } else if (filtros.fechaInicio) {
+      where.fecha_fin = { gte: filtros.fechaInicio };
+    } else if (filtros.fechaFin) {
+      where.fecha_inicio = { lte: filtros.fechaFin };
+    }
+
+    return this.prisma.canchaMantenimiento.findMany({
+      where,
+      include: {
+        cancha: {
+          include: {
+            sede: true,
+            cancha_tipo: true,
+          },
+        },
+      },
+      orderBy: {
+        fecha_inicio: 'asc',
+      },
+    });
+  }
+
   async crearTipoCancha(descripcion: string): Promise<CanchaTipo> {
     return this.prisma.canchaTipo.create({
       data: { descripcion },
