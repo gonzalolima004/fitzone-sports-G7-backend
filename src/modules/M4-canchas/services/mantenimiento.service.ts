@@ -1,6 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CanchasRepository } from '../repositories/canchas.repository';
 import { CrearMantenimientoDto } from '../dto/crear-mantenimiento.dto';
+
+export interface FiltrosConsultaMantenimiento {
+  sedeId?: number;
+  canchaId?: number;
+  fechaInicio?: string;
+  fechaFin?: string;
+}
 
 @Injectable()
 export class MantenimientoService {
@@ -24,5 +35,68 @@ export class MantenimientoService {
     });
 
     return mantenimiento;
+  }
+
+  /**
+   * Obtiene la lista de mantenimientos aplicando filtros opcionales.
+   * Optimizado: realiza una única consulta en el repositorio sin consultas redundantes.
+   */
+  async obtenerMantenimientos(filtros: FiltrosConsultaMantenimiento) {
+    let fechaInicioDate: Date | undefined;
+    let fechaFinDate: Date | undefined;
+
+    if (
+      filtros.sedeId !== undefined &&
+      (isNaN(filtros.sedeId) || filtros.sedeId <= 0)
+    ) {
+      throw new BadRequestException(
+        'El ID de sede debe ser un número entero positivo.',
+      );
+    }
+
+    if (
+      filtros.canchaId !== undefined &&
+      (isNaN(filtros.canchaId) || filtros.canchaId <= 0)
+    ) {
+      throw new BadRequestException(
+        'El ID de cancha debe ser un número entero positivo.',
+      );
+    }
+
+    if (filtros.fechaInicio) {
+      fechaInicioDate = new Date(filtros.fechaInicio);
+      if (isNaN(fechaInicioDate.getTime())) {
+        throw new BadRequestException(
+          'El parámetro fechaInicio no es una fecha válida.',
+        );
+      }
+    }
+
+    if (filtros.fechaFin) {
+      // Si la fechaFin viene en formato YYYY-MM-DD sin hora, se extiende al final del día
+      fechaFinDate =
+        filtros.fechaFin.length === 10
+          ? new Date(`${filtros.fechaFin}T23:59:59.999Z`)
+          : new Date(filtros.fechaFin);
+
+      if (isNaN(fechaFinDate.getTime())) {
+        throw new BadRequestException(
+          'El parámetro fechaFin no es una fecha válida.',
+        );
+      }
+    }
+
+    if (fechaInicioDate && fechaFinDate && fechaInicioDate > fechaFinDate) {
+      throw new BadRequestException(
+        'La fechaInicio no puede ser posterior a fechaFin.',
+      );
+    }
+
+    return this.canchasRepository.obtenerMantenimientos({
+      sedeId: filtros.sedeId,
+      canchaId: filtros.canchaId,
+      fechaInicio: fechaInicioDate,
+      fechaFin: fechaFinDate,
+    });
   }
 }

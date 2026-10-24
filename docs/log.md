@@ -1123,3 +1123,21 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Prevenir que socios pudieran generar reservas huérfanas en días donde la clase no está programada, resuelto reutilizando la misma regla de aplicación temporal tanto en la grilla diaria como en el servicio transaccional de reservas y lista de espera.
 - **Commits:**
   - `feat(clases): implementar dias_semana y fecha para programacion de clases y filtrado de agenda`
+
+---
+
+#### 24/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del endpoint de consulta y listado de mantenimientos de canchas (`GET /canchas/mantenimientos`) en el módulo M4.
+  - Soporte de filtros opcionales en el endpoint: por sede (`sedeId`), por cancha (`canchaId`) y por rango de fechas (`fechaInicio` y `fechaFin`).
+  - Implementación de validaciones en `MantenimientoService` para validar que los IDs sean enteros positivos y que el rango cronológico sea coherente (`BadRequestException`).
+  - Normalización automática de fechas: soporte de formato `YYYY-MM-DD` extendiendo `fechaFin` al final del día (`23:59:59.999Z`) para abarcar la jornada completa.
+  - Integración en `CanchasRepository` mediante una consulta optimizada que obtiene los mantenimientos junto con sus relaciones (`cancha`, `sede` y `cancha_tipo`) en una única operación.
+- **Decisiones:** Ninguna
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M4): metodos para crud de mantenimiento`
+  - `docs(log): actualizacion de bitacora`
