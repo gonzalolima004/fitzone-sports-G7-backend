@@ -1126,6 +1126,38 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 25/10/2026
+
+#### Angelina Vialle | Rol: Desarrolladora Backend || Tech Lead
+
+**Actividades:**
+
+- **Módulo M1 (Usuarios):**
+  - Ajuste en `CreateUsuarioDto`: tipado estricto y transformación de `id_sede` a número entero (`@Type(() => Number)` e `@IsInt()`), e incorporación del campo opcional `id_usuario_estado` con su validación correspondiente.
+  - Refactorización de `UsuarioResponseDto`: uso de `@Transform` con `class-transformer` para mapear la relación relacional `usuario_rol` de Prisma y exponer los objetos de roles completos (`id_rol` y `nombre`) en vez de solo IDs numéricos, junto con la exposición completa de la información de la `sede`.
+  - Actualización de `UsuariosRepository.findAll`: inclusión de relaciones (`usuario_rol` con detalle de `rol`, `usuario_estado` y `sede`) para recuperar la información completa de los usuarios en una sola consulta.
+  - Mejora en `UsuariosService.actualizarUsuario`: soporte para vincular entidades relacionadas en Prisma mediante `connect` (`sede`, `usuario_estado`) y actualización/reemplazo controlado de roles asociados (`usuario_rol`).
+
+- **Módulo M2 (Accesos y Aforo Realtime):**
+  - Limpieza de código y estandarización en `AccesosController`, `QrController` y `AccesosService`: remoción de `console.log` de depuración y simplificación de mensajes y descripciones en Swagger y excepciones de conflicto.
+  - Manejo preventivo de excepciones en `AccesosRepository`: adición de bloque `try/catch` con log de error en `obtenerAforoMaximoSede` ante fallos de conexión o lectura en la base de datos.
+  - Disparo de notificación de aforo en tiempo real (`notificarCambioAforo`) tras registrar un ingreso en `AccesosService`.
+  - Reestructuración de `AforoRealtimeService`: estabilización de la emisión vía Supabase Realtime Broadcast mediante suscripción explícita al canal (`channel.subscribe`), envío del evento `aforo_actualizado` una vez confirmado el estado `SUBSCRIBED`, y cierre controlado del canal (`client.removeChannel`) tras un retardo temporizado para evitar conexiones colgadas y fugas de memoria.
+
+**Decisiones:**
+- Mapear las relaciones completas de roles y sede directamente en `UsuarioResponseDto` y `UsuariosRepository` para proveer toda la información necesaria al frontend en una única petición sin sobrecargar la red con consultas adicionales.
+- Utilizar conexiones explícitas (`connect`) y reemplazo transaccional en la actualización de roles en `UsuariosService` para preservar la integridad referencial en Prisma.
+- Sincronizar el canal de Supabase Realtime esperando el evento de confirmación de suscripción antes de emitir el broadcast y liberarlo con un retardo controlado (500 ms) para asegurar la entrega efectiva del mensaje sin dejar suscripciones activas en memoria.
+
+**Dificultades:**
+- Asegurar la entrega confiable de los eventos Realtime de Supabase sin dejar suscripciones activas ni conexiones huérfanas en el backend de NestJS; resuelto controlando la suscripción y el cierre temporizado del canal.
+- Compatibilizar la estructura relacional de `usuario_rol` de Prisma con el formato de roles consumido por el frontend en `UsuarioResponseDto`.
+
+**Commits:**
+- `feat(M1): Cambios para obtener los usuarios con sus respectivos datos, actualizar datos de usuario y crear usuarios`
+- `feat(M2): quitar console.log, mensajes, mejora de obtener aforo`
+- `feat(M2): arreglos en aforo realtime para que funcione correctamente`
+- `docs(log): actualizar bitacora`
 #### 24/10/2026
 
 #### Marcos Caraballo | Rol: Desarrollador Backend

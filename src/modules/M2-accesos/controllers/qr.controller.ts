@@ -48,7 +48,6 @@ export class QrController {
     @CurrentUser() user: AuthenticatedUser,
     @Query('id_usuario', ParseIntPipe) idUsuarioQuery?: number,
   ): QrDinamicoResponseDto {
-    console.log('user', user);
     const idUsuario = user?.id_usuario ?? idUsuarioQuery;
     return this.qrService.generarQrDinamico(idUsuario);
   }

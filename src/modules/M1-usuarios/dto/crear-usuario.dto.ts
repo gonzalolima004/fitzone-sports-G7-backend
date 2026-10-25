@@ -7,9 +7,11 @@ import {
   IsNumber,
   MinLength,
   MaxLength,
+  IsInt,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 const capitalizarPalabras = (value: unknown): unknown => {
   if (typeof value !== 'string') return value;
@@ -82,9 +84,10 @@ export class CreateUsuarioDto {
   foto_url?: string;
 
   @ApiProperty({ example: '1', description: 'ID de la sede del usuario' })
+  @Type(() => Number)
   @IsNotEmpty()
-  @IsString()
-  id_sede: string;
+  @IsInt()
+  id_sede: number;
 
   @ApiProperty({
     example: [1, 2],
@@ -95,4 +98,13 @@ export class CreateUsuarioDto {
   @IsArray()
   @IsNumber({}, { each: true })
   roles?: number[];
+  @ApiProperty({
+    example: 1,
+    description: 'Estado del usuario (1: Activo, 3: Suspendido)',
+    required: false,
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  id_usuario_estado?: number;
 }
