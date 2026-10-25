@@ -19,7 +19,7 @@ export class UsuariosService {
   private readonly SALT_ROUNDS = 10;
   private readonly SUPABASE_PLACEHOLDER = 'SUPABASE_MANAGED_AUTH';
 
-  constructor(private readonly repository: UsuariosRepository) {}
+  constructor(private readonly repository: UsuariosRepository) { }
 
   /**
    * Abstrae la responsabilidad de gestionar si es auth delegada (Supabase)
@@ -107,11 +107,38 @@ export class UsuariosService {
   ): Promise<UsuarioResponseDto> {
     await this.findById(id); // Verifica que exista
 
-    const { contrasenia, ...restoDatos } = dto;
-    const datosAActualizar: Prisma.UsuarioUpdateInput = restoDatos;
+    const { contrasenia, id_sede, id_usuario_estado, roles, ...restoDatos } = dto;
+
+    const datosAActualizar: Prisma.UsuarioUpdateInput = {
+      ...restoDatos,
+    };
 
     if (contrasenia) {
       datosAActualizar.password = await this.generatePasswordHash(contrasenia);
+    }
+
+    // Transformar el ID plano a un objeto de conexión de Prisma
+    if (id_sede !== undefined) {
+      datosAActualizar.sede = {
+        connect: { id_sede: Number(id_sede) },
+      };
+    }
+
+    // Conexión relacional para el estado del usuario
+    if (id_usuario_estado !== undefined) {
+      datosAActualizar.usuario_estado = {
+        connect: { id_usuario_estado: Number(id_usuario_estado) },
+      };
+    }
+
+    // Actualización de roles si se envían
+    if (roles && roles.length > 0) {
+      datosAActualizar.usuario_rol = {
+        deleteMany: {},
+        create: roles.map((id_rol) => ({
+          rol: { connect: { id_rol } },
+        })),
+      };
     }
 
     const usuario = await this.repository.update(id, datosAActualizar);

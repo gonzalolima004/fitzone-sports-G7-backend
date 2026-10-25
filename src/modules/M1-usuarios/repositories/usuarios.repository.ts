@@ -8,7 +8,7 @@ import { PrismaService } from '../../../database/prisma-service/prisma.service';
 
 @Injectable()
 export class UsuariosRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   public readonly defaultIncludes = {
     sede: true,
@@ -54,7 +54,13 @@ export class UsuariosRepository {
   async findAll(id_sede?: number): Promise<UsuarioConRoles[]> {
     return this.prisma.usuario.findMany({
       where: id_sede ? { id_sede } : {},
-      include: this.defaultIncludes,
+      include: {
+        usuario_rol: {
+          include: { rol: true },
+        },
+        usuario_estado: true,
+        sede: true,
+      },
     });
   }
 
