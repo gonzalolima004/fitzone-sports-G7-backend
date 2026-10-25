@@ -1128,7 +1128,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 #### 25/10/2026
 
-#### Angelina Vialle | Rol: Desarrolladora Backend
+#### Angelina Vialle | Rol: Desarrolladora Backend || Tech Lead
 
 **Actividades:**
 
@@ -1157,3 +1157,4 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - `feat(M1): Cambios para obtener los usuarios con sus respectivos datos, actualizar datos de usuario y crear usuarios`
 - `feat(M2): quitar console.log, mensajes, mejora de obtener aforo`
 - `feat(M2): arreglos en aforo realtime para que funcione correctamente`
+- `docs(log): actualizar bitacora`
