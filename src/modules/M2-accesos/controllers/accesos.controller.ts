@@ -55,7 +55,7 @@ export class AccesosController {
   @ApiResponse({
     status: 409,
     description:
-      'Conflicto por anti-doble ingreso (RN-01): El usuario registra un ingreso activo sin egreso.',
+      'Conflicto por anti-doble ingreso: El usuario registra un ingreso activo sin egreso.',
   })
   async validarIngreso(
     @Body() validarIngresoDto: ValidarIngresoDto,

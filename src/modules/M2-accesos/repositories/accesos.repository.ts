@@ -94,10 +94,15 @@ export class AccesosRepository {
    * Obtiene el aforo máximo de una sede específica
    */
   async obtenerAforoMaximoSede(idSede: number): Promise<number | null> {
-    const sede = await this.prisma.sede.findUnique({
-      where: { id_sede: idSede },
-      select: { aforo_maximo: true },
-    });
-    return sede ? sede.aforo_maximo : null;
+    try {
+      const sede = await this.prisma.sede.findUnique({
+        where: { id_sede: idSede },
+        select: { aforo_maximo: true },
+      });
+      return sede ? sede.aforo_maximo : null;
+    } catch (error) {
+      console.error('Error al consultar aforo máximo en base de datos:', error);
+      return null;
+    }
   }
 }

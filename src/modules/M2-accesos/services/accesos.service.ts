@@ -66,7 +66,7 @@ export class AccesosService {
       });
     }
 
-    //2. Corroborar el estado de la membresía y regla de mora(RN-03 / RF-03)
+    //2. Corroborar el estado de la membresía y regla de mora
     const estadoMembresia =
       await this.membresiasService.verificarMembresia(id_usuario);
     if (!estadoMembresia.esSocioActivo || estadoMembresia.enMora) {
@@ -80,7 +80,7 @@ export class AccesosService {
     //4. Obtener el nombre del usuario
     const usuario = await this.usuariosService.findById(id_usuario);
 
-    //3. Transacción atómica para prevenir race conditions y aplicar regla Anti - Doble Ingreso(RN-01)
+    //3. Transacción atómica para prevenir race conditions y aplicar regla Anti - Doble Ingreso
     const nuevoRegistro: RegistroAcceso =
       await this.accesosRepository.ejecutarTransaccionIngreso(async (tx) => {
         const accesoActivo =
@@ -89,13 +89,15 @@ export class AccesosService {
         if (accesoActivo) {
           throw new ConflictException({
             statusCode: 409,
-            message: `Acceso rechazado (RN-01): El usuario ya figura dentro de la sede '${accesoActivo.sede.nombre}' sin haber registrado su egreso.`,
+            message: `Acceso rechazado: El usuario ya figura dentro de la sede '${accesoActivo.sede.nombre}' sin haber registrado su egreso.`,
             error: 'Conflict',
           });
         }
 
         return this.accesosRepository.crearIngreso(id_usuario, dto.id_sede, tx);
       });
+
+    await this.notificarCambioAforo(dto.id_sede);
 
     return new AccesoResponseDto({
       id_registro_acceso: nuevoRegistro.id_registro_acceso,
@@ -107,8 +109,7 @@ export class AccesosService {
   }
 
   /**
-   * Procesa el egreso de un socio, verifica que tenga un acceso activo en la sede especificada
-   * y calcula los minutos de permanencia en el establecimiento.
+   * Procesa el egreso de un socio, verifica que tenga un acceso activo en la sede especificada.
    */
   async registrarEgreso(dto: RegistrarEgresoDto): Promise<EgresoResponseDto> {
     const id_usuario = this.extraerIdDeToken(dto.qrToken);
@@ -173,6 +174,6 @@ export class AccesosService {
    */
   async notificarCambioAforo(idSede: number): Promise<void> {
     const estadoActualizado = await this.obtenerEstadoAforo(idSede);
-    await this.aforoRealtimeService.emitirAforo(idSede, estadoActualizado);
+    this.aforoRealtimeService.emitirAforo(idSede, estadoActualizado);
   }
 }
