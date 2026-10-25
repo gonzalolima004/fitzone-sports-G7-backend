@@ -1158,3 +1158,18 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - `feat(M2): quitar console.log, mensajes, mejora de obtener aforo`
 - `feat(M2): arreglos en aforo realtime para que funcione correctamente`
 - `docs(log): actualizar bitacora`
+#### 24/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del endpoint de consulta y listado de mantenimientos de canchas (`GET /canchas/mantenimientos`) en el módulo M4.
+  - Soporte de filtros opcionales en el endpoint: por sede (`sedeId`), por cancha (`canchaId`) y por rango de fechas (`fechaInicio` y `fechaFin`).
+  - Implementación de validaciones en `MantenimientoService` para validar que los IDs sean enteros positivos y que el rango cronológico sea coherente (`BadRequestException`).
+  - Normalización automática de fechas: soporte de formato `YYYY-MM-DD` extendiendo `fechaFin` al final del día (`23:59:59.999Z`) para abarcar la jornada completa.
+  - Integración en `CanchasRepository` mediante una consulta optimizada que obtiene los mantenimientos junto con sus relaciones (`cancha`, `sede` y `cancha_tipo`) en una única operación.
+- **Decisiones:** Ninguna
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M4): metodos para crud de mantenimiento`
+  - `docs(log): actualizacion de bitacora`
