@@ -66,8 +66,9 @@ export class PagosController {
   })
   async iniciarPago(
     @Body() dto: IniciarPagoDto,
+    @CurrentUserId() userId: number,
   ): Promise<PreferenciaPagoResponseDto> {
-    return this.pagosService.crearPreferenciaPago(dto, dto.email_pagador);
+    return this.pagosService.crearPreferenciaPago(dto, userId);
   }
 
   @Get('mis-pagos')

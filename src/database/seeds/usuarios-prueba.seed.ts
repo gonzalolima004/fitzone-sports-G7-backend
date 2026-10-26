@@ -50,11 +50,11 @@ async function catalogos() {
     });
   }
 
-  const estados = ['Activa', 'Vencida', 'Pendiente', 'Suspendida'];
+  const estados = ['Activa', 'Vencida', 'Suspendida'];
   for (const [i, descripcion] of estados.entries()) {
     await prisma.membresiaEstado.upsert({
       where: { id_membresia_estado: i + 1 },
-      update: {},
+      update: { descripcion },
       create: { id_membresia_estado: i + 1, descripcion },
     });
   }

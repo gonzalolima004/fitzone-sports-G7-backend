@@ -1101,6 +1101,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `docs(log): actualizacion de bitacora`
 
 ---
+
 #### 21/10/2026
 
 #### Joaquín Ribarola | Rol: Desarrollador Backend
@@ -1145,19 +1146,23 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Reestructuración de `AforoRealtimeService`: estabilización de la emisión vía Supabase Realtime Broadcast mediante suscripción explícita al canal (`channel.subscribe`), envío del evento `aforo_actualizado` una vez confirmado el estado `SUBSCRIBED`, y cierre controlado del canal (`client.removeChannel`) tras un retardo temporizado para evitar conexiones colgadas y fugas de memoria.
 
 **Decisiones:**
+
 - Mapear las relaciones completas de roles y sede directamente en `UsuarioResponseDto` y `UsuariosRepository` para proveer toda la información necesaria al frontend en una única petición sin sobrecargar la red con consultas adicionales.
 - Utilizar conexiones explícitas (`connect`) y reemplazo transaccional en la actualización de roles en `UsuariosService` para preservar la integridad referencial en Prisma.
 - Sincronizar el canal de Supabase Realtime esperando el evento de confirmación de suscripción antes de emitir el broadcast y liberarlo con un retardo controlado (500 ms) para asegurar la entrega efectiva del mensaje sin dejar suscripciones activas en memoria.
 
 **Dificultades:**
+
 - Asegurar la entrega confiable de los eventos Realtime de Supabase sin dejar suscripciones activas ni conexiones huérfanas en el backend de NestJS; resuelto controlando la suscripción y el cierre temporizado del canal.
 - Compatibilizar la estructura relacional de `usuario_rol` de Prisma con el formato de roles consumido por el frontend en `UsuarioResponseDto`.
 
 **Commits:**
+
 - `feat(M1): Cambios para obtener los usuarios con sus respectivos datos, actualizar datos de usuario y crear usuarios`
 - `feat(M2): quitar console.log, mensajes, mejora de obtener aforo`
 - `feat(M2): arreglos en aforo realtime para que funcione correctamente`
 - `docs(log): actualizar bitacora`
+
 #### 24/10/2026
 
 #### Marcos Caraballo | Rol: Desarrollador Backend
@@ -1173,3 +1178,22 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   - `feat(M4): metodos para crud de mantenimiento`
   - `docs(log): actualizacion de bitacora`
+
+---
+
+#### 26/10/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación de la lógica de cálculo y vencimiento para los 3 planes de membresía (Mensual: 30 días, Trimestral: 90 días, Anual: 365 días) utilizando adición de meses calendario y ajuste al último día del mes ante desfasajes de días.
+  - Implementación de la confirmación atómica transaccional ante la aprobación del pago, se calculan las fechas de vigencia considerando la fecha máxima entre la actual y la vigencia remanente de una membresía activa previa.
+  - Estricta restricción del catálogo de estados de membresía a los 3 estados oficiales del negocio: Activa, Vencida y Suspendida, eliminando cualquier referencia al estado transitorio Pendiente.
+- **Decisiones:**
+  - Utilizar meses calendario en lugar de sumas fijas de 30 o 365 días en el cálculo de vigencia para garantizar que un plan mensual o anual venza exactamente en el mismo día del mes siguiente o del año próximo.
+  - Garantizar atomicidad mediante $transaction de Prisma para que la actualización del pago, la desactivación de membresías previas y la activación de la nueva se ejecuten de forma segura e idempotente.
+- **Dificultades:** Ninguna
+- **Commits:**
+  - `feat(membresias): soporte y lógica de duración para planes mensual, trimestral y anual`
+  - `feat(pagos): flujo de contratación de planes y activación de membresías`
+  - `fix(membresias): ceñir ciclo de vida a 3 estados (activa, vencida, suspendida) y remover pendiente`
