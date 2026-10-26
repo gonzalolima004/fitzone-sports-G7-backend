@@ -24,6 +24,7 @@ import {
   PagoConceptoDto,
 } from '../dto/pago-detalle-response.dto';
 import { PagoPendienteResponseDto } from '../dto/pago-pendiente-response.dto';
+import { etiquetaPlan } from '../../M1-usuarios/utils/plan-duracion';
 
 @Injectable()
 export class PagosService {
@@ -402,12 +403,13 @@ export class PagosService {
       const m = pago.membresia;
       const nombrePlan = m.membresia_plan?.nombre || 'Plan FitZone';
       const dias = m.membresia_plan?.duracion_dias || 30;
+      const etiqueta = etiquetaPlan(dias);
       const inicioStr = new Date(m.fecha_inicio).toLocaleDateString('es-AR');
       const finStr = new Date(m.fecha_fin).toLocaleDateString('es-AR');
 
       items.push({
         concepto: `Membresía ${nombrePlan}`,
-        detalle: `Vigencia: ${inicioStr} al ${finStr} (${dias} días)`,
+        detalle: `${etiqueta} • Vigencia: ${inicioStr} al ${finStr} (${dias} días)`,
         cantidad: 1,
         precio_unitario: Math.round(Number(pago.monto)),
         subtotal: Math.round(Number(pago.monto)),
@@ -494,6 +496,7 @@ export class PagosService {
       const m = pago.membresia;
       const nombrePlan = m.membresia_plan?.nombre || 'Plan FitZone';
       const dias = m.membresia_plan?.duracion_dias || 30;
+      const etiqueta = etiquetaPlan(dias);
       const inicioStr = new Date(m.fecha_inicio).toLocaleDateString('es-AR', {
         day: '2-digit',
         month: '2-digit',
@@ -509,7 +512,8 @@ export class PagosService {
         tipo: 'membresia',
         id_referencia: m.id_membresia,
         titulo: `Membresía ${nombrePlan}`,
-        detalle: `Plan de ${dias} días • Vigencia: ${inicioStr} al ${finStr}`,
+        detalle: `${etiqueta} • Vigencia: ${inicioStr} al ${finStr}`,
+        duracion_dias: dias,
       };
     } else {
       concepto = {
@@ -601,6 +605,7 @@ export class PagosService {
       if ((!estadoActiva || vencida) && !renovada) {
         const nombrePlan = membresia.membresia_plan?.nombre || 'Plan FitZone';
         const dias = membresia.membresia_plan?.duracion_dias || 30;
+        const etiqueta = etiquetaPlan(dias);
         const finStr = new Date(membresia.fecha_fin).toLocaleDateString(
           'es-AR',
           {
@@ -616,9 +621,10 @@ export class PagosService {
           id_referencia: membresia.id_membresia,
           titulo: `Membresía ${nombrePlan}`,
           detalle: vencida
-            ? `Plan de ${dias} días • Venció el ${finStr}`
-            : `Plan de ${dias} días • Hasta ${finStr}`,
+            ? `${etiqueta} • Venció el ${finStr}`
+            : `${etiqueta} • Hasta ${finStr}`,
           monto: Math.round(Number(membresia.membresia_plan?.precio ?? 0)),
+          duracion_dias: dias,
         });
       }
     }

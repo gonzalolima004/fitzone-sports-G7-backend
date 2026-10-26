@@ -19,7 +19,7 @@ export class UsuariosService {
   private readonly SALT_ROUNDS = 10;
   private readonly SUPABASE_PLACEHOLDER = 'SUPABASE_MANAGED_AUTH';
 
-  constructor(private readonly repository: UsuariosRepository) { }
+  constructor(private readonly repository: UsuariosRepository) {}
 
   /**
    * Abstrae la responsabilidad de gestionar si es auth delegada (Supabase)
@@ -107,7 +107,8 @@ export class UsuariosService {
   ): Promise<UsuarioResponseDto> {
     await this.findById(id); // Verifica que exista
 
-    const { contrasenia, id_sede, id_usuario_estado, roles, ...restoDatos } = dto;
+    const { contrasenia, id_sede, id_usuario_estado, roles, ...restoDatos } =
+      dto;
 
     const datosAActualizar: Prisma.UsuarioUpdateInput = {
       ...restoDatos,
