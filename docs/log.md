@@ -1223,3 +1223,32 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `0860270` — feat(sedes): proteger sedes y ciudades por rol.
   - `9dff9a1` — feat(planes): proteger gestion de planes por rol.
 - **Referencia:** https://trello.com/c/gn9BCsTu
+
+---
+
+#### 23/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** E11-T2 — Migración a Prisma ORM, Reportes y Testing.
+- **Actividades:**
+  - Pruebas de integración de `ReportesService` y `ReportesRepository` contra PostgreSQL temporal (PGlite) con un escenario de datos conocido, escritas **antes** de migrar para fijar los resultados: ingresos consolidados (solo pagos aprobados y dentro del período), filtros por sede y concepto, estado sin distinguir mayúsculas, período vacío; ocupación con asistencias y reservas confirmadas, filtro por sede, sedes sin actividad y período vacío.
+  - Migración de `obtenerIngresosPorSede` de SQL nativo (`$queryRaw` con `UNION ALL`) a `prisma.pago.findMany` con filtros tipados y suma por sede con `Prisma.Decimal`.
+  - Migración de `obtenerMetricasOcupacionPorSede` a tres `groupBy` en paralelo, traducción de canchas y clases a su sede y nombres de las sedes con actividad.
+  - Eliminación del script `test/reportes-ocupacion.sql-check.cjs`, reemplazado por las pruebas de integración.
+  - Registro de la decisión en el ADR-018.
+- **Decisiones:**
+  - Mantener la firma de los métodos del repository: el service y el controller no cambiaron, lo que muestra el beneficio del patrón Repository (ADR-014).
+  - Sumar los ingresos por sede en memoria, porque Prisma no agrupa por campos de tablas relacionadas. Es adecuado para reportes mensuales de la cadena; con millones de pagos por período convendría agregar en la base o precalcular (detallado en el ADR-018).
+  - Resolver en la base los conteos de ocupación con `groupBy` y combinar por sede en memoria.
+  - Un commit por consulta migrada y el borrado del SQL anterior recién con las pruebas pasando.
+- **Dificultades y resolución:**
+  - Prisma no permite agrupar por la sede de una relación: se seleccionan solo los campos necesarios y se combinan los resultados por sede. Se verificó que Prisma resuelve las relaciones con una cantidad fija de consultas (sin N+1).
+  - Los tipos de Prisma se perdían al combinar consultas condicionales dentro de `Promise.all`; se resolvió con métodos privados tipados para traducir canchas y clases a sede.
+- **Verificación:** las mismas pruebas pasan con el SQL anterior y con Prisma; ya no queda `$queryRaw` en `M6-reportes`. Suite completa del backend aprobada; ESLint sin errores en los archivos modificados. Pendiente: comparar en el panel los números con los datos compartidos.
+- **Commits:**
+  - `33a94b1` — test(reportes): agregar pruebas de ingresos y ocupacion.
+  - `564869f` — refactor(reportes): migrar ingresos a Prisma ORM.
+  - `28b82f8` — refactor(reportes): migrar ocupacion a Prisma ORM.
+  - `889017d` — docs(adr): agregar ADR-018 de reportes con Prisma.
+- **Referencia:** https://trello.com/c/GLFWrFZK
