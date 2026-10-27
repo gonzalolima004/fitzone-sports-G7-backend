@@ -24,6 +24,7 @@ import {
   PagoConceptoDto,
 } from '../dto/pago-detalle-response.dto';
 import { PagoPendienteResponseDto } from '../dto/pago-pendiente-response.dto';
+import { etiquetaPlan } from '../../M1-usuarios/utils/plan-duracion';
 
 @Injectable()
 export class PagosService {
@@ -41,21 +42,31 @@ export class PagosService {
    */
   async crearPreferenciaPago(
     dto: IniciarPagoDto,
-    emailUsuario?: string,
+    userId?: number,
   ): Promise<PreferenciaPagoResponseDto> {
     // 1. Validar concepto único: exactamente una entidad asociada
     const tieneCancha =
       dto.id_cancha_reserva !== undefined && dto.id_cancha_reserva !== null;
+    const tienePlan =
+      dto.id_membresia_plan !== undefined && dto.id_membresia_plan !== null;
     const tieneMembresia =
       dto.id_membresia !== undefined && dto.id_membresia !== null;
+    const tieneConceptoMembresia = tienePlan || tieneMembresia;
 
-    if ((tieneCancha && tieneMembresia) || (!tieneCancha && !tieneMembresia)) {
+    if (
+      (tieneCancha && tieneConceptoMembresia) ||
+      (!tieneCancha && !tieneConceptoMembresia)
+    ) {
       throw new BadRequestException(
-        'Debe asociar el pago exactamente a una reserva de cancha o a una membresía.',
+        'Debe asociar el pago exactamente a una reserva de cancha o a un plan/membresía.',
       );
     }
 
-    // 2. Verificar existencia de la entidad en la base de datos
+    let idMembresiaParaPago: number | null = null;
+    let montoTotal = dto.monto ? Math.round(Number(dto.monto)) : 0;
+    let tituloItem = dto.titulo;
+
+    // 2. Verificar existencia y resolver entidad asociada
     if (tieneCancha) {
       const existe = await this.pagosRepository.existeCanchaReserva(
         dto.id_cancha_reserva!,
@@ -65,16 +76,66 @@ export class PagosService {
           `La reserva de cancha #${dto.id_cancha_reserva} no existe.`,
         );
       }
-    }
+      if (!montoTotal) {
+        throw new BadRequestException(
+          'El monto es requerido para reservas de cancha.',
+        );
+      }
+    } else if (tienePlan) {
+      const plan = await this.pagosRepository.obtenerPlanPorId(
+        dto.id_membresia_plan!,
+      );
+      if (!plan) {
+        throw new NotFoundException(
+          `El plan de membresía #${dto.id_membresia_plan} no existe.`,
+        );
+      }
+      // Se utiliza el precio oficial registrado en la base de datos
+      montoTotal = Math.round(Number(plan.precio));
+      if (!tituloItem) {
+        tituloItem = `Suscripción - ${plan.nombre}`;
+      }
 
-    if (tieneMembresia) {
-      const existe = await this.pagosRepository.existeMembresia(
+      // Obtener el ID del socio
+      let targetUserId = userId;
+      if (!targetUserId && dto.email_pagador) {
+        const u = await this.pagosRepository.obtenerUsuarioPorEmail(
+          dto.email_pagador,
+        );
+        targetUserId = u?.id_usuario;
+      }
+
+      if (!targetUserId) {
+        throw new BadRequestException(
+          'No se pudo determinar el usuario socio para asociar la membresía.',
+        );
+      }
+
+      // Crear membresía en estado 'Suspendida' (inactiva) hasta que el pago sea aprobado
+      const idSuspendida =
+        await this.pagosRepository.obtenerEstadoMembresiaSuspendidaId();
+      const nuevaMembresia = await this.pagosRepository.crearMembresia({
+        id_usuario: targetUserId,
+        id_membresia_plan: plan.id_membresia_plan,
+        id_membresia_estado: idSuspendida,
+        fecha_inicio: new Date(),
+        fecha_fin: new Date(),
+        renovacion_automatica: dto.renovacion_automatica ?? false,
+      });
+
+      idMembresiaParaPago = nuevaMembresia.id_membresia;
+    } else if (tieneMembresia) {
+      const m = await this.pagosRepository.obtenerMembresiaPorId(
         dto.id_membresia!,
       );
-      if (!existe) {
+      if (!m) {
         throw new NotFoundException(
           `La membresía #${dto.id_membresia} no existe.`,
         );
+      }
+      idMembresiaParaPago = dto.id_membresia!;
+      if (!montoTotal) {
+        montoTotal = Math.round(Number(m.membresia_plan?.precio ?? 0));
       }
     }
 
@@ -84,9 +145,14 @@ export class PagosService {
     // 4. Invocar el SDK oficial de Mercado Pago para crear la preferencia
     const itemId = tieneCancha
       ? `cancha-${dto.id_cancha_reserva}`
-      : `membresia-${dto.id_membresia}`;
-    const payerEmail =
-      emailUsuario || dto.email_pagador || 'cliente@fitzone.com';
+      : `membresia-${idMembresiaParaPago}`;
+
+    let payerEmail = dto.email_pagador || 'cliente@fitzone.com';
+    if (userId) {
+      const u = await this.pagosRepository.obtenerUsuarioPorId(userId);
+      if (u?.email) payerEmail = u.email;
+    }
+
     const backUrls = this.mercadopagoService.backUrls;
     const notificationUrl = this.mercadopagoService.notificationUrl;
 
@@ -96,9 +162,9 @@ export class PagosService {
           items: [
             {
               id: itemId,
-              title: dto.titulo,
+              title: tituloItem,
               quantity: 1,
-              unit_price: Math.round(Number(dto.monto)),
+              unit_price: montoTotal,
               currency_id: 'ARS',
             },
           ],
@@ -120,7 +186,7 @@ export class PagosService {
           external_reference: itemId,
           metadata: {
             id_cancha_reserva: dto.id_cancha_reserva ?? null,
-            id_membresia: dto.id_membresia ?? null,
+            id_membresia: idMembresiaParaPago,
           },
         },
       })
@@ -145,8 +211,8 @@ export class PagosService {
     const nuevoPago = await this.pagosRepository.crearPago({
       id_pago_estado: idPagoEstado,
       id_cancha_reserva: dto.id_cancha_reserva ?? null,
-      id_membresia: dto.id_membresia ?? null,
-      monto: Math.round(Number(dto.monto)),
+      id_membresia: idMembresiaParaPago,
+      monto: montoTotal,
       token_transaccion: preference.id,
       comprobante_url: null,
     });
@@ -402,12 +468,13 @@ export class PagosService {
       const m = pago.membresia;
       const nombrePlan = m.membresia_plan?.nombre || 'Plan FitZone';
       const dias = m.membresia_plan?.duracion_dias || 30;
+      const etiqueta = etiquetaPlan(dias);
       const inicioStr = new Date(m.fecha_inicio).toLocaleDateString('es-AR');
       const finStr = new Date(m.fecha_fin).toLocaleDateString('es-AR');
 
       items.push({
         concepto: `Membresía ${nombrePlan}`,
-        detalle: `Vigencia: ${inicioStr} al ${finStr} (${dias} días)`,
+        detalle: `${etiqueta} • Vigencia: ${inicioStr} al ${finStr} (${dias} días)`,
         cantidad: 1,
         precio_unitario: Math.round(Number(pago.monto)),
         subtotal: Math.round(Number(pago.monto)),
@@ -494,6 +561,7 @@ export class PagosService {
       const m = pago.membresia;
       const nombrePlan = m.membresia_plan?.nombre || 'Plan FitZone';
       const dias = m.membresia_plan?.duracion_dias || 30;
+      const etiqueta = etiquetaPlan(dias);
       const inicioStr = new Date(m.fecha_inicio).toLocaleDateString('es-AR', {
         day: '2-digit',
         month: '2-digit',
@@ -509,7 +577,8 @@ export class PagosService {
         tipo: 'membresia',
         id_referencia: m.id_membresia,
         titulo: `Membresía ${nombrePlan}`,
-        detalle: `Plan de ${dias} días • Vigencia: ${inicioStr} al ${finStr}`,
+        detalle: `${etiqueta} • Vigencia: ${inicioStr} al ${finStr}`,
+        duracion_dias: dias,
       };
     } else {
       concepto = {
@@ -601,6 +670,7 @@ export class PagosService {
       if ((!estadoActiva || vencida) && !renovada) {
         const nombrePlan = membresia.membresia_plan?.nombre || 'Plan FitZone';
         const dias = membresia.membresia_plan?.duracion_dias || 30;
+        const etiqueta = etiquetaPlan(dias);
         const finStr = new Date(membresia.fecha_fin).toLocaleDateString(
           'es-AR',
           {
@@ -616,9 +686,10 @@ export class PagosService {
           id_referencia: membresia.id_membresia,
           titulo: `Membresía ${nombrePlan}`,
           detalle: vencida
-            ? `Plan de ${dias} días • Venció el ${finStr}`
-            : `Plan de ${dias} días • Hasta ${finStr}`,
+            ? `${etiqueta} • Venció el ${finStr}`
+            : `${etiqueta} • Hasta ${finStr}`,
           monto: Math.round(Number(membresia.membresia_plan?.precio ?? 0)),
+          duracion_dias: dias,
         });
       }
     }

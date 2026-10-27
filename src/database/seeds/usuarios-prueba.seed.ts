@@ -50,25 +50,42 @@ async function catalogos() {
     });
   }
 
-  const estados = ['Activa', 'Vencida'];
+  const estados = ['Activa', 'Vencida', 'Suspendida'];
   for (const [i, descripcion] of estados.entries()) {
     await prisma.membresiaEstado.upsert({
       where: { id_membresia_estado: i + 1 },
-      update: {},
+      update: { descripcion },
       create: { id_membresia_estado: i + 1, descripcion },
     });
   }
 
-  await prisma.membresiaPlan.upsert({
-    where: { id_membresia_plan: 1 },
-    update: {},
-    create: {
+  const planes = [
+    {
       id_membresia_plan: 1,
       nombre: 'Plan Mensual',
       duracion_dias: 30,
-      precio: 15000,
+      precio: 40000,
     },
-  });
+    {
+      id_membresia_plan: 2,
+      nombre: 'Plan Trimestral',
+      duracion_dias: 90,
+      precio: 105000,
+    },
+    {
+      id_membresia_plan: 3,
+      nombre: 'Plan Anual',
+      duracion_dias: 365,
+      precio: 360000,
+    },
+  ];
+  for (const plan of planes) {
+    await prisma.membresiaPlan.upsert({
+      where: { id_membresia_plan: plan.id_membresia_plan },
+      update: {},
+      create: plan,
+    });
+  }
 }
 
 const USUARIOS = [
