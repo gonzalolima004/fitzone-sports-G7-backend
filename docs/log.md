@@ -801,7 +801,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - El código anterior tenía una CTE incompleta y no incorporaba correctamente las reservas de clases.
   - La instalación local no contenía `@nestjs/jwt`, ya declarado por el equipo; se instalaron las dependencias para compilar.
 - **Verificación:** Build y typecheck aprobados; 9 pruebas aprobadas; consulta SQL comprobada con fechas límite, estados, filtros, resultados vacíos y reservas sin asistencia. No se probó una sesión completa contra la base compartida.
-- **Commits:** `d2ac371` — fix(reportes): completar metricas de ocupacion por sede.
+- **Commits:** `fix(reportes): completar metricas de ocupacion por sede`
 
 #### Facundo Agüero | Rol: Team Leader
 
@@ -1196,9 +1196,8 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - El `typecheck` de `dev` falla por un error previo en `M4-canchas/repositories/canchas.repository.ts` (`activo` no existe en `CanchaTipo` del `schema.prisma`). No corresponde a esta tarea y se informó al TL; los archivos modificados compilan sin errores.
 - **Verificación:** 20 suites y 151 pruebas aprobadas (13 nuevas). ESLint sin errores en los archivos modificados. Pendiente: prueba manual en Swagger (`/api/docs`) con las cuentas compartidas de socio y gerente.
 - **Commits:**
-  - `8356d75` — feat(reportes): proteger endpoints con rol gerente.
-  - `e68a09a` — test(reportes): agregar pruebas de acceso por rol.
-- **Referencia:** https://trello.com/c/UL44ESHY
+  - `feat(reportes): proteger endpoints con rol gerente`
+  - `test(reportes): agregar pruebas de acceso por rol`
 
 ---
 
@@ -1206,7 +1205,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 #### Facundo Agüero | Rol: Desarrollador Backend
 
-- **Tarea:** E11-T1 — Panel de Gerente, CRUD Sedes/Membresías y Sede Dinámica (parte backend).
+- **Tarea:** Panel de Gerente, CRUD Sedes/Membresías y Sede Dinámica (parte backend).
 - **Actividades:**
   - Revisión de los CRUD existentes de `/sedes`, `/ciudades` (M0-sedes) y `/planes` (M1-usuarios): las operaciones de escritura no tenían protección y cualquier cliente podía crear, modificar o dar de baja sedes y planes.
   - Protección de `POST`, `PATCH` y `DELETE` de `/sedes`, `/ciudades` y `/planes` con `SupabaseAuthGuard`, `RolesGuard` y `@Roles('gerente', 'admin')`, con 401 y 403 documentados en Swagger.
@@ -1220,9 +1219,8 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Eliminar un plan con membresías asociadas devuelve 500 por la clave foránea de `membresia`. No se modificó `PlanesService` por pertenecer a M1: queda registrado como `it.todo` (responder 409) y el frontend muestra un mensaje claro en ese caso.
 - **Verificación:** 22 suites y 172 pruebas aprobadas (1 pendiente `todo`). ESLint sin errores en los archivos modificados. Pendiente: recorrido con la cuenta compartida de gerente.
 - **Commits:**
-  - `0860270` — feat(sedes): proteger sedes y ciudades por rol.
-  - `9dff9a1` — feat(planes): proteger gestion de planes por rol.
-- **Referencia:** https://trello.com/c/gn9BCsTu
+  - `feat(sedes): proteger sedes y ciudades por rol`
+  - `feat(planes): proteger gestion de planes por rol`
 
 ---
 
@@ -1230,7 +1228,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 #### Facundo Agüero | Rol: Desarrollador Backend
 
-- **Tarea:** E11-T2 — Migración a Prisma ORM, Reportes y Testing.
+- **Tarea:** Migración a Prisma ORM, Reportes y Testing.
 - **Actividades:**
   - Pruebas de integración de `ReportesService` y `ReportesRepository` contra PostgreSQL temporal (PGlite) con un escenario de datos conocido, escritas **antes** de migrar para fijar los resultados: ingresos consolidados (solo pagos aprobados y dentro del período), filtros por sede y concepto, estado sin distinguir mayúsculas, período vacío; ocupación con asistencias y reservas confirmadas, filtro por sede, sedes sin actividad y período vacío.
   - Migración de `obtenerIngresosPorSede` de SQL nativo (`$queryRaw` con `UNION ALL`) a `prisma.pago.findMany` con filtros tipados y suma por sede con `Prisma.Decimal`.
@@ -1247,8 +1245,26 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Los tipos de Prisma se perdían al combinar consultas condicionales dentro de `Promise.all`; se resolvió con métodos privados tipados para traducir canchas y clases a sede.
 - **Verificación:** las mismas pruebas pasan con el SQL anterior y con Prisma; ya no queda `$queryRaw` en `M6-reportes`. Suite completa del backend aprobada; ESLint sin errores en los archivos modificados. Pendiente: comparar en el panel los números con los datos compartidos.
 - **Commits:**
-  - `33a94b1` — test(reportes): agregar pruebas de ingresos y ocupacion.
-  - `564869f` — refactor(reportes): migrar ingresos a Prisma ORM.
-  - `28b82f8` — refactor(reportes): migrar ocupacion a Prisma ORM.
-  - `889017d` — docs(adr): agregar ADR-018 de reportes con Prisma.
-- **Referencia:** https://trello.com/c/GLFWrFZK
+  - `test(reportes): agregar pruebas de ingresos y ocupacion`
+  - `refactor(reportes): migrar ingresos a Prisma ORM`
+  - `refactor(reportes): migrar ocupacion a Prisma ORM`
+  - `docs(adr): agregar ADR-018 de reportes con Prisma`
+
+---
+
+#### 27/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Correcciones de la revisión de reportes, sedes y planes.
+- **Actividades:**
+  - Se quitó `admin` de `@Roles` en `ReportesController`, `SedeController`, `CiudadController` y `PlanesController`, porque ese rol no existe en el sistema: reportes y el alta, la modificación y la baja de sedes, ciudades y planes quedan solo para `gerente`.
+  - Se actualizaron las descripciones de Swagger (401 y 403) y las pruebas de integración: se quitaron los casos con token de admin y la baja lógica de sede se prueba con token de gerente.
+  - Se ajustó el formato de mis entradas anteriores de esta bitácora: commits sin hash, sin enlace a Trello y sin códigos de tarea, como en el resto del equipo.
+- **Decisiones:**
+  - `clases.controller.ts` (M3) también incluye `admin` en `@Roles`; no se modificó por pertenecer a otro módulo; queda para su responsable.
+- **Dificultades:** Ninguna.
+- **Verificación:** 23 suites y 180 pruebas aprobadas (1 pendiente `todo`). ESLint sin errores en los archivos modificados.
+- **Commits:**
+  - `fix(rbac): quitar rol admin de reportes, sedes y planes`
+  - `docs(log): corregir formato y registrar correcciones`
