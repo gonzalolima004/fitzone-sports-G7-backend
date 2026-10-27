@@ -1197,3 +1197,79 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(membresias): soporte y lógica de duración para planes mensual, trimestral y anual`
   - `feat(pagos): flujo de contratación de planes y activación de membresías`
   - `fix(membresias): ceñir ciclo de vida a 3 estados (activa, vencida, suspendida) y remover pendiente`
+#### 23/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Backend — Proteger endpoints de reportes para rol gerente.
+- **Actividades:**
+  - Protección de `GET /reportes/ingresos` y `GET /reportes/ocupacion` con `SupabaseAuthGuard` y `RolesGuard`, aplicados a nivel de `ReportesController` junto con `@Roles('gerente', 'admin')`, reutilizando el patrón de `clases.controller.ts`.
+  - Documentación en Swagger del candado (`@ApiBearerAuth`) y de las respuestas 401 y 403; corrección del tipo de respuesta del 400 de ingresos.
+  - Pruebas de integración HTTP con Supertest sobre los guards reales: 401 sin token o con `Authorization` mal formado, 403 para socio y recepcionista, 200 para gerente y admin, y validación 400 del rango de fechas.
+  - Base PostgreSQL temporal en memoria (PGlite + `pglite-prisma-adapter`) creada con el DDL de `schema.prisma` y un escenario de datos conocido (`test/utils/escenario-reportes.ts`), reutilizable por las pruebas de los demás módulos.
+- **Decisiones:**
+  - Aplicar los guards a nivel de clase para que cualquier endpoint futuro de reportes quede protegido por defecto.
+  - Incluir `admin` junto con `gerente` por consistencia con los demás controladores protegidos; si el equipo define "solo gerente", se modifica la constante `ROLES_REPORTES`.
+  - Generar los tokens de prueba con el mismo `JwtService` de la aplicación para no depender de Supabase ni de la red, y no usar mocks (regla del equipo).
+  - No se requirieron cambios en el frontend: el panel ya envía el token por el interceptor de Axios y las pantallas de ingresos y ocupación muestran el mensaje del servidor ante un 403.
+- **Dificultades y resolución:**
+  - PGlite carga módulos nativos de Node con `import()` dinámico, que Jest no admite sin `--experimental-vm-modules`. Se agregó una regla de transformación para archivos `.cjs` en la configuración de Jest, de modo que `yarn test` funcione sin flags adicionales.
+  - El `typecheck` de `dev` falla por un error previo en `M4-canchas/repositories/canchas.repository.ts` (`activo` no existe en `CanchaTipo` del `schema.prisma`). No corresponde a esta tarea y se informó al TL; los archivos modificados compilan sin errores.
+- **Verificación:** 20 suites y 151 pruebas aprobadas (13 nuevas). ESLint sin errores en los archivos modificados. Pendiente: prueba manual en Swagger (`/api/docs`) con las cuentas compartidas de socio y gerente.
+- **Commits:**
+  - `8356d75` — feat(reportes): proteger endpoints con rol gerente.
+  - `e68a09a` — test(reportes): agregar pruebas de acceso por rol.
+- **Referencia:** https://trello.com/c/UL44ESHY
+
+---
+
+#### 23/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** E11-T1 — Panel de Gerente, CRUD Sedes/Membresías y Sede Dinámica (parte backend).
+- **Actividades:**
+  - Revisión de los CRUD existentes de `/sedes`, `/ciudades` (M0-sedes) y `/planes` (M1-usuarios): las operaciones de escritura no tenían protección y cualquier cliente podía crear, modificar o dar de baja sedes y planes.
+  - Protección de `POST`, `PATCH` y `DELETE` de `/sedes`, `/ciudades` y `/planes` con `SupabaseAuthGuard`, `RolesGuard` y `@Roles('gerente', 'admin')`, con 401 y 403 documentados en Swagger.
+  - Pruebas de integración HTTP sobre PGlite para sedes y ciudades: listado público solo de sedes activas, 401/403/201 en el alta, 404 por ciudad inexistente, 400 por datos inválidos o campos no permitidos, actualización parcial y baja lógica.
+  - Pruebas de integración para planes: catálogo público con precio numérico, 401/403/201 en el alta con normalización del nombre, 400 por duración inválida, edición y baja de un plan sin membresías.
+  - Extracción de `test/utils/app-de-pruebas.ts` para levantar la aplicación de pruebas con los módulos reales y reutilizarla en reportes, sedes y planes.
+- **Decisiones:**
+  - Mantener públicos los `GET`: el registro de usuarios, la landing, el selector de sede del encabezado y la pantalla de membresías los consultan sin sesión.
+  - En `PlanesController` (módulo M1) solo se agregaron decoradores, sin modificar la lógica de `PlanesService`.
+- **Dificultades y resolución:**
+  - Eliminar un plan con membresías asociadas devuelve 500 por la clave foránea de `membresia`. No se modificó `PlanesService` por pertenecer a M1: queda registrado como `it.todo` (responder 409) y el frontend muestra un mensaje claro en ese caso.
+- **Verificación:** 22 suites y 172 pruebas aprobadas (1 pendiente `todo`). ESLint sin errores en los archivos modificados. Pendiente: recorrido con la cuenta compartida de gerente.
+- **Commits:**
+  - `0860270` — feat(sedes): proteger sedes y ciudades por rol.
+  - `9dff9a1` — feat(planes): proteger gestion de planes por rol.
+- **Referencia:** https://trello.com/c/gn9BCsTu
+
+---
+
+#### 23/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** E11-T2 — Migración a Prisma ORM, Reportes y Testing.
+- **Actividades:**
+  - Pruebas de integración de `ReportesService` y `ReportesRepository` contra PostgreSQL temporal (PGlite) con un escenario de datos conocido, escritas **antes** de migrar para fijar los resultados: ingresos consolidados (solo pagos aprobados y dentro del período), filtros por sede y concepto, estado sin distinguir mayúsculas, período vacío; ocupación con asistencias y reservas confirmadas, filtro por sede, sedes sin actividad y período vacío.
+  - Migración de `obtenerIngresosPorSede` de SQL nativo (`$queryRaw` con `UNION ALL`) a `prisma.pago.findMany` con filtros tipados y suma por sede con `Prisma.Decimal`.
+  - Migración de `obtenerMetricasOcupacionPorSede` a tres `groupBy` en paralelo, traducción de canchas y clases a su sede y nombres de las sedes con actividad.
+  - Eliminación del script `test/reportes-ocupacion.sql-check.cjs`, reemplazado por las pruebas de integración.
+  - Registro de la decisión en el ADR-018.
+- **Decisiones:**
+  - Mantener la firma de los métodos del repository: el service y el controller no cambiaron, lo que muestra el beneficio del patrón Repository (ADR-014).
+  - Sumar los ingresos por sede en memoria, porque Prisma no agrupa por campos de tablas relacionadas. Es adecuado para reportes mensuales de la cadena; con millones de pagos por período convendría agregar en la base o precalcular (detallado en el ADR-018).
+  - Resolver en la base los conteos de ocupación con `groupBy` y combinar por sede en memoria.
+  - Un commit por consulta migrada y el borrado del SQL anterior recién con las pruebas pasando.
+- **Dificultades y resolución:**
+  - Prisma no permite agrupar por la sede de una relación: se seleccionan solo los campos necesarios y se combinan los resultados por sede. Se verificó que Prisma resuelve las relaciones con una cantidad fija de consultas (sin N+1).
+  - Los tipos de Prisma se perdían al combinar consultas condicionales dentro de `Promise.all`; se resolvió con métodos privados tipados para traducir canchas y clases a sede.
+- **Verificación:** las mismas pruebas pasan con el SQL anterior y con Prisma; ya no queda `$queryRaw` en `M6-reportes`. Suite completa del backend aprobada; ESLint sin errores en los archivos modificados. Pendiente: comparar en el panel los números con los datos compartidos.
+- **Commits:**
+  - `33a94b1` — test(reportes): agregar pruebas de ingresos y ocupacion.
+  - `564869f` — refactor(reportes): migrar ingresos a Prisma ORM.
+  - `28b82f8` — refactor(reportes): migrar ocupacion a Prisma ORM.
+  - `889017d` — docs(adr): agregar ADR-018 de reportes con Prisma.
+- **Referencia:** https://trello.com/c/GLFWrFZK
