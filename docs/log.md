@@ -1173,3 +1173,29 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   - `feat(M4): metodos para crud de mantenimiento`
   - `docs(log): actualizacion de bitacora`
+
+---
+
+#### 23/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Backend — Proteger endpoints de reportes para rol gerente.
+- **Actividades:**
+  - Protección de `GET /reportes/ingresos` y `GET /reportes/ocupacion` con `SupabaseAuthGuard` y `RolesGuard`, aplicados a nivel de `ReportesController` junto con `@Roles('gerente', 'admin')`, reutilizando el patrón de `clases.controller.ts`.
+  - Documentación en Swagger del candado (`@ApiBearerAuth`) y de las respuestas 401 y 403; corrección del tipo de respuesta del 400 de ingresos.
+  - Pruebas de integración HTTP con Supertest sobre los guards reales: 401 sin token o con `Authorization` mal formado, 403 para socio y recepcionista, 200 para gerente y admin, y validación 400 del rango de fechas.
+  - Base PostgreSQL temporal en memoria (PGlite + `pglite-prisma-adapter`) creada con el DDL de `schema.prisma` y un escenario de datos conocido (`test/utils/escenario-reportes.ts`), reutilizable por las pruebas de los demás módulos.
+- **Decisiones:**
+  - Aplicar los guards a nivel de clase para que cualquier endpoint futuro de reportes quede protegido por defecto.
+  - Incluir `admin` junto con `gerente` por consistencia con los demás controladores protegidos; si el equipo define "solo gerente", se modifica la constante `ROLES_REPORTES`.
+  - Generar los tokens de prueba con el mismo `JwtService` de la aplicación para no depender de Supabase ni de la red, y no usar mocks (regla del equipo).
+  - No se requirieron cambios en el frontend: el panel ya envía el token por el interceptor de Axios y las pantallas de ingresos y ocupación muestran el mensaje del servidor ante un 403.
+- **Dificultades y resolución:**
+  - PGlite carga módulos nativos de Node con `import()` dinámico, que Jest no admite sin `--experimental-vm-modules`. Se agregó una regla de transformación para archivos `.cjs` en la configuración de Jest, de modo que `yarn test` funcione sin flags adicionales.
+  - El `typecheck` de `dev` falla por un error previo en `M4-canchas/repositories/canchas.repository.ts` (`activo` no existe en `CanchaTipo` del `schema.prisma`). No corresponde a esta tarea y se informó al TL; los archivos modificados compilan sin errores.
+- **Verificación:** 20 suites y 151 pruebas aprobadas (13 nuevas). ESLint sin errores en los archivos modificados. Pendiente: prueba manual en Swagger (`/api/docs`) con las cuentas compartidas de socio y gerente.
+- **Commits:**
+  - `8356d75` — feat(reportes): proteger endpoints con rol gerente.
+  - `e68a09a` — test(reportes): agregar pruebas de acceso por rol.
+- **Referencia:** https://trello.com/c/UL44ESHY
