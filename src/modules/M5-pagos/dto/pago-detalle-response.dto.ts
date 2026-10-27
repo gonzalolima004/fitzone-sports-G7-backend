@@ -51,6 +51,15 @@ export class PagoConceptoDto {
   @IsString()
   @IsNotEmpty()
   detalle: string;
+
+  @ApiPropertyOptional({
+    description: 'Duración en días del plan en caso de membresía',
+    example: 30,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsInt()
+  duracion_dias?: number;
 }
 
 /**

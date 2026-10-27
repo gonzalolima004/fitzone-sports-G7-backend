@@ -8,7 +8,7 @@ import { PrismaService } from '../../../database/prisma-service/prisma.service';
 
 @Injectable()
 export class UsuariosRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   public readonly defaultIncludes = {
     sede: true,

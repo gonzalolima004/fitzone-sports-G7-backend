@@ -99,6 +99,27 @@ export class MembresiasRepository {
     });
   }
 
+  async obtenerEstadoPorDescripcion(descripcion: string) {
+    return await this.prisma.membresiaEstado.findFirst({
+      where: {
+        descripcion: {
+          equals: descripcion,
+          mode: 'insensitive',
+        },
+      },
+    });
+  }
+
+  async obtenerEstadoId(descripcion: string): Promise<number> {
+    const estado = await this.obtenerEstadoPorDescripcion(descripcion);
+    if (estado) return estado.id_membresia_estado;
+
+    const nuevo = await this.prisma.membresiaEstado.create({
+      data: { descripcion },
+    });
+    return nuevo.id_membresia_estado;
+  }
+
   // ==========================================
   // MEMBRESÍAS DE USUARIO (US-02-04)
   // ==========================================
@@ -111,10 +132,11 @@ export class MembresiasRepository {
     fecha_fin: Date;
     renovacion_automatica?: boolean;
   }) {
+    const idEstado =
+      data.id_membresia_estado ?? (await this.obtenerEstadoId('Activa'));
     const {
       id_usuario,
       id_membresia_plan,
-      id_membresia_estado = 1,
       fecha_inicio,
       fecha_fin,
       renovacion_automatica = false,
@@ -126,7 +148,7 @@ export class MembresiasRepository {
         renovacion_automatica,
         usuario: { connect: { id_usuario } },
         membresia_plan: { connect: { id_membresia_plan } },
-        membresia_estado: { connect: { id_membresia_estado } },
+        membresia_estado: { connect: { id_membresia_estado: idEstado } },
       },
       include: MEMBRESIA_INCLUDE,
     });
@@ -140,11 +162,12 @@ export class MembresiasRepository {
   }
   //Encontrar la membresía activa de un usuario.
   async findActiveByUsuarioId(id_usuario: number) {
-    const ID_ESTADO_ACTIVO = 1;
     return await this.prisma.membresia.findFirst({
       where: {
         id_usuario: id_usuario,
-        id_membresia_estado: ID_ESTADO_ACTIVO,
+        membresia_estado: {
+          descripcion: { equals: 'Activa', mode: 'insensitive' },
+        },
         fecha_fin: {
           gte: new Date(),
         },
@@ -210,15 +233,15 @@ export class MembresiasRepository {
 
   //Desactiva las membresías anteriores de un usuario.
   async deactivatePrevious(id_usuario: number) {
-    const ID_ESTADO_ACTIVO = 1; //NOTA: Verificar si es correcto
-    const ID_ESTADO_SUSPENDIDO = 3; //NOTA: Verificar si es correcto
+    const idActiva = await this.obtenerEstadoId('Activa');
+    const idSuspendida = await this.obtenerEstadoId('Suspendida');
     await this.prisma.membresia.updateMany({
       where: {
         id_usuario,
-        id_membresia_estado: ID_ESTADO_ACTIVO,
+        id_membresia_estado: idActiva,
       },
       data: {
-        id_membresia_estado: ID_ESTADO_SUSPENDIDO,
+        id_membresia_estado: idSuspendida,
       },
     });
   }

@@ -10,6 +10,7 @@ import { ActualizarMembresiaEstadoDto } from '../dto/actualizar-membresia-estado
 import { plainToInstance } from 'class-transformer';
 import { MembresiaResponseDto } from '../dto/membresia-response.dto';
 import { VerificarMembresiaResponseDto } from '../dto/verificar-membresia-response.dto';
+import { calcularFechaFin } from '../utils/plan-duracion';
 
 @Injectable()
 export class MembresiasService {
@@ -44,9 +45,7 @@ export class MembresiasService {
 
     const fechaFin = dto.fecha_fin
       ? new Date(dto.fecha_fin)
-      : new Date(
-          fechaInicio.getTime() + plan.duracion_dias * 24 * 60 * 60 * 1000,
-        );
+      : calcularFechaFin(fechaInicio, plan.duracion_dias);
 
     // 4. Desactivar membresías activas anteriores del usuario (Regla: 1 activa a la vez)
     await this.membresiasRepository.deactivatePrevious(dto.id_usuario);

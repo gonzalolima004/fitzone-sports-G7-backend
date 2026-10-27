@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { TipoConceptoPago } from './pago-detalle-response.dto';
 
 /**
@@ -37,4 +37,10 @@ export class PagoPendienteResponseDto {
     example: 15000,
   })
   monto: number;
+
+  @ApiPropertyOptional({
+    description: 'Duración en días del plan en caso de membresía',
+    example: 30,
+  })
+  duracion_dias?: number;
 }
