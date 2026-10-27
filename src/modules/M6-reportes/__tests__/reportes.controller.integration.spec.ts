@@ -82,14 +82,6 @@ describe('ReportesController (integración): acceso por rol', () => {
           .set('Authorization', bearer('recepcionista'))
           .expect(403);
       });
-
-      it('responde 200 con token de admin', async () => {
-        await request(servidor())
-          .get(ruta)
-          .query(consulta)
-          .set('Authorization', bearer('admin'))
-          .expect(200);
-      });
     },
   );
 

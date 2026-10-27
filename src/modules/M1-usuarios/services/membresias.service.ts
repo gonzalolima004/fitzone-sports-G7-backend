@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,8 +8,12 @@ import { MembresiasRepository } from '../repositories/membresias.repository';
 import { UsuariosRepository } from '../repositories/usuarios.repository';
 import { CreateMembresiaDto } from '../dto/crear-membresia.dto';
 import { ActualizarMembresiaEstadoDto } from '../dto/actualizar-membresia-estado.dto';
+import { ActualizarMembresiaDto } from '../dto/actualizar-membresia.dto';
 import { plainToInstance } from 'class-transformer';
-import { MembresiaResponseDto } from '../dto/membresia-response.dto';
+import {
+  MembresiaEstadoDto,
+  MembresiaResponseDto,
+} from '../dto/membresia-response.dto';
 import { VerificarMembresiaResponseDto } from '../dto/verificar-membresia-response.dto';
 import { calcularFechaFin } from '../utils/plan-duracion';
 
@@ -147,6 +152,86 @@ export class MembresiasService {
       dto.id_membresia_estado,
     );
     return plainToInstance(MembresiaResponseDto, membresiaActualizada);
+  }
+
+  /**
+   * Catálogo de estados de membresía (tabla membresia_estado).
+   */
+  async findAllEstados(): Promise<MembresiaEstadoDto[]> {
+    const estados = await this.membresiasRepository.findAllEstados();
+    return plainToInstance(MembresiaEstadoDto, estados);
+  }
+
+  /**
+   * Modifica la fecha de vencimiento o la renovación automática de una membresía.
+   */
+  async update(
+    id_membresia: number,
+    dto: ActualizarMembresiaDto,
+  ): Promise<MembresiaResponseDto> {
+    const membresia = await this.membresiasRepository.findById(id_membresia);
+    if (!membresia) {
+      throw new NotFoundException(
+        `Membresía con ID ${id_membresia} no encontrada`,
+      );
+    }
+
+    if (
+      dto.fecha_fin === undefined &&
+      dto.renovacion_automatica === undefined
+    ) {
+      throw new BadRequestException(
+        'Indicá la fecha de fin o la renovación automática a modificar',
+      );
+    }
+
+    const datos: { fecha_fin?: Date; renovacion_automatica?: boolean } = {};
+
+    if (dto.fecha_fin !== undefined) {
+      const fechaFin = new Date(dto.fecha_fin);
+      if (Number.isNaN(fechaFin.getTime())) {
+        throw new BadRequestException('La fecha de fin no es válida');
+      }
+      if (fechaFin < membresia.fecha_inicio) {
+        throw new BadRequestException(
+          'La fecha de fin no puede ser anterior a la fecha de inicio',
+        );
+      }
+      datos.fecha_fin = fechaFin;
+    }
+
+    if (dto.renovacion_automatica !== undefined) {
+      datos.renovacion_automatica = dto.renovacion_automatica;
+    }
+
+    const actualizada = await this.membresiasRepository.update(
+      id_membresia,
+      datos,
+    );
+    return plainToInstance(MembresiaResponseDto, actualizada);
+  }
+
+  /**
+   * Elimina una membresía cargada por error. Si ya tiene pagos no se borra:
+   * se conserva para la facturación y los reportes, y se suspende.
+   */
+  async remove(id_membresia: number): Promise<MembresiaResponseDto> {
+    const membresia = await this.membresiasRepository.findById(id_membresia);
+    if (!membresia) {
+      throw new NotFoundException(
+        `Membresía con ID ${id_membresia} no encontrada`,
+      );
+    }
+
+    const pagos = await this.membresiasRepository.countPagos(id_membresia);
+    if (pagos > 0) {
+      throw new ConflictException(
+        'La membresía tiene pagos registrados y no se puede eliminar. Cambiá su estado a Suspendida.',
+      );
+    }
+
+    const eliminada = await this.membresiasRepository.remove(id_membresia);
+    return plainToInstance(MembresiaResponseDto, eliminada);
   }
 
   async softDelete(id: number): Promise<MembresiaResponseDto> {

@@ -19,11 +19,13 @@ export class CreateMembresiaDto {
 
   @ApiProperty({
     example: '2025-01-01',
-    description: 'Fecha de fin de la membresía',
+    description:
+      'Fecha de fin de la membresía. Si no se envía, se calcula según la duración del plan.',
+    required: false,
   })
-  @IsNotEmpty({ message: 'La fecha de fin es requerida' })
+  @IsOptional()
   @IsString({ message: 'La fecha de fin debe ser una cadena' })
-  fecha_fin: string;
+  fecha_fin?: string;
   @ApiProperty({
     example: true,
     description:

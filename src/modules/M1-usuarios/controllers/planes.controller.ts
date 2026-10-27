@@ -26,7 +26,7 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
 // Los GET siguen siendo públicos (landing y pantalla de membresías).
-// Alta, modificación y baja: solo gerente y admin (E11-T1).
+// Alta, modificación y baja: solo gerente.
 @ApiTags('Planes')
 @Controller('planes')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -35,9 +35,9 @@ export class PlanesController {
 
   @Post()
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('gerente', 'admin')
+  @Roles('gerente')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Crear un nuevo plan (Solo gerente y admin)' })
+  @ApiOperation({ summary: 'Crear un nuevo plan (Solo gerente)' })
   @ApiResponse({ status: 201, description: 'Plan creado exitosamente.' })
   @ApiResponse({
     status: 401,
@@ -45,7 +45,7 @@ export class PlanesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol gerente o admin.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   create(@Body() createPlanDto: CrearPlanDto): Promise<PlanResponseDto> {
     return this.planesService.create(createPlanDto);
@@ -71,9 +71,9 @@ export class PlanesController {
   }
   @Patch(':id')
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('gerente', 'admin')
+  @Roles('gerente')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Actualizar plan (Solo gerente y admin)' })
+  @ApiOperation({ summary: 'Actualizar plan (Solo gerente)' })
   @ApiResponse({ status: 200, description: 'Plan actualizado correctamente.' })
   @ApiResponse({
     status: 401,
@@ -81,7 +81,7 @@ export class PlanesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol gerente o admin.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({ status: 404, description: 'Plan no encontrado.' })
   update(
@@ -92,9 +92,9 @@ export class PlanesController {
   }
   @Delete(':id')
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('gerente', 'admin')
+  @Roles('gerente')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Eliminar plan (Solo gerente y admin)' })
+  @ApiOperation({ summary: 'Eliminar plan (Solo gerente)' })
   @ApiResponse({ status: 200, description: 'Plan eliminado correctamente.' })
   @ApiResponse({
     status: 401,
@@ -102,7 +102,7 @@ export class PlanesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol gerente o admin.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({ status: 404, description: 'Plan no encontrado.' })
   remove(@Param('id', ParseIntPipe) id: number): Promise<PlanResponseDto> {

@@ -231,6 +231,31 @@ export class MembresiasRepository {
     });
   }
 
+  // Modifica la fecha de vencimiento o la renovación automática.
+  async update(
+    id_membresia: number,
+    data: { fecha_fin?: Date; renovacion_automatica?: boolean },
+  ) {
+    return await this.prisma.membresia.update({
+      where: { id_membresia },
+      data,
+      include: MEMBRESIA_INCLUDE,
+    });
+  }
+
+  // Cantidad de pagos registrados para una membresía.
+  async countPagos(id_membresia: number) {
+    return await this.prisma.pago.count({ where: { id_membresia } });
+  }
+
+  // Elimina la membresía (solo se usa cuando no tiene pagos).
+  async remove(id_membresia: number) {
+    return await this.prisma.membresia.delete({
+      where: { id_membresia },
+      include: MEMBRESIA_INCLUDE,
+    });
+  }
+
   //Desactiva las membresías anteriores de un usuario.
   async deactivatePrevious(id_usuario: number) {
     const idActiva = await this.obtenerEstadoId('Activa');
