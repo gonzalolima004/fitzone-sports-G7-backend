@@ -65,7 +65,7 @@ export class SedeController {
     return this.sedeService.findById(id_sede);
   }
 
-  @ApiOperation({ summary: 'Crear una nueva sede (Solo gerente y admin)' })
+  @ApiOperation({ summary: 'Crear una nueva sede (Solo gerente)' })
   @ApiResponse({
     status: 201,
     description: 'Sede creada correctamente',
@@ -80,14 +80,14 @@ export class SedeController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol gerente o admin.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({
     status: 404,
     description: 'La ciudad especificada no existe',
   })
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('gerente', 'admin')
+  @Roles('gerente')
   @ApiBearerAuth()
   @Post()
   async create(@Body() data: CreateSedeDto) {
@@ -95,7 +95,7 @@ export class SedeController {
   }
 
   @ApiOperation({
-    summary: 'Actualizar datos de la sede (Solo gerente y admin)',
+    summary: 'Actualizar datos de la sede (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -116,14 +116,14 @@ export class SedeController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol gerente o admin.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({
     status: 404,
     description: 'Sede o ciudad especificada no encontrada',
   })
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('gerente', 'admin')
+  @Roles('gerente')
   @ApiBearerAuth()
   @Patch(':id')
   async update(
@@ -134,7 +134,7 @@ export class SedeController {
   }
 
   @ApiOperation({
-    summary: 'Eliminar lógicamente una sede (Solo gerente y admin)',
+    summary: 'Eliminar lógicamente una sede (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -155,14 +155,14 @@ export class SedeController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol gerente o admin.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({
     status: 404,
     description: 'Sede no encontrada',
   })
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('gerente', 'admin')
+  @Roles('gerente')
   @ApiBearerAuth()
   @Delete(':id')
   async logicalDelete(@Param('id', ParseIntPipe) id_sede: number) {

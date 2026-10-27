@@ -14,8 +14,8 @@ type PlanRespuesta = {
 };
 
 /**
- * Integración HTTP de los planes de membresía (E11-T1): el catálogo es
- * público y su administración queda reservada a gerente y admin.
+ * Integración HTTP de los planes de membresía: el catálogo es público y su
+ * administración queda reservada al gerente.
  * PlanesController pertenece a UsuariosModule, que el helper ya importa.
  */
 describe('Planes de membresía (integración): permisos de escritura', () => {

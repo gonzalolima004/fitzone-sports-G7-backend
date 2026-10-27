@@ -62,7 +62,7 @@ export class CiudadController {
     return this.ciudadService.findById(id_ciudad);
   }
 
-  @ApiOperation({ summary: 'Crear una nueva ciudad (Solo gerente y admin)' })
+  @ApiOperation({ summary: 'Crear una nueva ciudad (Solo gerente)' })
   @ApiResponse({
     status: 201,
     description: 'Ciudad creada correctamente',
@@ -77,10 +77,10 @@ export class CiudadController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol gerente o admin.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('gerente', 'admin')
+  @Roles('gerente')
   @ApiBearerAuth()
   @Post()
   async create(@Body() data: CreateCiudadDto) {
@@ -88,7 +88,7 @@ export class CiudadController {
   }
 
   @ApiOperation({
-    summary: 'Actualizar datos de la ciudad (Solo gerente y admin)',
+    summary: 'Actualizar datos de la ciudad (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -109,14 +109,14 @@ export class CiudadController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol gerente o admin.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({
     status: 404,
     description: 'Ciudad no encontrada',
   })
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('gerente', 'admin')
+  @Roles('gerente')
   @ApiBearerAuth()
   @Patch(':id')
   async update(
@@ -127,7 +127,7 @@ export class CiudadController {
   }
 
   @ApiOperation({
-    summary: 'Eliminar lógicamente una ciudad (Solo gerente y admin)',
+    summary: 'Eliminar lógicamente una ciudad (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -148,14 +148,14 @@ export class CiudadController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol gerente o admin.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({
     status: 404,
     description: 'Ciudad no encontrada',
   })
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('gerente', 'admin')
+  @Roles('gerente')
   @ApiBearerAuth()
   @Delete(':id')
   async logicalDelete(@Param('id', ParseIntPipe) id_ciudad: number) {

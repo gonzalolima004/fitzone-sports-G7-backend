@@ -20,9 +20,9 @@ type CiudadRespuesta = { id_ciudad: number; nombre: string; activo: boolean };
 type Ids = { concordia: number; sedeCentro: number; sedeVieja: number };
 
 /**
- * Integración HTTP de M0-sedes (E11-T1): la consulta de sedes y ciudades es
- * pública (el registro no tiene token) y el alta, la modificación y la baja
- * quedan reservadas a gerente y admin.
+ * Integración HTTP de M0-sedes: la consulta de sedes y ciudades es pública
+ * (el registro no tiene token) y el alta, la modificación y la baja quedan
+ * reservadas al gerente.
  */
 describe('Sedes y ciudades (integración): permisos de escritura', () => {
   let contexto: AppDePruebas;
@@ -175,7 +175,7 @@ describe('Sedes y ciudades (integración): permisos de escritura', () => {
       await request(servidor()).delete(`/sedes/${ids.sedeCentro}`).expect(401);
     });
 
-    it('con token de admin realiza la baja lógica: deja de listarse pero se conserva', async () => {
+    it('con token de gerente realiza la baja lógica: deja de listarse pero se conserva', async () => {
       const temporal = await contexto.base.prisma.sede.create({
         data: {
           nombre: 'Temporal',
@@ -187,7 +187,7 @@ describe('Sedes y ciudades (integración): permisos de escritura', () => {
 
       const respuesta = await request(servidor())
         .delete(`/sedes/${temporal.id_sede}`)
-        .set('Authorization', bearer('admin'))
+        .set('Authorization', bearer('gerente'))
         .expect(200);
       expect((respuesta.body as SedeRespuesta).activo).toBe(false);
 

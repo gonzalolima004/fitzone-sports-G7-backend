@@ -14,14 +14,6 @@ import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
-/**
- * Roles habilitados para consultar la reportería consolidada multi-sede.
- * El actor del dominio es el Gerente Central (A4); admin se incluye por
- * consistencia con el resto de los controladores protegidos del proyecto
- * (ver clases.controller.ts). Si el equipo define "solo gerente", se cambia acá.
- */
-const ROLES_REPORTES = ['gerente', 'admin'];
-
 @ApiTags('Reportes')
 @ApiBearerAuth()
 @ApiResponse({
@@ -30,17 +22,17 @@ const ROLES_REPORTES = ['gerente', 'admin'];
 })
 @ApiResponse({
   status: 403,
-  description: 'Acceso denegado: se requiere rol gerente o admin.',
+  description: 'Acceso denegado: se requiere rol gerente.',
 })
 @UseGuards(SupabaseAuthGuard, RolesGuard)
-@Roles(...ROLES_REPORTES)
+@Roles('gerente')
 @Controller('reportes')
 export class ReportesController {
   constructor(private readonly reportesService: ReportesService) {}
 
   @Get('ingresos')
   @ApiOperation({
-    summary: 'Obtener reporte consolidado de ingresos (Solo gerente y admin)',
+    summary: 'Obtener reporte consolidado de ingresos (Solo gerente)',
   })
   @ApiResponse({
     status: 200,
@@ -59,7 +51,7 @@ export class ReportesController {
 
   @Get('ocupacion')
   @ApiOperation({
-    summary: 'Obtener métricas de ocupación por sede (Solo gerente y admin)',
+    summary: 'Obtener métricas de ocupación por sede (Solo gerente)',
   })
   @ApiResponse({
     status: 200,
