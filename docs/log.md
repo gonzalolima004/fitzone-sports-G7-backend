@@ -1199,3 +1199,27 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `8356d75` — feat(reportes): proteger endpoints con rol gerente.
   - `e68a09a` — test(reportes): agregar pruebas de acceso por rol.
 - **Referencia:** https://trello.com/c/UL44ESHY
+
+---
+
+#### 23/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** E11-T1 — Panel de Gerente, CRUD Sedes/Membresías y Sede Dinámica (parte backend).
+- **Actividades:**
+  - Revisión de los CRUD existentes de `/sedes`, `/ciudades` (M0-sedes) y `/planes` (M1-usuarios): las operaciones de escritura no tenían protección y cualquier cliente podía crear, modificar o dar de baja sedes y planes.
+  - Protección de `POST`, `PATCH` y `DELETE` de `/sedes`, `/ciudades` y `/planes` con `SupabaseAuthGuard`, `RolesGuard` y `@Roles('gerente', 'admin')`, con 401 y 403 documentados en Swagger.
+  - Pruebas de integración HTTP sobre PGlite para sedes y ciudades: listado público solo de sedes activas, 401/403/201 en el alta, 404 por ciudad inexistente, 400 por datos inválidos o campos no permitidos, actualización parcial y baja lógica.
+  - Pruebas de integración para planes: catálogo público con precio numérico, 401/403/201 en el alta con normalización del nombre, 400 por duración inválida, edición y baja de un plan sin membresías.
+  - Extracción de `test/utils/app-de-pruebas.ts` para levantar la aplicación de pruebas con los módulos reales y reutilizarla en reportes, sedes y planes.
+- **Decisiones:**
+  - Mantener públicos los `GET`: el registro de usuarios, la landing, el selector de sede del encabezado y la pantalla de membresías los consultan sin sesión.
+  - En `PlanesController` (módulo M1) solo se agregaron decoradores, sin modificar la lógica de `PlanesService`.
+- **Dificultades y resolución:**
+  - Eliminar un plan con membresías asociadas devuelve 500 por la clave foránea de `membresia`. No se modificó `PlanesService` por pertenecer a M1: queda registrado como `it.todo` (responder 409) y el frontend muestra un mensaje claro en ese caso.
+- **Verificación:** 22 suites y 172 pruebas aprobadas (1 pendiente `todo`). ESLint sin errores en los archivos modificados. Pendiente: recorrido con la cuenta compartida de gerente.
+- **Commits:**
+  - `0860270` — feat(sedes): proteger sedes y ciudades por rol.
+  - `9dff9a1` — feat(planes): proteger gestion de planes por rol.
+- **Referencia:** https://trello.com/c/gn9BCsTu
