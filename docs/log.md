@@ -1289,3 +1289,29 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   - `fix(rbac): quitar rol admin de reportes, sedes y planes`
   - `docs(log): corregir formato y registrar correcciones`
+
+---
+
+#### 27/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** CRUD de membresías de los socios para el gerente (parte backend).
+- **Actividades:**
+  - Revisión de `/membresias` (M1): ya tenía alta, consultas y cambio de estado, pero sin protección; faltaban modificar y eliminar, y la respuesta no traía el socio, el plan ni el estado.
+  - Protección con `SupabaseAuthGuard`, `RolesGuard` y `@Roles('gerente')` del alta, el listado general, el detalle, la modificación, el cambio de estado y la baja. Las consultas por usuario, que usan el socio y el control de acceso, siguen como estaban.
+  - Nuevo `GET /membresias/estados` con el catálogo de la tabla `membresia_estado`, para que el panel no tenga los estados escritos a mano.
+  - Nuevo `PATCH /membresias/:id` para modificar la fecha de vencimiento y la renovación automática, con validación de que el vencimiento no sea anterior al inicio.
+  - Nuevo `DELETE /membresias/:id` para eliminar una membresía cargada por error; si ya tiene pagos responde 409 y se sugiere suspenderla.
+  - `MembresiaResponseDto` ahora incluye el plan (con precio numérico), el estado y los datos básicos del socio. En el alta, `fecha_fin` pasa a ser opcional: si no se envía, se calcula con la duración del plan (`calcularFechaFin`).
+  - Pruebas de integración HTTP sobre PGlite: permisos (401/403), catálogo de estados, listado con filtros, detalle, alta con cálculo del vencimiento, cambio de estado, modificación y baja con y sin pagos.
+- **Decisiones:**
+  - El cambio de estado sigue en `PATCH /membresias/:id/estado`, que ya existía; la modificación nueva solo toca vencimiento y renovación.
+  - No borrar membresías con pagos: suspenderlas conserva la facturación y los reportes sin romper las claves foráneas de `pago`.
+- **Dificultades:**
+  - Al serializar el precio del plan anidado, class-transformer intentaba construir un `Decimal` vacío y el listado respondía 500; se resolvió declarando el campo como número (`@Type(() => Number)`).
+- **Verificación:** 24 suites y 200 pruebas aprobadas (20 nuevas, 1 pendiente `todo`). ESLint sin errores en los archivos modificados.
+- **Commits:**
+  - `feat(membresias): completar CRUD de membresias para el gerente`
+  - `test(membresias): agregar pruebas de integracion del CRUD`
+  - `docs(log): registrar CRUD de membresias`
