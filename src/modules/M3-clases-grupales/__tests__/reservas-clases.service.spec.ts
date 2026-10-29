@@ -24,6 +24,7 @@ interface MockPrismaService {
   clase: {
     findUnique: jest.Mock;
   };
+  $executeRaw: jest.Mock;
   $transaction: jest.Mock;
 }
 
@@ -66,6 +67,7 @@ describe('ReservasClasesService', () => {
       clase: {
         findUnique: jest.fn(),
       },
+      $executeRaw: jest.fn().mockResolvedValue(1),
       $transaction: jest
         .fn()
         .mockImplementation((callback: (tx: unknown) => Promise<unknown>) =>

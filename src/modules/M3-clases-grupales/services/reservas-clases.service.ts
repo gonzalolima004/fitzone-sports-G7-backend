@@ -101,9 +101,11 @@ export class ReservasClasesService {
       );
     }
 
-    // 4. Validación atómica de cupo e inserción
+    // 4. Validación atómica de cupo e inserción con control de concurrencia
     return await this.prisma.$transaction(async (tx) => {
-      // 4.1. Validar existencia y capacidad de la clase
+      // 4.1. Bloqueo pesimista (FOR UPDATE) para serializar reservas concurrentes y evitar race conditions
+      await tx.$executeRaw`SELECT id_clase FROM clase WHERE id_clase = ${data.id_clase} FOR UPDATE`;
+
       const clase = await tx.clase.findUnique({
         where: { id_clase: data.id_clase },
       });
