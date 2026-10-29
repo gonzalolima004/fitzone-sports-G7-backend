@@ -1197,6 +1197,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(membresias): soporte y lógica de duración para planes mensual, trimestral y anual`
   - `feat(pagos): flujo de contratación de planes y activación de membresías`
   - `fix(membresias): ceñir ciclo de vida a 3 estados (activa, vencida, suspendida) y remover pendiente`
+
 #### 23/10/2026
 
 #### Facundo Agüero | Rol: Desarrollador Backend
@@ -1315,3 +1316,23 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(membresias): completar CRUD de membresias para el gerente`
   - `test(membresias): agregar pruebas de integracion del CRUD`
   - `docs(log): registrar CRUD de membresias`
+
+---
+
+#### 29/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** Corrección de consultas de reservas activas y robustecimiento de transacción de cancelación y lista de espera en M3.
+- **Actividades:**
+  - **Filtrado estricto de reservas activas en M3:** Corrección en `ReservasClasesRepository.obtenerReservasPorUsuario` agregando la condición `id_clase_reserva_estado: 1` (`Confirmada`) a la consulta de Prisma, resolviendo el error donde el endpoint `GET /reservas-clases/mis-reservas` retornaba reservas históricas canceladas como si continuaran vigentes.
+  - **Tolerancia temporal en lista de espera:** Incorporación de un margen de tolerancia (`toleranciaMs = 60000`, +/- 1 minuto con operadores `gte` y `lte`) en `ListaEsperaRepository.obtenerPrimerInscriptoActivo` y `ReservasClasesRepository.obtenerPrimerEnEspera`, blindando la búsqueda de socios en lista de espera frente a posibles discrepancias de milisegundos, segundos o zonas horarias al comparar `fecha_inicio` y `fecha_fin`.
+  - **Atomicidad y prevención de condiciones de carrera en cancelación:** Refactorización de `ReservasClasesService.cancelarReserva` dentro de la transacción de Prisma (`$transaction`), asegurando que la actualización del estado de la lista de espera a estado `2` (Promovida) y la creación de la reserva en estado `1` (Confirmada) se ejecuten de forma indivisible.
+  - **Prevención de lecturas sucias en concurrencia:** Al actualizar el estado de la reserva cancelada a `4` dentro de la transacción, el bloqueo a nivel de fila (`RowExclusiveLock`) en PostgreSQL sumado al filtrado de estado `1` en repositorio previene lecturas sucias o dobles cancelaciones concurrentes.
+  - **Pruebas y verificación:** Actualización y ampliación de las suites unitarias en `repositories.spec.ts` y `reservas-clases.service.spec.ts`, alcanzando **24 suites y 202 pruebas aprobadas al 100%**, superando build de NestJS y ESLint sin observaciones.
+- **Decisiones:**
+  - Filtrar las reservas en estado `1` directamente en la consulta a la base de datos en `ReservasClasesRepository` en lugar de hacerlo en memoria en el servicio, maximizando el rendimiento y la consistencia con `ListaEsperaRepository`.
+  - Emplear un rango de tolerancia de 1 minuto (`gte`/`lte`) en la búsqueda del primer inscripto de lista de espera para asegurar que diferencias de redondeo o formato ISO (con o sin milisegundos) nunca impidan la promoción del socio.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `fix(clases): filtrar reservas activas y robustecer transaccion atomica de cancelacion y promocion`
