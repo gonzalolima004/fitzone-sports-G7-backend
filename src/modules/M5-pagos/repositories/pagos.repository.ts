@@ -62,6 +62,23 @@ export class PagosRepository {
     });
   }
 
+  async actualizarPagoPendiente(
+    id_pago: number,
+    data: {
+      monto: number;
+      token_transaccion: string;
+    },
+  ): Promise<Pago> {
+    return this.prisma.pago.update({
+      where: { id_pago },
+      data: {
+        monto: data.monto,
+        token_transaccion: data.token_transaccion,
+        fecha_pago: new Date(),
+      },
+    });
+  }
+
   async obtenerPorId(id_pago: number): Promise<PagoConRelaciones | null> {
     return this.prisma.pago.findUnique({
       where: { id_pago },
@@ -275,6 +292,47 @@ export class PagosRepository {
     });
   }
 
+  /**
+   * Busca una membresía en estado 'Suspendida' del usuario que nunca haya tenido
+   * un pago 'Aprobado' (intención de suscripción abierta sin abonar).
+   */
+  async obtenerMembresiaSuspendidaSinPagoAprobado(id_usuario: number) {
+    return this.prisma.membresia.findFirst({
+      where: {
+        id_usuario,
+        membresia_estado: {
+          descripcion: { equals: 'Suspendida', mode: 'insensitive' },
+        },
+        pagos: {
+          none: {
+            pago_estado: {
+              descripcion: { equals: 'Aprobado', mode: 'insensitive' },
+            },
+          },
+        },
+      },
+      orderBy: { id_membresia: 'desc' },
+    });
+  }
+
+  async actualizarIntencionMembresia(
+    id_membresia: number,
+    data: {
+      id_membresia_plan: number;
+      renovacion_automatica?: boolean;
+    },
+  ) {
+    return this.prisma.membresia.update({
+      where: { id_membresia },
+      data: {
+        id_membresia_plan: data.id_membresia_plan,
+        renovacion_automatica: data.renovacion_automatica ?? false,
+        fecha_inicio: new Date(),
+        fecha_fin: new Date(),
+      },
+    });
+  }
+
   async crearMembresia(data: {
     id_usuario: number;
     id_membresia_plan: number;
@@ -459,7 +517,8 @@ export class PagosRepository {
 
   /**
    * Obtiene la lista cronológica de pagos asociados a un usuario (identificado por id_usuario)
-   * a través de sus reservas de cancha o membresías adquiridas.
+   * a través de sus reservas de cancha o membresías adquiridas, excluyendo intenciones
+   * de checkout abandonadas en estado 'Pendiente'.
    */
   async obtenerHistorialPorUsuario(
     id_usuario: number,
@@ -467,6 +526,11 @@ export class PagosRepository {
     return this.prisma.pago.findMany({
       where: {
         OR: [{ cancha_reserva: { id_usuario } }, { membresia: { id_usuario } }],
+        NOT: {
+          pago_estado: {
+            descripcion: { equals: 'Pendiente', mode: 'insensitive' },
+          },
+        },
       },
       orderBy: { fecha_pago: 'desc' },
       include: {
