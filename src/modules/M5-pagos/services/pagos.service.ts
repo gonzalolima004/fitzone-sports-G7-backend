@@ -111,19 +111,34 @@ export class PagosService {
         );
       }
 
-      // Crear membresía en estado 'Suspendida' (inactiva) hasta que el pago sea aprobado
-      const idSuspendida =
-        await this.pagosRepository.obtenerEstadoMembresiaSuspendidaId();
-      const nuevaMembresia = await this.pagosRepository.crearMembresia({
-        id_usuario: targetUserId,
-        id_membresia_plan: plan.id_membresia_plan,
-        id_membresia_estado: idSuspendida,
-        fecha_inicio: new Date(),
-        fecha_fin: new Date(),
-        renovacion_automatica: dto.renovacion_automatica ?? false,
-      });
+      // Reutilizar intención de membresía 'Suspendida' sin pago aprobado si ya existía,
+      // evitando acumular registros huérfanos cuando el usuario abre el checkout y no paga
+      const intencionExistente =
+        await this.pagosRepository.obtenerMembresiaSuspendidaSinPagoAprobado?.(
+          targetUserId,
+        );
 
-      idMembresiaParaPago = nuevaMembresia.id_membresia;
+      if (intencionExistente) {
+        const membresiaActualizada =
+          await this.pagosRepository.actualizarIntencionMembresia(
+            intencionExistente.id_membresia,
+            {
+              id_membresia_plan: plan.id_membresia_plan,
+            },
+          );
+        idMembresiaParaPago = membresiaActualizada.id_membresia;
+      } else {
+        const idSuspendida =
+          await this.pagosRepository.obtenerEstadoMembresiaSuspendidaId();
+        const nuevaMembresia = await this.pagosRepository.crearMembresia({
+          id_usuario: targetUserId,
+          id_membresia_plan: plan.id_membresia_plan,
+          id_membresia_estado: idSuspendida,
+          fecha_inicio: new Date(),
+          fecha_fin: new Date(),
+        });
+        idMembresiaParaPago = nuevaMembresia.id_membresia;
+      }
     } else if (tieneMembresia) {
       const m = await this.pagosRepository.obtenerMembresiaPorId(
         dto.id_membresia!,
@@ -182,7 +197,10 @@ export class PagosService {
             backUrls?.success && !backUrls.success.includes('localhost')
               ? 'approved'
               : undefined,
-          notification_url: notificationUrl || undefined,
+          notification_url:
+            notificationUrl && !notificationUrl.includes('localhost')
+              ? notificationUrl
+              : undefined,
           external_reference: itemId,
           metadata: {
             id_cancha_reserva: dto.id_cancha_reserva ?? null,
@@ -206,16 +224,35 @@ export class PagosService {
       );
     }
 
-    // 5. Persistir la intención en la tabla `pago` con estado 'Pendiente'
+    // 5. Persistir o reutilizar la intención en la tabla `pago` con estado 'Pendiente'
     // RNF-02: Se almacena solo el ID en token_transaccion, sin datos sensibles de tarjeta.
-    const nuevoPago = await this.pagosRepository.crearPago({
-      id_pago_estado: idPagoEstado,
-      id_cancha_reserva: dto.id_cancha_reserva ?? null,
-      id_membresia: idMembresiaParaPago,
-      monto: montoTotal,
-      token_transaccion: preference.id,
-      comprobante_url: null,
-    });
+    const pagoPendienteExistente = tieneCancha
+      ? await this.pagosRepository.obtenerUltimoPagoPendienteCancha?.(
+          dto.id_cancha_reserva!,
+        )
+      : idMembresiaParaPago
+        ? await this.pagosRepository.obtenerUltimoPagoPendienteMembresia?.(
+            idMembresiaParaPago,
+          )
+        : null;
+
+    const nuevoPago =
+      pagoPendienteExistente && this.pagosRepository.actualizarPagoPendiente
+        ? await this.pagosRepository.actualizarPagoPendiente(
+            pagoPendienteExistente.id_pago,
+            {
+              monto: montoTotal,
+              token_transaccion: preference.id,
+            },
+          )
+        : await this.pagosRepository.crearPago({
+            id_pago_estado: idPagoEstado,
+            id_cancha_reserva: dto.id_cancha_reserva ?? null,
+            id_membresia: idMembresiaParaPago,
+            monto: montoTotal,
+            token_transaccion: preference.id,
+            comprobante_url: null,
+          });
 
     this.logger.log(
       `Intención de pago #${nuevoPago.id_pago} registrada exitosamente (Preferencia: ${preference.id}).`,
@@ -358,7 +395,7 @@ export class PagosService {
       return {
         received: true,
         status: 'approved',
-        message: `Pago #${pago.id_pago} aprobado y confirmado exitosamente`,
+        message: `Pago #${pagoConfirmado.id_pago} aprobado y confirmado exitosamente`,
       };
     }
 
