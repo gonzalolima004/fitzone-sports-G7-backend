@@ -1315,3 +1315,28 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(membresias): completar CRUD de membresias para el gerente`
   - `test(membresias): agregar pruebas de integracion del CRUD`
   - `docs(log): registrar CRUD de membresias`
+
+---
+
+#### 30/10/2026
+
+#### Angelina Vialle | Rol: Desarrolladora Backend
+
+- **Actividades:**
+  - **Flexibilización de identificación en ingresos y egresos:** Actualización de `ValidarIngresoDto` y `RegistrarEgresoDto` para hacer opcional `qrToken` y habilitar el campo `dni` (validado como numérico con `@Matches(/^\d+$/)` y `@IsOptional()`), permitiendo el registro tanto por QR dinámico como por ingreso manual de DNI.
+  - **Búsqueda por DNI en repositorio:** Implementación de `buscarUsuarioPorDni` en `AccesosRepository` para consultar socios en la base de datos vía `prisma.usuario.findUnique`, con soporte para clientes transaccionales.
+  - **Unificación de resolución de identidad:** Creación del método privado auxiliar `resolverIdUsuario` en `AccesosService` para centralizar la validación: resolución y existencia de usuario por DNI (`NotFoundException` 404 si no existe) o validación de vigencia del token efímero QR (`BadRequestException` 400 si expiró o está manipulado).
+  - **Refactorización de flujos de torniquete:** Adaptación de `validarYRegistrarIngreso` y `registrarEgreso` en `AccesosService` para utilizar la resolución unificada de identidad, manteniendo intactas las reglas de membresía activa, anti-doble ingreso y transacción atómica.
+  - **Estandarización de excepciones y Swagger:** Migración de `UnauthorizedException` (401) a `BadRequestException` (400) en `QrService.validarTokenEfimero`, `extraerIdDeToken` y los decoradores `@ApiResponse` de `AccesosController` y `QrController`, alineando los errores de formato o expiración de QR con las convenciones HTTP de validación de carga útil.
+- **Decisiones:**
+  - Centralizar la lógica de obtención del socio en `resolverIdUsuario` para evitar duplicar código entre los métodos de ingreso y egreso, asegurando un punto único de validación para ambos métodos de entrada (QR vs. DNI).
+  - Validar el formato numérico del DNI directamente a nivel de DTO mediante expresión regular para rechazar peticiones mal formadas antes de consultar la base de datos.
+  - Utilizar `BadRequestException` (400) en lugar de `UnauthorizedException` (401) para fallos de validación o expiración del token QR, reservando el 401 estrictamente para la autenticación de la sesión del usuario contra la API.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M2): correccion de excepciones y codigos de estado`
+  - `feat(M2): adicion de dni en dto de egreso e ingreso`
+  - `feat(M2): funcion para buscar usuario por dni`
+  - `feat(M2): correcion de excepciones y metodo para buscar por dni o token`
+  - `fix(M2): arreglo tipo de excepcion`
+  - `docs(log): actualizacion de bitacora`
