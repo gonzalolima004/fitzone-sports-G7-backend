@@ -124,7 +124,6 @@ export class PagosService {
             intencionExistente.id_membresia,
             {
               id_membresia_plan: plan.id_membresia_plan,
-              renovacion_automatica: dto.renovacion_automatica ?? false,
             },
           );
         idMembresiaParaPago = membresiaActualizada.id_membresia;
@@ -137,7 +136,6 @@ export class PagosService {
           id_membresia_estado: idSuspendida,
           fecha_inicio: new Date(),
           fecha_fin: new Date(),
-          renovacion_automatica: dto.renovacion_automatica ?? false,
         });
         idMembresiaParaPago = nuevaMembresia.id_membresia;
       }
@@ -199,7 +197,10 @@ export class PagosService {
             backUrls?.success && !backUrls.success.includes('localhost')
               ? 'approved'
               : undefined,
-          notification_url: notificationUrl || undefined,
+          notification_url:
+            notificationUrl && !notificationUrl.includes('localhost')
+              ? notificationUrl
+              : undefined,
           external_reference: itemId,
           metadata: {
             id_cancha_reserva: dto.id_cancha_reserva ?? null,

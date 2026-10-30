@@ -1197,6 +1197,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(membresias): soporte y lógica de duración para planes mensual, trimestral y anual`
   - `feat(pagos): flujo de contratación de planes y activación de membresías`
   - `fix(membresias): ceñir ciclo de vida a 3 estados (activa, vencida, suspendida) y remover pendiente`
+
 #### 23/10/2026
 
 #### Facundo Agüero | Rol: Desarrollador Backend
@@ -1315,3 +1316,21 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(membresias): completar CRUD de membresias para el gerente`
   - `test(membresias): agregar pruebas de integracion del CRUD`
   - `docs(log): registrar CRUD de membresias`
+
+---
+
+#### 29/10/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Endpoint de verificación de membresía: inclusión de fecha_inicio en el DTO de respuesta y ajuste en la detección de mora considerando estado 'Vencida' o expiración de fecha fin.
+  - Flujo de pagos: reutilización de intenciones de membresía suspendidas y pagos pendientes para evitar registros huérfanos al reintentar checkout, y exclusión de pagos pendientes abandonados en el historial del socio.
+  - Depuración del inicio de pago: remoción del parámetro y persistencia de renovación automática en DTO, repositorio y servicio.
+- **Decisiones:**
+  - Reutilizar la intención de pago pendiente previa en lugar de crear registros duplicados si el usuario no completó la transacción anterior.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `fix(membresias): corregir deteccion de mora y devolver fecha_inicio en verificacion`
+  - `fix(pagos): reutilizar intenciones suspendidas y omitir pagos pendientes huerfanos en historial`
+  - `refactor(pagos): remover campo renovacion_automatica en flujo de inicio de pago`

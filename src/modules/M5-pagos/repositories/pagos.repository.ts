@@ -319,14 +319,12 @@ export class PagosRepository {
     id_membresia: number,
     data: {
       id_membresia_plan: number;
-      renovacion_automatica?: boolean;
     },
   ) {
     return this.prisma.membresia.update({
       where: { id_membresia },
       data: {
         id_membresia_plan: data.id_membresia_plan,
-        renovacion_automatica: data.renovacion_automatica ?? false,
         fecha_inicio: new Date(),
         fecha_fin: new Date(),
       },
@@ -339,7 +337,6 @@ export class PagosRepository {
     id_membresia_estado: number;
     fecha_inicio: Date;
     fecha_fin: Date;
-    renovacion_automatica?: boolean;
   }) {
     return this.prisma.membresia.create({
       data,

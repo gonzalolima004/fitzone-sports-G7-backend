@@ -1,5 +1,4 @@
 import {
-  IsBoolean,
   IsEmail,
   IsInt,
   IsNotEmpty,
@@ -101,15 +100,6 @@ export class IniciarPagoDto {
   @IsInt()
   @IsPositive()
   id_membresia?: number;
-
-  @ApiPropertyOptional({
-    description:
-      'Indica si el socio habilita la renovación automática para su membresía',
-    example: true,
-  })
-  @IsOptional()
-  @IsBoolean()
-  renovacion_automatica?: boolean;
 
   @ApiPropertyOptional({
     description:
