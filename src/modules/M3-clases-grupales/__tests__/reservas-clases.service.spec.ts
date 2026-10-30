@@ -24,6 +24,7 @@ interface MockPrismaService {
   clase: {
     findUnique: jest.Mock;
   };
+  $executeRaw: jest.Mock;
   $transaction: jest.Mock;
 }
 
@@ -66,6 +67,7 @@ describe('ReservasClasesService', () => {
       clase: {
         findUnique: jest.fn(),
       },
+      $executeRaw: jest.fn().mockResolvedValue(1),
       $transaction: jest
         .fn()
         .mockImplementation((callback: (tx: unknown) => Promise<unknown>) =>
@@ -572,6 +574,21 @@ describe('ReservasClasesService', () => {
         100,
         expect.any(Date),
         expect.any(Date),
+      );
+    });
+
+    it('debe consultar mis reservas sin rango de fecha si no se especifica el parámetro fecha', async () => {
+      (
+        mockReservasRepo.obtenerReservasPorUsuario as jest.Mock
+      ).mockResolvedValue([]);
+
+      const resultado = await service.obtenerMisReservas(100);
+
+      expect(resultado).toEqual([]);
+      expect(mockReservasRepo.obtenerReservasPorUsuario).toHaveBeenCalledWith(
+        100,
+        undefined,
+        undefined,
       );
     });
   });

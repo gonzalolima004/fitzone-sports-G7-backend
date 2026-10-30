@@ -81,15 +81,33 @@ export class ReservasClasesRepository {
     fecha_inicio: Date,
     fecha_fin: Date,
     tx?: Prisma.TransactionClient,
+    toleranciaMs: number = 60000,
   ) {
     const prismaClient = tx || this.prisma;
+    const inicioDate = new Date(fecha_inicio);
+    const finDate = new Date(fecha_fin);
+
+    const where: Prisma.ClaseReservaWhereInput = {
+      id_clase,
+      id_clase_reserva_estado: 2, // 2 = En Espera
+    };
+
+    if (toleranciaMs > 0) {
+      where.fecha_inicio = {
+        gte: new Date(inicioDate.getTime() - toleranciaMs),
+        lte: new Date(inicioDate.getTime() + toleranciaMs),
+      };
+      where.fecha_fin = {
+        gte: new Date(finDate.getTime() - toleranciaMs),
+        lte: new Date(finDate.getTime() + toleranciaMs),
+      };
+    } else {
+      where.fecha_inicio = inicioDate;
+      where.fecha_fin = finDate;
+    }
+
     return await prismaClient.claseReserva.findFirst({
-      where: {
-        id_clase,
-        fecha_inicio,
-        fecha_fin,
-        id_clase_reserva_estado: 2, // 2 = En Espera
-      },
+      where,
       orderBy: {
         id_clase_reserva: 'asc', // El primero que llegó (auto-incremental)
       },
@@ -98,6 +116,7 @@ export class ReservasClasesRepository {
 
   /**
    * Obtiene las reservas asociadas a un usuario, permitiendo filtrar por un rango de fechas.
+   * Filtra únicamente las reservas activas/confirmadas (id_clase_reserva_estado: 1).
    */
   async obtenerReservasPorUsuario(
     id_usuario: number,
@@ -106,6 +125,7 @@ export class ReservasClasesRepository {
   ) {
     const whereClause: Prisma.ClaseReservaWhereInput = {
       id_usuario,
+      id_clase_reserva_estado: 1, // Solo reservas activas / confirmadas
     };
 
     if (fechaInicioDia && fechaFinDia) {
