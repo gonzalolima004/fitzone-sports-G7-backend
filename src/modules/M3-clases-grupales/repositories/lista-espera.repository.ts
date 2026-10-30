@@ -66,15 +66,33 @@ export class ListaEsperaRepository {
     fecha_inicio: Date,
     fecha_fin: Date,
     tx?: Prisma.TransactionClient,
+    toleranciaMs: number = 60000,
   ) {
     const prismaClient = tx || this.prisma;
+    const inicioDate = new Date(fecha_inicio);
+    const finDate = new Date(fecha_fin);
+
+    const where: Prisma.ClaseListaEsperaWhereInput = {
+      id_clase,
+      id_clase_lista_espera_estado: 1, // En espera
+    };
+
+    if (toleranciaMs > 0) {
+      where.fecha_inicio = {
+        gte: new Date(inicioDate.getTime() - toleranciaMs),
+        lte: new Date(inicioDate.getTime() + toleranciaMs),
+      };
+      where.fecha_fin = {
+        gte: new Date(finDate.getTime() - toleranciaMs),
+        lte: new Date(finDate.getTime() + toleranciaMs),
+      };
+    } else {
+      where.fecha_inicio = inicioDate;
+      where.fecha_fin = finDate;
+    }
+
     return await prismaClient.claseListaEspera.findFirst({
-      where: {
-        id_clase,
-        fecha_inicio,
-        fecha_fin,
-        id_clase_lista_espera_estado: 1, // En espera
-      },
+      where,
       orderBy: {
         id_clase_lista_espera: 'asc',
       },

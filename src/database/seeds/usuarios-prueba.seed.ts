@@ -98,6 +98,14 @@ const USUARIOS = [
     membresia: 'activa',
   },
   {
+    dni: '30000006',
+    email: 'socio2@fitzone.com',
+    nombre: 'María',
+    apellido: 'Activa',
+    rol: 1,
+    membresia: 'activa',
+  },
+  {
     dni: '30000002',
     email: 'socio.vencido@fitzone.com',
     nombre: 'Victor',

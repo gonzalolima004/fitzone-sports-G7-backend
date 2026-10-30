@@ -101,9 +101,11 @@ export class ReservasClasesService {
       );
     }
 
-    // 4. Validación atómica de cupo e inserción
+    // 4. Validación atómica de cupo e inserción con control de concurrencia
     return await this.prisma.$transaction(async (tx) => {
-      // 4.1. Validar existencia y capacidad de la clase
+      // 4.1. Bloqueo pesimista (FOR UPDATE) para serializar reservas concurrentes y evitar race conditions
+      await tx.$executeRaw`SELECT id_clase FROM clase WHERE id_clase = ${data.id_clase} FOR UPDATE`;
+
       const clase = await tx.clase.findUnique({
         where: { id_clase: data.id_clase },
       });
@@ -175,6 +177,7 @@ export class ReservasClasesService {
 
       const ahora = new Date();
       const fechaInicio = new Date(reserva.fecha_inicio);
+      const fechaFin = new Date(reserva.fecha_fin);
 
       if (ahora >= fechaInicio) {
         throw new BadRequestException(
@@ -201,28 +204,29 @@ export class ReservasClasesService {
       const primerInscriptoLista =
         await this.listaEsperaRepository.obtenerPrimerInscriptoActivo(
           reserva.id_clase,
-          reserva.fecha_inicio,
-          reserva.fecha_fin,
+          fechaInicio,
+          fechaFin,
           tx,
         );
 
       if (primerInscriptoLista) {
         idUsuarioPromovido = primerInscriptoLista.id_usuario;
-        // Creamos la nueva reserva confirmada para el socio promovido
-        await this.reservasRepository.crearReserva(
-          {
-            id_clase: reserva.id_clase,
-            fecha_inicio: reserva.fecha_inicio.toISOString(),
-            fecha_fin: reserva.fecha_fin.toISOString(),
-          },
-          idUsuarioPromovido,
-          1, // Confirmada
-          tx,
-        );
-        // Actualizamos estado en lista de espera (2 = Promovida / Procesada)
+        // Transacción atómica:
+        // 1) Actualizamos estado en lista de espera a 2 (Promovida / Procesada)
         await this.listaEsperaRepository.actualizarEstadoInscripcion(
           primerInscriptoLista.id_clase_lista_espera,
           2,
+          tx,
+        );
+        // 2) Creamos la nueva reserva confirmada (estado 1) para el socio promovido
+        await this.reservasRepository.crearReserva(
+          {
+            id_clase: reserva.id_clase,
+            fecha_inicio: fechaInicio.toISOString(),
+            fecha_fin: fechaFin.toISOString(),
+          },
+          idUsuarioPromovido,
+          1, // Confirmada
           tx,
         );
       } else {
@@ -230,8 +234,8 @@ export class ReservasClasesService {
         const primerEnEsperaReserva =
           await this.reservasRepository.obtenerPrimerEnEspera(
             reserva.id_clase,
-            reserva.fecha_inicio,
-            reserva.fecha_fin,
+            fechaInicio,
+            fechaFin,
             tx,
           );
 
@@ -249,8 +253,8 @@ export class ReservasClasesService {
       if (idUsuarioPromovido) {
         await this.listaEsperaSubject.notify({
           id_clase: reserva.id_clase,
-          fecha_inicio: reserva.fecha_inicio,
-          fecha_fin: reserva.fecha_fin,
+          fecha_inicio: fechaInicio,
+          fecha_fin: fechaFin,
           id_usuario_promovido: idUsuarioPromovido,
         });
       }

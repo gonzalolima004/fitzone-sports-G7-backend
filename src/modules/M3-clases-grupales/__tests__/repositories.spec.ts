@@ -288,8 +288,14 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
       expect(mockPrisma.claseReserva.findFirst).toHaveBeenCalledWith({
         where: {
           id_clase: 1,
-          fecha_inicio: d1,
-          fecha_fin: d2,
+          fecha_inicio: {
+            gte: new Date(d1.getTime() - 60000),
+            lte: new Date(d1.getTime() + 60000),
+          },
+          fecha_fin: {
+            gte: new Date(d2.getTime() - 60000),
+            lte: new Date(d2.getTime() + 60000),
+          },
           id_clase_reserva_estado: 2,
         },
         orderBy: { id_clase_reserva: 'asc' },
@@ -303,7 +309,7 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
       await repo.obtenerReservasPorUsuario(50);
       expect(mockPrisma.claseReserva.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id_usuario: 50 },
+          where: { id_usuario: 50, id_clase_reserva_estado: 1 },
         }),
       );
 
@@ -314,6 +320,7 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
         expect.objectContaining({
           where: {
             id_usuario: 50,
+            id_clase_reserva_estado: 1,
             fecha_inicio: { gte: d1, lte: d2 },
           },
         }),
@@ -388,7 +395,7 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
       expect(count).toBe(4);
     });
 
-    it('obtenerPrimerInscriptoActivo debe consultar el primer registro en espera orden asc', async () => {
+    it('obtenerPrimerInscriptoActivo debe consultar el primer registro en espera con rango de tolerancia orden asc', async () => {
       const d1 = new Date();
       const d2 = new Date();
       mockPrisma.claseListaEspera.findFirst.mockResolvedValue({
@@ -400,13 +407,39 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
       expect(mockPrisma.claseListaEspera.findFirst).toHaveBeenCalledWith({
         where: {
           id_clase: 1,
+          fecha_inicio: {
+            gte: new Date(d1.getTime() - 60000),
+            lte: new Date(d1.getTime() + 60000),
+          },
+          fecha_fin: {
+            gte: new Date(d2.getTime() - 60000),
+            lte: new Date(d2.getTime() + 60000),
+          },
+          id_clase_lista_espera_estado: 1,
+        },
+        orderBy: { id_clase_lista_espera: 'asc' },
+      });
+      expect(res?.id_clase_lista_espera).toBe(1);
+    });
+
+    it('obtenerPrimerInscriptoActivo debe soportar coincidencia exacta si toleranciaMs es 0', async () => {
+      const d1 = new Date();
+      const d2 = new Date();
+      mockPrisma.claseListaEspera.findFirst.mockResolvedValue({
+        id_clase_lista_espera: 1,
+      });
+
+      await repo.obtenerPrimerInscriptoActivo(1, d1, d2, undefined, 0);
+
+      expect(mockPrisma.claseListaEspera.findFirst).toHaveBeenCalledWith({
+        where: {
+          id_clase: 1,
           fecha_inicio: d1,
           fecha_fin: d2,
           id_clase_lista_espera_estado: 1,
         },
         orderBy: { id_clase_lista_espera: 'asc' },
       });
-      expect(res?.id_clase_lista_espera).toBe(1);
     });
 
     it('actualizarEstadoInscripcion debe invocar prisma.claseListaEspera.update', async () => {
