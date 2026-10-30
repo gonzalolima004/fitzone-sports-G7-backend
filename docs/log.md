@@ -1321,6 +1321,19 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 #### 29/10/2026
 
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Endpoint de verificación de membresía: inclusión de fecha_inicio en el DTO de respuesta y ajuste en la detección de mora considerando estado 'Vencida' o expiración de fecha fin.
+  - Flujo de pagos: reutilización de intenciones de membresía suspendidas y pagos pendientes para evitar registros huérfanos al reintentar checkout, y exclusión de pagos pendientes abandonados en el historial del socio.
+  - Depuración del inicio de pago: remoción del parámetro y persistencia de renovación automática en DTO, repositorio y servicio.
+- **Decisiones:**
+  - Reutilizar la intención de pago pendiente previa en lugar de crear registros duplicados si el usuario no completó la transacción anterior.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `fix(membresias): corregir deteccion de mora y devolver fecha_inicio en verificacion`
+  - `fix(pagos): reutilizar intenciones suspendidas y omitir pagos pendientes huerfanos en historial`
+  - `refactor(pagos): remover campo renovacion_automatica en flujo de inicio de pago`
 #### Joaquín Ribarola | Rol: Desarrollador Backend
 
 - **Tarea:** Corrección de consultas de reservas activas y robustecimiento de transacción de cancelación y lista de espera en M3.

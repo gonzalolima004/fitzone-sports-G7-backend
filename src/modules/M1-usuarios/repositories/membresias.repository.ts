@@ -190,6 +190,26 @@ export class MembresiasRepository {
       },
     });
   }
+
+  /**
+   * Obtiene la última membresía Activa o Vencida del usuario (vigente o expirada)
+   * para verificar si se encuentra al día o en mora.
+   */
+  async findLatestActivaOrVencidaByUsuarioId(id_usuario: number) {
+    return await this.prisma.membresia.findFirst({
+      where: {
+        id_usuario,
+        membresia_estado: {
+          descripcion: { in: ['Activa', 'Vencida'] },
+        },
+      },
+      orderBy: {
+        fecha_fin: 'desc',
+      },
+      include: MEMBRESIA_INCLUDE,
+    });
+  }
+
   //Encontrar todas las membresías de un usuario.
   async findByUsuarioId(id_usuario: number) {
     return await this.prisma.membresia.findMany({

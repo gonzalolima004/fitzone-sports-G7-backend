@@ -257,17 +257,21 @@ export class MembresiasService {
     // Extraer sede de origen del usuario
     const idSedeOrigen = usuario.id_sede ?? 0;
 
-    // 2. Obtener membresía activa vigente (id_membresia_estado = 1 y fecha_fin >= HOY)
-    const membresiaActiva =
-      await this.membresiasRepository.findActiveByUsuarioId(id_usuario);
+    // 2. Obtener última membresía Activa o Vencida del socio (vigente o expirada)
+    const ultimaMembresia =
+      (await this.membresiasRepository.findActiveByUsuarioId(id_usuario)) ??
+      (await this.membresiasRepository.findLatestActivaOrVencidaByUsuarioId?.(
+        id_usuario,
+      ));
 
-    // Si no tiene membresía activa
-    if (!membresiaActiva) {
+    // Si no tiene ninguna membresía activa ni vencida registrada
+    if (!ultimaMembresia) {
       return plainToInstance(VerificarMembresiaResponseDto, {
         id_usuario: id_usuario,
         esSocioActivo: false,
         enMora: false,
-        id_sede_origen: idSedeOrigen, //MMMMMMMMMMMM
+        id_sede_origen: idSedeOrigen,
+        fecha_inicio: null,
         fecha_vencimiento: null,
         nombre_plan: null,
         mensaje:
@@ -275,17 +279,22 @@ export class MembresiasService {
       });
     }
 
-    // 3. Determinar estado de mora según fecha de vencimiento
-    const esMora = membresiaActiva.fecha_fin < new Date();
+    // 3. Determinar estado de mora según estado y fecha de vencimiento
+    const estadoDescripcion =
+      ultimaMembresia.membresia_estado?.descripcion?.toLowerCase();
+    const esMora =
+      estadoDescripcion === 'vencida' ||
+      new Date(ultimaMembresia.fecha_fin) < new Date();
 
     // 4. Construir respuesta
     return plainToInstance(VerificarMembresiaResponseDto, {
       id_usuario: id_usuario,
-      esSocioActivo: !esMora, // Si no está en mora, es socio activo
+      esSocioActivo: !esMora,
       enMora: esMora,
       id_sede_origen: idSedeOrigen,
-      fecha_vencimiento: membresiaActiva.fecha_fin,
-      nombre_plan: membresiaActiva.membresia_plan?.nombre, // <-- DATO AGREGADO AQUÍ
+      fecha_inicio: ultimaMembresia.fecha_inicio,
+      fecha_vencimiento: ultimaMembresia.fecha_fin,
+      nombre_plan: ultimaMembresia.membresia_plan?.nombre,
       mensaje: esMora
         ? 'Membresía vencida. El socio se encuentra en mora y no tiene permitido el acceso.'
         : 'Socio activo habilitado para acceso multi-sede y beneficios.',

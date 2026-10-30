@@ -32,6 +32,15 @@ export class VerificarMembresiaResponseDto {
 
   @Expose()
   @ApiProperty({
+    example: '2026-09-25T00:00:00.000Z',
+    description: 'Fecha de inicio de la membresía activa o última registrada',
+    nullable: true,
+    required: false,
+  })
+  fecha_inicio?: Date | null;
+
+  @Expose()
+  @ApiProperty({
     example: '2026-10-25T00:00:00.000Z',
     description:
       'Fecha de vencimiento de la membresía activa o última registrada',
