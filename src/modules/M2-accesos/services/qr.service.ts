@@ -1,7 +1,7 @@
 import {
   Injectable,
   InternalServerErrorException,
-  UnauthorizedException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -74,13 +74,13 @@ export class QrService {
    * @param token - Token QR a validar.
    * @param idUsuario - ID del usuario al que pertenece el token.
    * @returns `true` si el token es válido, `false` en caso contrario.
-   * @throws `UnauthorizedException` si el token es inválido o ha expirado.
+   * @throws `BadRequestException` si el token es inválido o ha expirado.
    */
   validarTokenEfimero(token: string, idUsuario: number | string): boolean {
     try {
       const partes = token.split('.');
       if (partes.length !== 3) {
-        throw new UnauthorizedException('Formato de token inválido');
+        throw new BadRequestException('Formato de token inválido');
       }
 
       const [userIdToken, timestampStr, signatureToken] = partes;
@@ -88,7 +88,7 @@ export class QrService {
       const currentTimestamp = Math.floor(Date.now() / 1000);
 
       if (userIdToken !== String(idUsuario)) {
-        throw new UnauthorizedException('Token no válido para este usuario');
+        throw new BadRequestException('Token no válido para este usuario');
       }
 
       // Calculamos cuánto tiempo ha pasado desde que se creó el token
@@ -100,7 +100,7 @@ export class QrService {
         segundosTranscurridos < 0 ||
         segundosTranscurridos > this.EXPIRATION_SECONDS
       ) {
-        throw new UnauthorizedException('El código QR ha expirado');
+        throw new BadRequestException('El código QR ha expirado');
       }
 
       // Reconstruimos la firma usando el mismo timestamp de creación que viajó en el token
@@ -112,12 +112,12 @@ export class QrService {
       );
 
       if (!validSignature) {
-        throw new UnauthorizedException('Código QR inválido o alterado');
+        throw new BadRequestException('Código QR inválido o alterado');
       }
 
       return true;
     } catch (error: unknown) {
-      if (error instanceof UnauthorizedException) {
+      if (error instanceof BadRequestException) {
         throw error;
       }
 
@@ -125,7 +125,7 @@ export class QrService {
         error instanceof Error ? error.message : 'Error de verificación';
       this.logger.warn(`Intento fallido de validación de QR: ${message}`);
 
-      throw new UnauthorizedException('Token de acceso inválido');
+      throw new BadRequestException('Token de acceso inválido');
     }
   }
 }

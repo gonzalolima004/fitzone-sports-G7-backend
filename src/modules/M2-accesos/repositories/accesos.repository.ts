@@ -105,4 +105,13 @@ export class AccesosRepository {
       return null;
     }
   }
+  /**
+   * Busca un usuario activo por su número de DNI
+   */
+  async buscarUsuarioPorDni(dni: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return client.usuario.findUnique({
+      where: { dni },
+    });
+  }
 }

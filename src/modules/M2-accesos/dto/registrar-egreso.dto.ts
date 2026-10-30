@@ -7,16 +7,29 @@ import {
   IsDate,
   IsString,
   IsOptional,
+  Matches,
 } from 'class-validator';
 
 export class RegistrarEgresoDto {
   @ApiProperty({
     description: 'Token QR dinámico del socio que registra su salida física',
     example: '7.179199573.3d696a27f6dfa960',
+    required: false,
   })
+  @IsOptional()
   @IsString({ message: 'El qrToken debe ser un texto válido' })
   @IsNotEmpty({ message: 'El qrToken es obligatorio' })
-  qrToken: string;
+  qrToken?: string;
+
+  @ApiProperty({
+    description: 'Número de DNI del socio para el registro de egreso manual',
+    example: '38456789',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+$/, { message: 'El DNI solo debe contener números' })
+  dni?: string;
 
   @ApiProperty({
     description: 'ID de la sede donde se encuentra el torniquete de egreso',
