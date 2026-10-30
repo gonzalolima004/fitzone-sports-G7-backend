@@ -45,7 +45,7 @@ export class AccesosController {
     type: AccesoResponseDto,
   })
   @ApiResponse({
-    status: 401,
+    status: 400,
     description: 'Token QR inválido o expirado.',
   })
   @ApiResponse({

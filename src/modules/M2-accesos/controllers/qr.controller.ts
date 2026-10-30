@@ -35,7 +35,7 @@ export class QrController {
     type: QrDinamicoResponseDto,
   })
   @ApiResponse({
-    status: 401,
+    status: 400,
     description:
       'No autorizado. El token de autenticación está ausente, manipulado o expirado.',
   })
