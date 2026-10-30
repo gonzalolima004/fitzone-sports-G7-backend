@@ -1,5 +1,63 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
+
+/** Datos del plan contratado que acompañan a cada membresía. */
+@Exclude()
+export class MembresiaPlanResumenDto {
+  @Expose()
+  @ApiProperty({ example: 1, description: 'ID del plan de membresía' })
+  id_membresia_plan: number;
+
+  @Expose()
+  @ApiProperty({ example: 'Plan Mensual', description: 'Nombre del plan' })
+  nombre: string;
+
+  @Expose()
+  @ApiProperty({ example: 30, description: 'Duración del plan en días' })
+  duracion_dias: number;
+
+  // Prisma devuelve el precio como Decimal: se convierte a número.
+  @Expose()
+  @Type(() => Number)
+  @ApiProperty({ example: 25000, description: 'Precio del plan' })
+  precio: number;
+}
+
+/** Estado de la membresía, tomado de la tabla membresia_estado. */
+@Exclude()
+export class MembresiaEstadoDto {
+  @Expose()
+  @ApiProperty({ example: 1, description: 'ID del estado de membresía' })
+  id_membresia_estado: number;
+
+  @Expose()
+  @ApiProperty({ example: 'Activa', description: 'Nombre del estado' })
+  descripcion: string;
+}
+
+/** Datos básicos del socio titular de la membresía. */
+@Exclude()
+export class MembresiaSocioDto {
+  @Expose()
+  @ApiProperty({ example: 1, description: 'ID del usuario' })
+  id_usuario: number;
+
+  @Expose()
+  @ApiProperty({ example: 'Sofía', description: 'Nombre del socio' })
+  nombre: string;
+
+  @Expose()
+  @ApiProperty({ example: 'Gómez', description: 'Apellido del socio' })
+  apellido: string;
+
+  @Expose()
+  @ApiProperty({ example: '30111222', description: 'DNI del socio' })
+  dni: string;
+
+  @Expose()
+  @ApiProperty({ example: 'sofia@mail.com', description: 'Email del socio' })
+  email: string;
+}
 
 @Exclude()
 export class MembresiaResponseDto {
@@ -47,4 +105,19 @@ export class MembresiaResponseDto {
     description: 'ID del estado de la membresía',
   })
   id_membresia_estado: number;
+
+  @Expose()
+  @Type(() => MembresiaPlanResumenDto)
+  @ApiProperty({ type: MembresiaPlanResumenDto, required: false })
+  membresia_plan?: MembresiaPlanResumenDto;
+
+  @Expose()
+  @Type(() => MembresiaEstadoDto)
+  @ApiProperty({ type: MembresiaEstadoDto, required: false })
+  membresia_estado?: MembresiaEstadoDto;
+
+  @Expose()
+  @Type(() => MembresiaSocioDto)
+  @ApiProperty({ type: MembresiaSocioDto, required: false })
+  usuario?: MembresiaSocioDto;
 }

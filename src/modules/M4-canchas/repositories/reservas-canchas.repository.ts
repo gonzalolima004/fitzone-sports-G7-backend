@@ -33,6 +33,53 @@ export class ReservasCanchasRepository {
       },
     });
   }
+  async obtenerReservasPorCanchasYFecha(
+    idsCanchas: number[],
+    inicioDia: Date,
+    finDia: Date,
+  ): Promise<CanchaReserva[]> {
+    if (idsCanchas.length === 0) return [];
+
+    return this.prisma.canchaReserva.findMany({
+      where: {
+        id_cancha: { in: idsCanchas },
+        fecha_inicio: { gte: inicioDia },
+        fecha_fin: { lte: finDia },
+      },
+    });
+  }
+
+  async obtenerMantenimientosPorCanchasYFecha(
+    idsCanchas: number[],
+    inicioDia: Date,
+    finDia: Date,
+  ): Promise<CanchaMantenimiento[]> {
+    if (idsCanchas.length === 0) return [];
+
+    return this.prisma.canchaMantenimiento.findMany({
+      where: {
+        id_cancha: { in: idsCanchas },
+        fecha_inicio: { lt: finDia },
+        fecha_fin: { gt: inicioDia },
+      },
+    });
+  }
+
+  async obtenerPorId(id: number) {
+    return this.prisma.canchaReserva.findUnique({
+      where: { id_cancha_reserva: id },
+      include: {
+        cancha: {
+          include: {
+            sede: true,
+            cancha_tipo: true,
+          },
+        },
+        cancha_reserva_estado: true,
+      },
+    });
+  }
+
   /**
    * Ejecuta la validación de solapamiento y la inserción de manera atómica (RN-02).
    */

@@ -22,17 +22,22 @@ export class CanchasRepository {
   }
 
   async obtenerTodasActivas(sedeId?: number): Promise<Cancha[]> {
-    return this.prisma.cancha.findMany({
+    const temp = await this.prisma.cancha.findMany({
       where: { activo: true, ...(sedeId ? { id_sede: sedeId } : {}) },
       include: {
         sede: true,
         cancha_tipo: true,
       },
     });
+    return temp;
   }
 
-  async obtenerTiposCancha(): Promise<CanchaTipo[]> {
-    return this.prisma.canchaTipo.findMany();
+  async obtenerTiposCancha(inactivos?: boolean): Promise<CanchaTipo[]> {
+    return this.prisma.canchaTipo.findMany({
+      where: (inactivos === true
+        ? {}
+        : { activo: true }) as unknown as Prisma.CanchaTipoWhereInput,
+    });
   }
 
   async obtenerPorId(id_cancha: number): Promise<Cancha | null> {
@@ -85,6 +90,88 @@ export class CanchasRepository {
   ): Promise<CanchaMantenimiento> {
     return this.prisma.canchaMantenimiento.create({
       data,
+    });
+  }
+
+  /**
+   * Obtiene la lista de mantenimientos aplicando filtros opcionales (sede, cancha y rango de fechas)
+   * de forma directa y optimizada en una sola consulta a la base de datos.
+   */
+  async obtenerMantenimientos(filtros: {
+    sedeId?: number;
+    canchaId?: number;
+    fechaInicio?: Date;
+    fechaFin?: Date;
+  }): Promise<CanchaMantenimiento[]> {
+    const where: Prisma.CanchaMantenimientoWhereInput = {};
+
+    if (filtros.canchaId) {
+      where.id_cancha = filtros.canchaId;
+    }
+
+    if (filtros.sedeId) {
+      where.cancha = {
+        id_sede: filtros.sedeId,
+      };
+    }
+
+    if (filtros.fechaInicio && filtros.fechaFin) {
+      // Solapamiento de rangos: inicia antes o durante fin de rango y finaliza después o durante inicio de rango
+      where.fecha_inicio = { lte: filtros.fechaFin };
+      where.fecha_fin = { gte: filtros.fechaInicio };
+    } else if (filtros.fechaInicio) {
+      where.fecha_fin = { gte: filtros.fechaInicio };
+    } else if (filtros.fechaFin) {
+      where.fecha_inicio = { lte: filtros.fechaFin };
+    }
+
+    return this.prisma.canchaMantenimiento.findMany({
+      where,
+      include: {
+        cancha: {
+          include: {
+            sede: true,
+            cancha_tipo: true,
+          },
+        },
+      },
+      orderBy: {
+        fecha_inicio: 'asc',
+      },
+    });
+  }
+
+  async crearTipoCancha(descripcion: string): Promise<CanchaTipo> {
+    return this.prisma.canchaTipo.create({
+      data: { descripcion },
+    });
+  }
+
+  async actualizarTipoCancha(
+    id_cancha_tipo: number,
+    data: { descripcion?: string; activo?: boolean },
+  ): Promise<CanchaTipo> {
+    return this.prisma.canchaTipo.update({
+      where: { id_cancha_tipo },
+      data: data,
+    });
+  }
+
+  async contarCanchasActivasPorTipo(id_cancha_tipo: number): Promise<number> {
+    return this.prisma.cancha.count({
+      where: {
+        id_cancha_tipo,
+        activo: true,
+      },
+    });
+  }
+
+  async borradoLogicoTipoCancha(id_cancha_tipo: number): Promise<CanchaTipo> {
+    // Borrado lógico: se actualizará el campo 'activo' a false una vez sincronizado en Supabase y Prisma.
+    // Descomentar la llamada a Prisma cuando el campo 'activo' exista en cancha_tipo:
+    return this.prisma.canchaTipo.update({
+      where: { id_cancha_tipo },
+      data: { activo: false },
     });
   }
 }

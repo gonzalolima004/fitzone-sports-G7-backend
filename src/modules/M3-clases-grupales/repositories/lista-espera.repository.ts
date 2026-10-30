@@ -11,8 +11,10 @@ export class ListaEsperaRepository {
     id_usuario: number,
     fecha_inicio: Date,
     fecha_fin: Date,
+    tx?: Prisma.TransactionClient,
   ) {
-    return await this.prisma.claseListaEspera.create({
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseListaEspera.create({
       data: {
         id_clase,
         id_usuario,
@@ -28,8 +30,10 @@ export class ListaEsperaRepository {
     id_usuario: number,
     fecha_inicio: Date,
     fecha_fin: Date,
+    tx?: Prisma.TransactionClient,
   ) {
-    return await this.prisma.claseListaEspera.findFirst({
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseListaEspera.findFirst({
       where: {
         id_clase,
         id_usuario,
@@ -44,14 +48,66 @@ export class ListaEsperaRepository {
     id_clase: number,
     fecha_inicio: Date,
     fecha_fin: Date,
+    tx?: Prisma.TransactionClient,
   ): Promise<number> {
-    return await this.prisma.claseListaEspera.count({
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseListaEspera.count({
       where: {
         id_clase,
         fecha_inicio,
         fecha_fin,
         id_clase_lista_espera_estado: 1, // En espera
       },
+    });
+  }
+
+  async obtenerPrimerInscriptoActivo(
+    id_clase: number,
+    fecha_inicio: Date,
+    fecha_fin: Date,
+    tx?: Prisma.TransactionClient,
+    toleranciaMs: number = 60000,
+  ) {
+    const prismaClient = tx || this.prisma;
+    const inicioDate = new Date(fecha_inicio);
+    const finDate = new Date(fecha_fin);
+
+    const where: Prisma.ClaseListaEsperaWhereInput = {
+      id_clase,
+      id_clase_lista_espera_estado: 1, // En espera
+    };
+
+    if (toleranciaMs > 0) {
+      where.fecha_inicio = {
+        gte: new Date(inicioDate.getTime() - toleranciaMs),
+        lte: new Date(inicioDate.getTime() + toleranciaMs),
+      };
+      where.fecha_fin = {
+        gte: new Date(finDate.getTime() - toleranciaMs),
+        lte: new Date(finDate.getTime() + toleranciaMs),
+      };
+    } else {
+      where.fecha_inicio = inicioDate;
+      where.fecha_fin = finDate;
+    }
+
+    return await prismaClient.claseListaEspera.findFirst({
+      where,
+      orderBy: {
+        id_clase_lista_espera: 'asc',
+      },
+    });
+  }
+
+  async actualizarEstadoInscripcion(
+    id_clase_lista_espera: number,
+    id_estado: number,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = tx || this.prisma;
+    return await prismaClient.claseListaEspera.update({
+      where: { id_clase_lista_espera },
+      data: { id_clase_lista_espera_estado: id_estado },
     });
   }
 

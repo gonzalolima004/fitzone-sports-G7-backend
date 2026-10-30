@@ -741,6 +741,14 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
 - Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
 
+- **Decisiones:**
+- Utilizar la clave `service_role` de Supabase a través del archivo `.env` del servidor. Esto permite que NestJS actúe con privilegios de administrador para subir los archivos al Storage, sorteando las políticas RLS sin comprometer la seguridad pública de la base de datos.
+
+- **Dificultades:**
+- Excepción `LIMIT_UNEXPECTED_FILE` lanzada por Multer al rechazar la petición inicial; se identificó que el frontend enviaba la imagen bajo la key `file` mientras el decorador `@UseInterceptors(FileInterceptor('foto'))` esperaba la key `foto`.
+- Error HTTP 500 (`Bucket not found`), resuelto instanciando manualmente el contenedor en Supabase.
+- Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
+
 - **Commits:**
 - `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
 
@@ -793,7 +801,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - El código anterior tenía una CTE incompleta y no incorporaba correctamente las reservas de clases.
   - La instalación local no contenía `@nestjs/jwt`, ya declarado por el equipo; se instalaron las dependencias para compilar.
 - **Verificación:** Build y typecheck aprobados; 9 pruebas aprobadas; consulta SQL comprobada con fechas límite, estados, filtros, resultados vacíos y reservas sin asistencia. No se probó una sesión completa contra la base compartida.
-- **Commits:** `d2ac371` — fix(reportes): completar metricas de ocupacion por sede.
+- **Commits:** `fix(reportes): completar metricas de ocupacion por sede`
 
 #### Facundo Agüero | Rol: Team Leader
 
@@ -805,6 +813,26 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 - **Commits:**
 - `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
+
+---
+
+#### 12/10/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación del endpoint para consultar pagos pendientes de membresías y reservas de canchas.
+  - Implementación de la lógica para calcular cuotas adeudadas y turnos sin abonar por usuario.
+  - Ajuste en el guard de autenticación para validar tokens JWT de sesión.
+  - Corrección en la integración de Mercado Pago para permitir pruebas en entorno local.
+- **Decisiones:**
+  - Priorizar la ruta de pagos pendientes para evitar conflictos con la búsqueda por identificador.
+  - Permitir validación de autenticación tanto para sesiones locales como de Supabase.
+- **Dificultades:**
+  - El guard de autenticación no reconocía los tokens locales generados por la API, resuelto agregando validación directa con la clave secreta.
+  - Error al generar preferencias de Mercado Pago en entorno de desarrollo local por configuración de retorno automático.
+- **Commits:**
+  - `feat(pagos): endpoint de pagos pendientes y correccion de auth guard`
 
 ---
 
@@ -871,7 +899,479 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 #### Facundo Agüero | Rol: Team Leader
 
-- **Actividades:** Revisión de los PR backend #53 (calendario) y #55 (planes/membresías), resolución de conflictos conservando esquema y registros de autores. Integración de #53 a dev; preparación de #55 con sus verificaciones.
-- **Correcciones de revisión:** Fechas estrictas, turnos completos dentro de horarios con minutos y rechazo de cruce de día en calendario. Identificadores id/id_plan preservados en el DTO de planes junto a la conversión de Decimal.
-- **Verificación:** Calendario: build/typecheck y 17 pruebas aprobados. Se agregaron pruebas del contrato serializado de planes para el PR #55.
-- **Pendientes para el relevo:** Aceptación con entorno compartido, zona horaria y feriados, migraciones reproducibles, concurrencia, contrato de pagos, cola de espera y alineación de ADR. Se documentan en el informe de cierre; no se modificó la base compartida.
+- **Commits:**
+- `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
+
+#### 14/10/2026
+
+#### Angelina Vialle | Rol: Backend Developer
+
+- **Actividades:** Arreglos de backend para integrarlo con el frontend.
+- **Decisiones:**
+  - Quitar el id de usuario de los dtos y usar el qr token
+  - La manera de generar el token de qr es más simple
+  - Elimine UserRepository porque no se usaba.
+  - Cambie send por httpSend porque se iba a quedar obsoleto
+- **Dificultades:** Ninguna.
+- **Commits:** `feat(M2-M1): arreglos`
+
+---
+
+#### 20/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Diseño e implementación de endpoint para consulta de disponibilidad masiva por sede (GET /canchas/disponibilidad con parametros sede y fecha ), optimizando la entrega para la grilla horaria para todas las canchas activas en una sola petición.
+  - Implementación de endpoint de consulta individual de reserva por identificador (GET /reservas-canchas/:id), permitiendo recuperar la entidad con sus relaciones completas (cancha, sede, cancha_tipo, cancha_reserva_estado) para el flujo de confirmación y pago.
+  - Refactorización y desacoplamiento del cálculo de tarifas: aseguramiento de congruencia entre la cotización del backend y la información consumida por el cliente.
+- **Decisiones:**
+  - Priorizar la reutilización de los métodos de repositorio y cálculo existentes sin alterar métodos innecesariamente, ni la estabilidad de las funcionalidades ya utilizadas por el resto del equipo.
+  - Mantener el endpoint unitario por cancha (GET /canchas/:id/disponibilidad) para chequeos puntuales y añadir el endpoint en lote para optimizar las vistas de grilla general.
+- **Dificultades:**
+  - Falta de endpoints necesarios, lo que justifica esta serie de modificaciones.
+- **Commits:**
+  - `feat(M4): nuevos endpoints para reserva canchas y disponibilidad por sede y cancha`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
+#### 20/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del CRUD completo de clases grupales en el módulo M3 (`POST`, `GET`, `GET :id`, `PATCH`, `PUT` y `DELETE`).
+  - Creación del endpoint `DELETE /clases/:id` con baja lógica (`activo: false`) y cancelación preventiva atómica en base de datos de las reservas activas y cupos en espera a futuro.
+  - Implementación del endpoint `PUT /clases/:id` para reemplazo idempotente total de datos de una clase grupal.
+  - Creación del decorador de metadatos `@Roles()` y del guardia de autorización `RolesGuard` (`roles.guard.ts`) con soporte de validación case-insensitive.
+  - Actualización de `SupabaseAuthGuard` e interfaz `AuthenticatedUser` para poblar dinámicamente `rol` y `roles` tanto desde el JWT emitido localmente por FitZone como en el fallback de Supabase Auth con relaciones de roles de base de datos.
+  - Protección de todos los endpoints mutadores (`POST`, `PUT`, `PATCH`, `DELETE`) de `/clases` restringiéndolos exclusivamente a usuarios con roles `admin` o `gerente`.
+  - Creación del script ejecutable e idempotente de seed para usuario Gerente (`src/database/seeds/gerente.seed.ts`) con contraseña hasheada en `bcryptjs`, asignación de `rol: "gerente"` y vinculación a sede activa por defecto (`id_sede: 1`).
+  - Incorporación del comando `npm run seed:gerente` y configuración de `prisma.seed` en `package.json`.
+  - Creación de suites de pruebas unitarias exhaustivas para `ClasesService`, `ClasesController`, `RolesGuard` y `SupabaseAuthGuard` alcanzando 46/46 pruebas exitosas.
+- **Decisiones:**
+  - Emplear baja lógica en clases para mantener la integridad referencial histórica de asistencias, pagos y auditorías.
+  - Cancelar automáticamente en una transacción las reservas a futuro vinculadas al dar de baja una clase para proteger a los socios y notificar el conteo en `EliminarClaseResponseDto`.
+  - Asegurar la idempotencia del seed de Gerente permitiendo reejecutarlo sin duplicar usuarios ni corromper llaves únicas de DNI o email.
+- **Dificultades:**
+  - Necesidad de asegurar compatibilidad del cliente de Prisma v7 con `@prisma/adapter-pg` dentro del script de seed aislado, resuelta instanciando el pool de conexión con el adaptador correspondiente.
+- **Commits:**
+  - `feat(clases): implementar crud completo con seguridad de roles y seed de gerente`
+
+---
+
+#### 20/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación de la utilidad centralizada de fechas y zona horaria `date-time.util.ts` (`TIMEZONE_ARGENTINA_OFFSET = '-03:00'`, `crearFechaArgentina`, `normalizarHorarioHHmm`, `obtenerRangoDiaArgentina`, `obtenerFechaHoyArgentina`).
+  - Estandarización de los DTOs de salida (`ClaseAgendaResponseDto`, `ClaseResponseDto`) para exponer consistentemente `fecha_inicio` y `fecha_fin` en formato ISO 8601 estricto (`.toISOString()`), y `horario_inicio` y `horario_fin` en formato `HH:mm`.
+  - Eliminación del desfase de 3 horas por concatenación manual de sufijo `Z` (UTC) en los servicios `ClasesService`, `ReservasClasesService` y `ListaEsperaService`, garantizando la correcta persistencia y cálculo de ocupación respecto al huso horario oficial de Argentina.
+  - Tipado estricto de retornos en `ClasesController` (`Promise<ClaseResponseDto>`, `Promise<ClaseResponseDto[] | ClaseAgendaResponseDto[]>`).
+  - Creación de pruebas unitarias exhaustivas en `date-time.util.spec.ts` y ampliación de tests en `clases.service.spec.ts` y `clases.controller.spec.ts` con cobertura al 100% (52 pruebas unitarias pasando).
+- **Decisiones:**
+  - Exponer tanto los horarios habituales de clase en formato `HH:mm` como los timestamps calculados `fecha_inicio` y `fecha_fin` en ISO 8601 en todas las variantes de consulta del catálogo (`ClaseResponseDto`) y de la agenda diaria (`ClaseAgendaResponseDto`).
+  - Centralizar toda operación de fecha del módulo en `date-time.util.ts` para evitar duplicación y discrepancias entre módulos.
+- **Dificultades:**
+  - Desfase de zona horaria histórico producido por tratar la hora local argentina como UTC mediante sufijo `Z`, resuelto aplicando explícitamente el offset `-03:00` en la creación de fechas.
+- **Commits:**
+  - `feat(clases): estandarizar fechas iso 8601 y horarios hh:mm en dtos de clases y reservas`
+
+---
+
+#### 20/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación de la rama de trabajo `feature/clases-testing`.
+  - Refactorización de `ReservasClasesService`:
+    - Incorporación de validación estricta de fechas (`isNaN`, `fechaFin > fechaInicio`).
+    - Conexión transaccional y reasignación automática de vacantes vinculando `clase_lista_espera` con `clase_reserva` al cancelar una reserva, con soporte de fallback a `clase_reserva` con estado 2.
+    - Notificación en tiempo real al observador de Supabase con el socio promovido.
+  - Refactorización de `ListaEsperaService`:
+    - Validación cronológica de fechas de inicio y fin, previniendo inscripciones a clases pasadas o con rangos invertidos.
+  - Refactorización de `ListaEsperaRepository`:
+    - Incorporación de soporte transaccional (`tx?: Prisma.TransactionClient`).
+    - Creación de métodos `obtenerPrimerInscriptoActivo` y `actualizarEstadoInscripcion` para procesamiento atómico de colas.
+  - Creación de suites de pruebas unitarias exhaustivas con cobertura del 100% de sentencias en todo el módulo M3 (`src/modules/M3-clases-grupales/__tests__/`):
+    - `reservas-clases.service.spec.ts` (18 tests: validación 48h, mora RN-03, superposiciones, capacidad, cancelaciones, penalidad, promociones y consultas).
+    - `lista-espera.service.spec.ts` (8 tests: clases inexistentes, validaciones temporales, duplicados, clases no agotadas, orden en cola).
+    - `reservas-clases.controller.spec.ts` (3 tests: `mis-reservas`, `crearReserva`, `cancelarReserva`).
+    - `lista-espera.controller.spec.ts` (2 tests: `mis-inscripciones`, `inscribir`).
+    - `repositories.spec.ts` (16 tests para `ClasesRepository`, `ReservasClasesRepository` y `ListaEsperaRepository`).
+    - `observer.spec.ts` (5 tests para `ListaEsperaSubject` y `NotificacionRealtimeObserver`).
+  - Total de pruebas unitarias del backend elevadas a **16 suites pasando y 109 pruebas exitosas** (100% de cobertura en M3).
+- **Decisiones:**
+  - Priorizar la reasignación automática de cupos desde la tabla oficial `clase_lista_espera` creando la reserva confirmada correspondiente y actualizando el estado de la solicitud en lista de espera, manteniendo compatibilidad hacia atrás.
+  - Asegurar tipado riguroso en mocks de pruebas sin recurrir al tipo `any`, cumpliendo con las reglas más estrictas de ESLint.
+- **Dificultades:**
+  - Desconexión previa entre la tabla `clase_lista_espera` (usada en inscripciones) y la lógica de cancelación en `clase_reserva`, resuelta unificando la búsqueda y promoviendo atómicamente al primer inscripto de la cola.
+- **Commits:**
+  - `test(clases): suites unitarias para servicios, controladores, repositorios y observer de m3`
+
+---
+
+#### 17/10/2026 - 22/10/2026
+
+#### Matías Sillen | Rol: Desarrollador Backend
+
+- **Actividades:**
+- Desarrollo del endpoint proactivo `GET /auth/me` para la validación cruzada de existencia de perfil local de usuarios provenientes de Identity Providers externos (Google).
+
+- **Decisiones:**
+- Delegar la gestión de la identidad y contraseñas completamente a Supabase, manteniendo en la base de datos local de PostgreSQL únicamente los datos de negocio requeridos por FitZone (DNI, Sede, Teléfono).
+- Descartar intervenciones sobre los errores de tipo `P1017` (ConnectionClosed) de Prisma, asumiendo el comportamiento natural del Hot-Reload de NestJS en entornos de desarrollo local.
+
+- **Dificultades:**
+- Resolución de conflictos de integridad referencial (claves foráneas) en PostgreSQL al intentar eliminar usuarios de prueba manualmente para depurar el flujo de Google OAuth. Se optó por el uso de `prisma studio` y `prisma migrate reset` para mantener el entorno de desarrollo consistente.
+
+- **Commits:**
+- `fix(usuarios): hacer contrasenia y foto_url opcionales en CreateUsuarioDto`
+- `feat(usuarios): omitir hasheo si la contraseña es delegada a Supabase`
+- `feat(auth): agregar endpoint /auth/me para verificar existencia de perfil local`
+
+---
+
+#### 23/10/2026
+
+#### Matías Sillen | Rol: Desarrollador Backend
+
+- **Actividades:**
+- Implementación de pruebas unitarias para `AuthService` utilizando Jest, cubriendo flujos de inicio de sesión local exitosos, credenciales inválidas y asignación de roles por defecto.
+- Creación de pruebas de integración HTTP con Supertest para validar el comportamiento real de `ValidationPipe` sobre `CreateUsuarioDto`, verificando transformaciones, regex de DNI y reglas de negocio.
+- Refactorización de `AuthService`, extrayendo la validación de credenciales contra la base de datos y la comprobación con `bcrypt` a un método privado independiente (`validateLocalUser`).
+- Refactorización de `UsuariosService`, aislando la lógica de hasheo de contraseñas (para registros de administrador) y la asignación de placeholder (para Supabase) en el método privado `generatePasswordHash`.
+
+- **Decisiones:**
+- Levantar un controlador efímero (dummy) en la suite de pruebas de integración del DTO para poder golpear el pipeline HTTP real de NestJS sin depender de los endpoints de los controladores productivos.
+- Aplicar el Principio de Responsabilidad Única (SRP) en los servicios, separando de forma clara la validación de identidad en la base de datos de la emisión y firmado de tokens JWT.
+
+- **Dificultades:**
+- Estructurar los mocks del repositorio `UsuariosRepository` y dependencias externas como `bcrypt` de forma estrictamente tipada en Jest para cumplir con la regla de no utilizar `any` en las pruebas unitarias.
+
+- **Commits:**
+- `test(auth): agregar pruebas unitarias de Auth Service`
+- `test(users): cubrir validaciones del DTO de creación mediante ValidationPipe`
+- `refactor(auth): separar validacion de credenciales en AuthService`
+- `refactor(users): aislar logica de hasheo de contraseñas de la creacion base`
+
+---
+
+#### 22/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Frontend
+
+- **Actividades**:
+  - Actualización de los DTOs para crear y actualizar canchas, incorporando el atributo booleano opcional `disponible`.
+- **Decisiones**:
+  - Incorporar `disponible` en los DTOs de creación y actualización para permitir definir la disponibilidad operativa de la cancha desde su alta o modificarla puntualmente según necesidades de la sede.
+- **Dificultades**: Ninguna
+- **Commits:**
+- `feat(M4): incorporar atributo disponible en dts para su modificacion`
+- `docs(log): actualizacion de bitacora`
+
+---
+
+#### 23/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del CRUD completo para tipos de cancha (`CanchaTipo`) en el módulo M4 (`POST /canchas/tipos`, `GET /canchas/tipos`, `PATCH /canchas/tipos/:id` y `DELETE /canchas/tipos/:id`).
+  - Creación de DTOs (`CrearTipoCanchaDto`, `ActualizarTipoCanchaDto`).
+  - Implementación de borrado lógico preventivo para tipos de cancha, validando que no existan canchas activas asociadas antes de permitir la baja.
+  - Optimización de rendimiento en el endpoint de disponibilidad masiva por sede (`GET /canchas/disponibilidad`), eliminando el problema de consultas redundantes.
+  - Reestructuración de consultas en paralelo mediante `Promise.all` y lectura por lote de reservas y mantenimientos del día para todas las canchas de la sede en una única consulta.
+  - Procesamiento y cálculo de la matriz de slots horarios (disponible, reservado, mantenimiento) en memoria mediante maps para acelerar el tiempo de respuesta.
+  - Optimización en `SedeService` y repositorios para la resolución de horarios operativos sin consultas redundantes.
+- **Decisiones:**
+  - Aplicar borrado lógico en `CanchaTipo` para preservar el historial referencial, impidiendo la baja si existen canchas activas que dependan de dicha disciplina.
+  - Permitir listar tipos inactivos opcionalmente mediante el query param `?inactivos=true`, manteniendo por defecto solo los activos para no alterar el comportamiento de cara al usuario final.
+  - Eliminar los cuellos de botella de red trayendo todas las reservas y mantenimientos de la sede en bloque y delegando el filtrado y armado de slots a la memoria RAM del servidor.
+- **Dificultades:**
+  - Tiempos de respuesta lentos en la consulta de grilla de disponibilidad debido a la ejecución de consultas repetitivas a la base de datos por cada cancha; resuelto agrupando las peticiones por lote y procesando los rangos en memoria.
+  - Dificultad para medir los tiempos de respuesta por problemas con el navegador; resuelto descargando uno diferente.
+- **Commits:**
+  - `feat(M4): Crud de cancha tipos funcionando`
+  - `refactor(M4): Optimizacion de consultas lentas en modulo de canchas`
+  - `chore(M4): formato con prettier`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
+#### 21/10/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Creación de la rama de trabajo `feature/clases-dias-semana`.
+  - Corrección de la asignación indiscriminada de clases a todos los días de la semana:
+    - Modificación del modelo `Clase` en `prisma/schema.prisma` incorporando `dias_semana Int[] @default([])` y `fecha DateTime? @db.Date`.
+    - Sincronización exitosa con la base de datos PostgreSQL de Supabase mediante `npx prisma db push` y regeneración del cliente con `npx prisma generate`.
+    - Ampliación de utilidades en `date-time.util.ts`: incorporación de `obtenerDiaSemana` (estandarizado de 0 = Domingo a 6 = Sábado) y `claseAplicaEnFecha` para evaluar coincidencia de fecha puntual o días de la semana con fallback a clases legacy sin restricciones.
+    - Actualización de los DTOs `CreateClaseDto`, `UpdateClaseDto`, `ClaseResponseDto` y `ClaseAgendaResponseDto` para recibir y exponer `dias_semana: number[]`, `fecha?: string | null` y `activo: boolean`.
+    - Adaptación de `ClasesRepository` gestionando la conversión transparente de fechas de entrada en formato string a objetos `Date` requeridos por Prisma.
+    - Refactorización de `ClasesService.obtenerClasesPorSede` para filtrar únicamente las clases aplicables al día de la semana o fecha específica consultada al solicitar la agenda.
+    - Blindaje de consistencia en `ReservasClasesService.crearReserva` y `ListaEsperaService.inscribir`: rechazo preventivo (`BadRequestException`) cuando un socio intenta reservar o solicitar lista de espera para un día o fecha en que la clase no se dicta.
+    - Ampliación y robustecimiento de la suite de pruebas unitarias (`date-time.util.spec.ts`, `clases.service.spec.ts`, `reservas-clases.service.spec.ts`, `lista-espera.service.spec.ts`, `repositories.spec.ts`, `clases.controller.spec.ts`), alcanzando **16 suites y 120 pruebas unitarias pasando al 100%**.
+- **Decisiones:**
+  - Emplear un array de enteros nativo de PostgreSQL (`dias_semana Int[]`) estandarizado con la convención del proyecto (0 = Domingo a 6 = Sábado) junto con un campo opcional `fecha` para soportar tanto clases semanales recurrentes (ej. lunes, miércoles y viernes) como clases o masterclasses de fecha única.
+  - Asegurar la compatibilidad hacia atrás en consultas y reservas de clases ya existentes en la base de datos mediante la lógica de fallback de `claseAplicaEnFecha`.
+- **Dificultades:**
+  - Prevenir que socios pudieran generar reservas huérfanas en días donde la clase no está programada, resuelto reutilizando la misma regla de aplicación temporal tanto en la grilla diaria como en el servicio transaccional de reservas y lista de espera.
+- **Commits:**
+  - `feat(clases): implementar dias_semana y fecha para programacion de clases y filtrado de agenda`
+
+---
+
+#### 25/10/2026
+
+#### Angelina Vialle | Rol: Desarrolladora Backend || Tech Lead
+
+**Actividades:**
+
+- **Módulo M1 (Usuarios):**
+  - Ajuste en `CreateUsuarioDto`: tipado estricto y transformación de `id_sede` a número entero (`@Type(() => Number)` e `@IsInt()`), e incorporación del campo opcional `id_usuario_estado` con su validación correspondiente.
+  - Refactorización de `UsuarioResponseDto`: uso de `@Transform` con `class-transformer` para mapear la relación relacional `usuario_rol` de Prisma y exponer los objetos de roles completos (`id_rol` y `nombre`) en vez de solo IDs numéricos, junto con la exposición completa de la información de la `sede`.
+  - Actualización de `UsuariosRepository.findAll`: inclusión de relaciones (`usuario_rol` con detalle de `rol`, `usuario_estado` y `sede`) para recuperar la información completa de los usuarios en una sola consulta.
+  - Mejora en `UsuariosService.actualizarUsuario`: soporte para vincular entidades relacionadas en Prisma mediante `connect` (`sede`, `usuario_estado`) y actualización/reemplazo controlado de roles asociados (`usuario_rol`).
+
+- **Módulo M2 (Accesos y Aforo Realtime):**
+  - Limpieza de código y estandarización en `AccesosController`, `QrController` y `AccesosService`: remoción de `console.log` de depuración y simplificación de mensajes y descripciones en Swagger y excepciones de conflicto.
+  - Manejo preventivo de excepciones en `AccesosRepository`: adición de bloque `try/catch` con log de error en `obtenerAforoMaximoSede` ante fallos de conexión o lectura en la base de datos.
+  - Disparo de notificación de aforo en tiempo real (`notificarCambioAforo`) tras registrar un ingreso en `AccesosService`.
+  - Reestructuración de `AforoRealtimeService`: estabilización de la emisión vía Supabase Realtime Broadcast mediante suscripción explícita al canal (`channel.subscribe`), envío del evento `aforo_actualizado` una vez confirmado el estado `SUBSCRIBED`, y cierre controlado del canal (`client.removeChannel`) tras un retardo temporizado para evitar conexiones colgadas y fugas de memoria.
+
+**Decisiones:**
+
+- Mapear las relaciones completas de roles y sede directamente en `UsuarioResponseDto` y `UsuariosRepository` para proveer toda la información necesaria al frontend en una única petición sin sobrecargar la red con consultas adicionales.
+- Utilizar conexiones explícitas (`connect`) y reemplazo transaccional en la actualización de roles en `UsuariosService` para preservar la integridad referencial en Prisma.
+- Sincronizar el canal de Supabase Realtime esperando el evento de confirmación de suscripción antes de emitir el broadcast y liberarlo con un retardo controlado (500 ms) para asegurar la entrega efectiva del mensaje sin dejar suscripciones activas en memoria.
+
+**Dificultades:**
+
+- Asegurar la entrega confiable de los eventos Realtime de Supabase sin dejar suscripciones activas ni conexiones huérfanas en el backend de NestJS; resuelto controlando la suscripción y el cierre temporizado del canal.
+- Compatibilizar la estructura relacional de `usuario_rol` de Prisma con el formato de roles consumido por el frontend en `UsuarioResponseDto`.
+
+**Commits:**
+
+- `feat(M1): Cambios para obtener los usuarios con sus respectivos datos, actualizar datos de usuario y crear usuarios`
+- `feat(M2): quitar console.log, mensajes, mejora de obtener aforo`
+- `feat(M2): arreglos en aforo realtime para que funcione correctamente`
+- `docs(log): actualizar bitacora`
+
+#### 24/10/2026
+
+#### Marcos Caraballo | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación del endpoint de consulta y listado de mantenimientos de canchas (`GET /canchas/mantenimientos`) en el módulo M4.
+  - Soporte de filtros opcionales en el endpoint: por sede (`sedeId`), por cancha (`canchaId`) y por rango de fechas (`fechaInicio` y `fechaFin`).
+  - Implementación de validaciones en `MantenimientoService` para validar que los IDs sean enteros positivos y que el rango cronológico sea coherente (`BadRequestException`).
+  - Normalización automática de fechas: soporte de formato `YYYY-MM-DD` extendiendo `fechaFin` al final del día (`23:59:59.999Z`) para abarcar la jornada completa.
+  - Integración en `CanchasRepository` mediante una consulta optimizada que obtiene los mantenimientos junto con sus relaciones (`cancha`, `sede` y `cancha_tipo`) en una única operación.
+- **Decisiones:** Ninguna
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M4): metodos para crud de mantenimiento`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
+#### 26/10/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación de la lógica de cálculo y vencimiento para los 3 planes de membresía (Mensual: 30 días, Trimestral: 90 días, Anual: 365 días) utilizando adición de meses calendario y ajuste al último día del mes ante desfasajes de días.
+  - Implementación de la confirmación atómica transaccional ante la aprobación del pago, se calculan las fechas de vigencia considerando la fecha máxima entre la actual y la vigencia remanente de una membresía activa previa.
+  - Estricta restricción del catálogo de estados de membresía a los 3 estados oficiales del negocio: Activa, Vencida y Suspendida, eliminando cualquier referencia al estado transitorio Pendiente.
+- **Decisiones:**
+  - Utilizar meses calendario en lugar de sumas fijas de 30 o 365 días en el cálculo de vigencia para garantizar que un plan mensual o anual venza exactamente en el mismo día del mes siguiente o del año próximo.
+  - Garantizar atomicidad mediante $transaction de Prisma para que la actualización del pago, la desactivación de membresías previas y la activación de la nueva se ejecuten de forma segura e idempotente.
+- **Dificultades:** Ninguna
+- **Commits:**
+  - `feat(membresias): soporte y lógica de duración para planes mensual, trimestral y anual`
+  - `feat(pagos): flujo de contratación de planes y activación de membresías`
+  - `fix(membresias): ceñir ciclo de vida a 3 estados (activa, vencida, suspendida) y remover pendiente`
+
+#### 23/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Backend — Proteger endpoints de reportes para rol gerente.
+- **Actividades:**
+  - Protección de `GET /reportes/ingresos` y `GET /reportes/ocupacion` con `SupabaseAuthGuard` y `RolesGuard`, aplicados a nivel de `ReportesController` junto con `@Roles('gerente', 'admin')`, reutilizando el patrón de `clases.controller.ts`.
+  - Documentación en Swagger del candado (`@ApiBearerAuth`) y de las respuestas 401 y 403; corrección del tipo de respuesta del 400 de ingresos.
+  - Pruebas de integración HTTP con Supertest sobre los guards reales: 401 sin token o con `Authorization` mal formado, 403 para socio y recepcionista, 200 para gerente y admin, y validación 400 del rango de fechas.
+  - Base PostgreSQL temporal en memoria (PGlite + `pglite-prisma-adapter`) creada con el DDL de `schema.prisma` y un escenario de datos conocido (`test/utils/escenario-reportes.ts`), reutilizable por las pruebas de los demás módulos.
+- **Decisiones:**
+  - Aplicar los guards a nivel de clase para que cualquier endpoint futuro de reportes quede protegido por defecto.
+  - Incluir `admin` junto con `gerente` por consistencia con los demás controladores protegidos; si el equipo define "solo gerente", se modifica la constante `ROLES_REPORTES`.
+  - Generar los tokens de prueba con el mismo `JwtService` de la aplicación para no depender de Supabase ni de la red, y no usar mocks (regla del equipo).
+  - No se requirieron cambios en el frontend: el panel ya envía el token por el interceptor de Axios y las pantallas de ingresos y ocupación muestran el mensaje del servidor ante un 403.
+- **Dificultades y resolución:**
+  - PGlite carga módulos nativos de Node con `import()` dinámico, que Jest no admite sin `--experimental-vm-modules`. Se agregó una regla de transformación para archivos `.cjs` en la configuración de Jest, de modo que `yarn test` funcione sin flags adicionales.
+  - El `typecheck` de `dev` falla por un error previo en `M4-canchas/repositories/canchas.repository.ts` (`activo` no existe en `CanchaTipo` del `schema.prisma`). No corresponde a esta tarea y se informó al TL; los archivos modificados compilan sin errores.
+- **Verificación:** 20 suites y 151 pruebas aprobadas (13 nuevas). ESLint sin errores en los archivos modificados. Pendiente: prueba manual en Swagger (`/api/docs`) con las cuentas compartidas de socio y gerente.
+- **Commits:**
+  - `feat(reportes): proteger endpoints con rol gerente`
+  - `test(reportes): agregar pruebas de acceso por rol`
+
+---
+
+#### 23/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Panel de Gerente, CRUD Sedes/Membresías y Sede Dinámica (parte backend).
+- **Actividades:**
+  - Revisión de los CRUD existentes de `/sedes`, `/ciudades` (M0-sedes) y `/planes` (M1-usuarios): las operaciones de escritura no tenían protección y cualquier cliente podía crear, modificar o dar de baja sedes y planes.
+  - Protección de `POST`, `PATCH` y `DELETE` de `/sedes`, `/ciudades` y `/planes` con `SupabaseAuthGuard`, `RolesGuard` y `@Roles('gerente', 'admin')`, con 401 y 403 documentados en Swagger.
+  - Pruebas de integración HTTP sobre PGlite para sedes y ciudades: listado público solo de sedes activas, 401/403/201 en el alta, 404 por ciudad inexistente, 400 por datos inválidos o campos no permitidos, actualización parcial y baja lógica.
+  - Pruebas de integración para planes: catálogo público con precio numérico, 401/403/201 en el alta con normalización del nombre, 400 por duración inválida, edición y baja de un plan sin membresías.
+  - Extracción de `test/utils/app-de-pruebas.ts` para levantar la aplicación de pruebas con los módulos reales y reutilizarla en reportes, sedes y planes.
+- **Decisiones:**
+  - Mantener públicos los `GET`: el registro de usuarios, la landing, el selector de sede del encabezado y la pantalla de membresías los consultan sin sesión.
+  - En `PlanesController` (módulo M1) solo se agregaron decoradores, sin modificar la lógica de `PlanesService`.
+- **Dificultades y resolución:**
+  - Eliminar un plan con membresías asociadas devuelve 500 por la clave foránea de `membresia`. No se modificó `PlanesService` por pertenecer a M1: queda registrado como `it.todo` (responder 409) y el frontend muestra un mensaje claro en ese caso.
+- **Verificación:** 22 suites y 172 pruebas aprobadas (1 pendiente `todo`). ESLint sin errores en los archivos modificados. Pendiente: recorrido con la cuenta compartida de gerente.
+- **Commits:**
+  - `feat(sedes): proteger sedes y ciudades por rol`
+  - `feat(planes): proteger gestion de planes por rol`
+
+---
+
+#### 23/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Migración a Prisma ORM, Reportes y Testing.
+- **Actividades:**
+  - Pruebas de integración de `ReportesService` y `ReportesRepository` contra PostgreSQL temporal (PGlite) con un escenario de datos conocido, escritas **antes** de migrar para fijar los resultados: ingresos consolidados (solo pagos aprobados y dentro del período), filtros por sede y concepto, estado sin distinguir mayúsculas, período vacío; ocupación con asistencias y reservas confirmadas, filtro por sede, sedes sin actividad y período vacío.
+  - Migración de `obtenerIngresosPorSede` de SQL nativo (`$queryRaw` con `UNION ALL`) a `prisma.pago.findMany` con filtros tipados y suma por sede con `Prisma.Decimal`.
+  - Migración de `obtenerMetricasOcupacionPorSede` a tres `groupBy` en paralelo, traducción de canchas y clases a su sede y nombres de las sedes con actividad.
+  - Eliminación del script `test/reportes-ocupacion.sql-check.cjs`, reemplazado por las pruebas de integración.
+  - Registro de la decisión en el ADR-018.
+- **Decisiones:**
+  - Mantener la firma de los métodos del repository: el service y el controller no cambiaron, lo que muestra el beneficio del patrón Repository (ADR-014).
+  - Sumar los ingresos por sede en memoria, porque Prisma no agrupa por campos de tablas relacionadas. Es adecuado para reportes mensuales de la cadena; con millones de pagos por período convendría agregar en la base o precalcular (detallado en el ADR-018).
+  - Resolver en la base los conteos de ocupación con `groupBy` y combinar por sede en memoria.
+  - Un commit por consulta migrada y el borrado del SQL anterior recién con las pruebas pasando.
+- **Dificultades y resolución:**
+  - Prisma no permite agrupar por la sede de una relación: se seleccionan solo los campos necesarios y se combinan los resultados por sede. Se verificó que Prisma resuelve las relaciones con una cantidad fija de consultas (sin N+1).
+  - Los tipos de Prisma se perdían al combinar consultas condicionales dentro de `Promise.all`; se resolvió con métodos privados tipados para traducir canchas y clases a sede.
+- **Verificación:** las mismas pruebas pasan con el SQL anterior y con Prisma; ya no queda `$queryRaw` en `M6-reportes`. Suite completa del backend aprobada; ESLint sin errores en los archivos modificados. Pendiente: comparar en el panel los números con los datos compartidos.
+- **Commits:**
+  - `test(reportes): agregar pruebas de ingresos y ocupacion`
+  - `refactor(reportes): migrar ingresos a Prisma ORM`
+  - `refactor(reportes): migrar ocupacion a Prisma ORM`
+  - `docs(adr): agregar ADR-018 de reportes con Prisma`
+
+---
+
+#### 27/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Correcciones de la revisión de reportes, sedes y planes.
+- **Actividades:**
+  - Se quitó `admin` de `@Roles` en `ReportesController`, `SedeController`, `CiudadController` y `PlanesController`, porque ese rol no existe en el sistema: reportes y el alta, la modificación y la baja de sedes, ciudades y planes quedan solo para `gerente`.
+  - Se actualizaron las descripciones de Swagger (401 y 403) y las pruebas de integración: se quitaron los casos con token de admin y la baja lógica de sede se prueba con token de gerente.
+  - Se ajustó el formato de mis entradas anteriores de esta bitácora: commits sin hash, sin enlace a Trello y sin códigos de tarea, como en el resto del equipo.
+- **Decisiones:**
+  - `clases.controller.ts` (M3) también incluye `admin` en `@Roles`; no se modificó por pertenecer a otro módulo; queda para su responsable.
+- **Dificultades:** Ninguna.
+- **Verificación:** 23 suites y 180 pruebas aprobadas (1 pendiente `todo`). ESLint sin errores en los archivos modificados.
+- **Commits:**
+  - `fix(rbac): quitar rol admin de reportes, sedes y planes`
+  - `docs(log): corregir formato y registrar correcciones`
+
+---
+
+#### 27/10/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** CRUD de membresías de los socios para el gerente (parte backend).
+- **Actividades:**
+  - Revisión de `/membresias` (M1): ya tenía alta, consultas y cambio de estado, pero sin protección; faltaban modificar y eliminar, y la respuesta no traía el socio, el plan ni el estado.
+  - Protección con `SupabaseAuthGuard`, `RolesGuard` y `@Roles('gerente')` del alta, el listado general, el detalle, la modificación, el cambio de estado y la baja. Las consultas por usuario, que usan el socio y el control de acceso, siguen como estaban.
+  - Nuevo `GET /membresias/estados` con el catálogo de la tabla `membresia_estado`, para que el panel no tenga los estados escritos a mano.
+  - Nuevo `PATCH /membresias/:id` para modificar la fecha de vencimiento y la renovación automática, con validación de que el vencimiento no sea anterior al inicio.
+  - Nuevo `DELETE /membresias/:id` para eliminar una membresía cargada por error; si ya tiene pagos responde 409 y se sugiere suspenderla.
+  - `MembresiaResponseDto` ahora incluye el plan (con precio numérico), el estado y los datos básicos del socio. En el alta, `fecha_fin` pasa a ser opcional: si no se envía, se calcula con la duración del plan (`calcularFechaFin`).
+  - Pruebas de integración HTTP sobre PGlite: permisos (401/403), catálogo de estados, listado con filtros, detalle, alta con cálculo del vencimiento, cambio de estado, modificación y baja con y sin pagos.
+- **Decisiones:**
+  - El cambio de estado sigue en `PATCH /membresias/:id/estado`, que ya existía; la modificación nueva solo toca vencimiento y renovación.
+  - No borrar membresías con pagos: suspenderlas conserva la facturación y los reportes sin romper las claves foráneas de `pago`.
+- **Dificultades:**
+  - Al serializar el precio del plan anidado, class-transformer intentaba construir un `Decimal` vacío y el listado respondía 500; se resolvió declarando el campo como número (`@Type(() => Number)`).
+- **Verificación:** 24 suites y 200 pruebas aprobadas (20 nuevas, 1 pendiente `todo`). ESLint sin errores en los archivos modificados.
+- **Commits:**
+  - `feat(membresias): completar CRUD de membresias para el gerente`
+  - `test(membresias): agregar pruebas de integracion del CRUD`
+  - `docs(log): registrar CRUD de membresias`
+
+---
+
+#### 30/10/2026
+
+#### Angelina Vialle | Rol: Desarrolladora Backend
+
+- **Actividades:**
+  - **Flexibilización de identificación en ingresos y egresos:** Actualización de `ValidarIngresoDto` y `RegistrarEgresoDto` para hacer opcional `qrToken` y habilitar el campo `dni` (validado como numérico con `@Matches(/^\d+$/)` y `@IsOptional()`), permitiendo el registro tanto por QR dinámico como por ingreso manual de DNI.
+  - **Búsqueda por DNI en repositorio:** Implementación de `buscarUsuarioPorDni` en `AccesosRepository` para consultar socios en la base de datos vía `prisma.usuario.findUnique`, con soporte para clientes transaccionales.
+  - **Unificación de resolución de identidad:** Creación del método privado auxiliar `resolverIdUsuario` en `AccesosService` para centralizar la validación: resolución y existencia de usuario por DNI (`NotFoundException` 404 si no existe) o validación de vigencia del token efímero QR (`BadRequestException` 400 si expiró o está manipulado).
+  - **Refactorización de flujos de torniquete:** Adaptación de `validarYRegistrarIngreso` y `registrarEgreso` en `AccesosService` para utilizar la resolución unificada de identidad, manteniendo intactas las reglas de membresía activa, anti-doble ingreso y transacción atómica.
+  - **Estandarización de excepciones y Swagger:** Migración de `UnauthorizedException` (401) a `BadRequestException` (400) en `QrService.validarTokenEfimero`, `extraerIdDeToken` y los decoradores `@ApiResponse` de `AccesosController` y `QrController`, alineando los errores de formato o expiración de QR con las convenciones HTTP de validación de carga útil.
+- **Decisiones:**
+  - Centralizar la lógica de obtención del socio en `resolverIdUsuario` para evitar duplicar código entre los métodos de ingreso y egreso, asegurando un punto único de validación para ambos métodos de entrada (QR vs. DNI).
+  - Validar el formato numérico del DNI directamente a nivel de DTO mediante expresión regular para rechazar peticiones mal formadas antes de consultar la base de datos.
+  - Utilizar `BadRequestException` (400) en lugar de `UnauthorizedException` (401) para fallos de validación o expiración del token QR, reservando el 401 estrictamente para la autenticación de la sesión del usuario contra la API.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M2): correccion de excepciones y codigos de estado`
+  - `feat(M2): adicion de dni en dto de egreso e ingreso`
+  - `feat(M2): funcion para buscar usuario por dni`
+  - `feat(M2): correcion de excepciones y metodo para buscar por dni o token`
+  - `fix(M2): arreglo tipo de excepcion`
+  - `docs(log): actualizacion de bitacora`
+#### 29/10/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Endpoint de verificación de membresía: inclusión de fecha_inicio en el DTO de respuesta y ajuste en la detección de mora considerando estado 'Vencida' o expiración de fecha fin.
+  - Flujo de pagos: reutilización de intenciones de membresía suspendidas y pagos pendientes para evitar registros huérfanos al reintentar checkout, y exclusión de pagos pendientes abandonados en el historial del socio.
+  - Depuración del inicio de pago: remoción del parámetro y persistencia de renovación automática en DTO, repositorio y servicio.
+- **Decisiones:**
+  - Reutilizar la intención de pago pendiente previa en lugar de crear registros duplicados si el usuario no completó la transacción anterior.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `fix(membresias): corregir deteccion de mora y devolver fecha_inicio en verificacion`
+  - `fix(pagos): reutilizar intenciones suspendidas y omitir pagos pendientes huerfanos en historial`
+  - `refactor(pagos): remover campo renovacion_automatica en flujo de inicio de pago`
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** Corrección de consultas de reservas activas y robustecimiento de transacción de cancelación y lista de espera en M3.
+- **Actividades:**
+  - **Filtrado estricto de reservas activas en M3:** Corrección en `ReservasClasesRepository.obtenerReservasPorUsuario` agregando la condición `id_clase_reserva_estado: 1` (`Confirmada`) a la consulta de Prisma, resolviendo el error donde el endpoint `GET /reservas-clases/mis-reservas` retornaba reservas históricas canceladas como si continuaran vigentes.
+  - **Tolerancia temporal en lista de espera:** Incorporación de un margen de tolerancia (`toleranciaMs = 60000`, +/- 1 minuto con operadores `gte` y `lte`) en `ListaEsperaRepository.obtenerPrimerInscriptoActivo` y `ReservasClasesRepository.obtenerPrimerEnEspera`, blindando la búsqueda de socios en lista de espera frente a posibles discrepancias de milisegundos, segundos o zonas horarias al comparar `fecha_inicio` y `fecha_fin`.
+  - **Atomicidad y prevención de condiciones de carrera en cancelación:** Refactorización de `ReservasClasesService.cancelarReserva` dentro de la transacción de Prisma (`$transaction`), asegurando que la actualización del estado de la lista de espera a estado `2` (Promovida) y la creación de la reserva en estado `1` (Confirmada) se ejecuten de forma indivisible.
+  - **Prevención de lecturas sucias en concurrencia:** Al actualizar el estado de la reserva cancelada a `4` dentro de la transacción, el bloqueo a nivel de fila (`RowExclusiveLock`) en PostgreSQL sumado al filtrado de estado `1` en repositorio previene lecturas sucias o dobles cancelaciones concurrentes.
+  - **Control de concurrencia con bloqueo pesimista (FOR UPDATE):** Incorporación de `SELECT id_clase FROM clase WHERE id_clase = $1 FOR UPDATE` dentro de la transacción de `ReservasClasesService.crearReserva`, serializando las peticiones simultáneas sobre la misma clase para evitar sobreventa (overbooking) ante múltiples intentos de reserva concurrentes.
+  - **Prueba de integración de concurrencia real (PGlite):** Creación de la suite `reservas-clases.concurrency.integration.spec.ts` ejecutando dos solicitudes HTTP simultáneas (`Promise.all`) sobre una clase con un único cupo disponible. Se verificó con éxito que exactamente uno obtiene la reserva confirmada (HTTP 201) mientras que el segundo recibe HTTP 409 (`ConflictException`) y puede inscribirse inmediatamente a la lista de espera (HTTP 201, `orden_en_cola: 1`). Se validó además la posterior cancelación y promoción automática del socio en cola.
+  - **Pruebas y verificación:** Total del backend elevado a **25 suites y 203 pruebas exitosas al 100%**, con `typecheck` y `build` de NestJS limpios.
+- **Decisiones:**
+  - Filtrar las reservas en estado `1` directamente en la consulta a la base de datos en `ReservasClasesRepository` en lugar de hacerlo en memoria en el servicio, maximizando el rendimiento y la consistencia con `ListaEsperaRepository`.
+  - Emplear un rango de tolerancia de 1 minuto (`gte`/`lte`) en la búsqueda del primer inscripto de lista de espera para asegurar que diferencias de redondeo o formato ISO (con o sin milisegundos) nunca impidan la promoción del socio.
+  - Aplicar bloqueo a nivel de fila (`FOR UPDATE`) en PostgreSQL sobre el registro de la clase durante la transacción de creación de reservas para garantizar que la verificación de cupos sea estrictamente atómica y libre de condiciones de carrera.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `fix(clases): filtrar reservas activas y robustecer transaccion atomica de cancelacion y promocion`
+  - `test(clases): probar condicion de carrera en reservas con bloqueo pesimista y lista de espera`

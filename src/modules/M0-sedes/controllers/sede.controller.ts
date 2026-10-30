@@ -8,6 +8,7 @@ import {
   Body,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { SedeService } from '../services/sede.service';
 import { CreateSedeDto } from '../dto/create-sede.dto';
@@ -18,8 +19,14 @@ import {
   ApiParam,
   ApiResponse,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
 
+// Los GET siguen siendo públicos: el registro de usuarios, la landing y el
+// selector de sede del encabezado consultan las sedes sin token.
 @ApiTags('Sedes')
 @Controller('sedes')
 export class SedeController {
@@ -58,7 +65,7 @@ export class SedeController {
     return this.sedeService.findById(id_sede);
   }
 
-  @ApiOperation({ summary: 'Crear una nueva sede' })
+  @ApiOperation({ summary: 'Crear una nueva sede (Solo gerente)' })
   @ApiResponse({
     status: 201,
     description: 'Sede creada correctamente',
@@ -68,15 +75,28 @@ export class SedeController {
     description: 'Los datos enviados no son válidos',
   })
   @ApiResponse({
+    status: 401,
+    description: 'No autorizado. Token no proporcionado o inválido.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Acceso denegado: se requiere rol gerente.',
+  })
+  @ApiResponse({
     status: 404,
     description: 'La ciudad especificada no existe',
   })
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente')
+  @ApiBearerAuth()
   @Post()
   async create(@Body() data: CreateSedeDto) {
     return this.sedeService.create(data);
   }
 
-  @ApiOperation({ summary: 'Actualizar datos de la sede' })
+  @ApiOperation({
+    summary: 'Actualizar datos de la sede (Solo gerente)',
+  })
   @ApiParam({
     name: 'id',
     type: Number,
@@ -91,9 +111,20 @@ export class SedeController {
     description: 'Los datos enviados no son válidos',
   })
   @ApiResponse({
+    status: 401,
+    description: 'No autorizado. Token no proporcionado o inválido.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Acceso denegado: se requiere rol gerente.',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Sede o ciudad especificada no encontrada',
   })
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente')
+  @ApiBearerAuth()
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id_sede: number,
@@ -103,7 +134,7 @@ export class SedeController {
   }
 
   @ApiOperation({
-    summary: 'Eliminar lógicamente una sede',
+    summary: 'Eliminar lógicamente una sede (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -119,9 +150,20 @@ export class SedeController {
     description: 'ID de la sede invalido',
   })
   @ApiResponse({
+    status: 401,
+    description: 'No autorizado. Token no proporcionado o inválido.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Acceso denegado: se requiere rol gerente.',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Sede no encontrada',
   })
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente')
+  @ApiBearerAuth()
   @Delete(':id')
   async logicalDelete(@Param('id', ParseIntPipe) id_sede: number) {
     return this.sedeService.logicalDelete(id_sede);

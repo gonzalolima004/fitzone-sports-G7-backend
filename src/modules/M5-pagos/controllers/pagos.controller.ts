@@ -20,6 +20,7 @@ import { PagosService } from '../services/pagos.service';
 import { IniciarPagoDto } from '../dto/iniciar-pago.dto';
 import { PreferenciaPagoResponseDto } from '../dto/preferencia-pago-response.dto';
 import { PagoDetalleResponseDto } from '../dto/pago-detalle-response.dto';
+import { PagoPendienteResponseDto } from '../dto/pago-pendiente-response.dto';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { CurrentUserId } from '../../../common/decorators/current-user.decorator';
 
@@ -65,8 +66,9 @@ export class PagosController {
   })
   async iniciarPago(
     @Body() dto: IniciarPagoDto,
+    @CurrentUserId() userId: number,
   ): Promise<PreferenciaPagoResponseDto> {
-    return this.pagosService.crearPreferenciaPago(dto, dto.email_pagador);
+    return this.pagosService.crearPreferenciaPago(dto, userId);
   }
 
   @Get('mis-pagos')
@@ -89,6 +91,28 @@ export class PagosController {
     @CurrentUserId() userId: number,
   ): Promise<PagoDetalleResponseDto[]> {
     return this.pagosService.obtenerHistorialUsuario(userId);
+  }
+
+  @Get('pendientes')
+  @ApiOperation({
+    summary: 'Consultar conceptos pendientes de pago del usuario autenticado',
+    description:
+      'Lista la membresía vencida o no activa (si no fue renovada) y las reservas de cancha futuras sin pago aprobado, listas para iniciar su pago.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Conceptos pendientes obtenidos exitosamente.',
+    type: [PagoPendienteResponseDto],
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'No autorizado. El token de autenticación está ausente o es inválido.',
+  })
+  async obtenerPendientes(
+    @CurrentUserId() userId: number,
+  ): Promise<PagoPendienteResponseDto[]> {
+    return this.pagosService.obtenerPendientesUsuario(userId);
   }
 
   @Get(':id')

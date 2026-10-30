@@ -7,10 +7,15 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
+import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 import { ListaEsperaSubject } from '../patterns/observer/lista-espera.subject';
 import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
 import { Subject } from 'rxjs';
+import {
+  claseAplicaEnFecha,
+  obtenerRangoDiaArgentina,
+} from '../../../common/utils/date-time.util';
 
 @Injectable()
 export class ReservasClasesService {
@@ -24,12 +29,25 @@ export class ReservasClasesService {
     private readonly prisma: PrismaService,
     private readonly reservasRepository: ReservasClasesRepository,
     private readonly listaEsperaSubject: ListaEsperaSubject,
+    private readonly listaEsperaRepository: ListaEsperaRepository,
   ) {}
 
   async crearReserva(data: CrearReservaClaseDto, id_usuario: number) {
     const fechaInicio = new Date(data.fecha_inicio);
     const fechaFin = new Date(data.fecha_fin);
     const ahora = new Date();
+
+    if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
+      throw new BadRequestException(
+        'Las fechas proporcionadas no son válidas.',
+      );
+    }
+
+    if (fechaFin <= fechaInicio) {
+      throw new BadRequestException(
+        'La fecha de fin debe ser posterior a la fecha de inicio.',
+      );
+    }
 
     // 1. Validación de hasta 48h antes del inicio
     const diffHoras =
@@ -83,9 +101,11 @@ export class ReservasClasesService {
       );
     }
 
-    // 4. Validación atómica de cupo e inserción
+    // 4. Validación atómica de cupo e inserción con control de concurrencia
     return await this.prisma.$transaction(async (tx) => {
-      // 4.1. Validar existencia y capacidad de la clase
+      // 4.1. Bloqueo pesimista (FOR UPDATE) para serializar reservas concurrentes y evitar race conditions
+      await tx.$executeRaw`SELECT id_clase FROM clase WHERE id_clase = ${data.id_clase} FOR UPDATE`;
+
       const clase = await tx.clase.findUnique({
         where: { id_clase: data.id_clase },
       });
@@ -93,6 +113,13 @@ export class ReservasClasesService {
       if (!clase) {
         throw new NotFoundException(
           `La clase con ID ${data.id_clase} no existe.`,
+        );
+      }
+
+      const fechaReservaStr = data.fecha_inicio.slice(0, 10);
+      if (!claseAplicaEnFecha(clase, fechaReservaStr)) {
+        throw new BadRequestException(
+          'La clase no se dicta en el día o fecha seleccionada.',
         );
       }
 
@@ -150,6 +177,7 @@ export class ReservasClasesService {
 
       const ahora = new Date();
       const fechaInicio = new Date(reserva.fecha_inicio);
+      const fechaFin = new Date(reserva.fecha_fin);
 
       if (ahora >= fechaInicio) {
         throw new BadRequestException(
@@ -170,30 +198,64 @@ export class ReservasClasesService {
           tx,
         );
 
-      // 3. Buscar si hay alguien en lista de espera (estado 2) para esa clase y horario exacto
-      const primerEnEspera =
-        await this.reservasRepository.obtenerPrimerEnEspera(
+      // 3. Buscar si hay alguien en lista de espera para esa clase y horario exacto
+      // Prioridad 1: Tabla oficial clase_lista_espera
+      let idUsuarioPromovido: number | null = null;
+      const primerInscriptoLista =
+        await this.listaEsperaRepository.obtenerPrimerInscriptoActivo(
           reserva.id_clase,
-          reserva.fecha_inicio,
-          reserva.fecha_fin,
+          fechaInicio,
+          fechaFin,
           tx,
         );
 
-      // 4. Si hay alguien, se promueve y se notifica
-      if (primerEnEspera) {
-        // Promover a Confirmada (estado 1)
-        await this.reservasRepository.actualizarEstadoReserva(
-          primerEnEspera.id_clase_reserva,
-          1,
+      if (primerInscriptoLista) {
+        idUsuarioPromovido = primerInscriptoLista.id_usuario;
+        // Transacción atómica:
+        // 1) Actualizamos estado en lista de espera a 2 (Promovida / Procesada)
+        await this.listaEsperaRepository.actualizarEstadoInscripcion(
+          primerInscriptoLista.id_clase_lista_espera,
+          2,
           tx,
         );
+        // 2) Creamos la nueva reserva confirmada (estado 1) para el socio promovido
+        await this.reservasRepository.crearReserva(
+          {
+            id_clase: reserva.id_clase,
+            fecha_inicio: fechaInicio.toISOString(),
+            fecha_fin: fechaFin.toISOString(),
+          },
+          idUsuarioPromovido,
+          1, // Confirmada
+          tx,
+        );
+      } else {
+        // Fallback: buscar si existía en clase_reserva con estado 2 (En Espera)
+        const primerEnEsperaReserva =
+          await this.reservasRepository.obtenerPrimerEnEspera(
+            reserva.id_clase,
+            fechaInicio,
+            fechaFin,
+            tx,
+          );
 
-        // Disparar evento a los observadores
+        if (primerEnEsperaReserva) {
+          idUsuarioPromovido = primerEnEsperaReserva.id_usuario;
+          await this.reservasRepository.actualizarEstadoReserva(
+            primerEnEsperaReserva.id_clase_reserva,
+            1,
+            tx,
+          );
+        }
+      }
+
+      // 4. Si se promovió a alguien, notificar a los observadores
+      if (idUsuarioPromovido) {
         await this.listaEsperaSubject.notify({
           id_clase: reserva.id_clase,
-          fecha_inicio: reserva.fecha_inicio,
-          fecha_fin: reserva.fecha_fin,
-          id_usuario_promovido: primerEnEspera.id_usuario,
+          fecha_inicio: fechaInicio,
+          fecha_fin: fechaFin,
+          id_usuario_promovido: idUsuarioPromovido,
         });
       }
 
@@ -203,7 +265,7 @@ export class ReservasClasesService {
           ? 'Reserva cancelada con penalidad (fuera de término, menos de 2 horas de anticipación).'
           : 'Reserva cancelada exitosamente sin penalidad.',
         reserva: reservaCancelada,
-        cupo_reasignado: !!primerEnEspera,
+        cupo_reasignado: idUsuarioPromovido !== null,
       };
     });
   }
@@ -213,8 +275,9 @@ export class ReservasClasesService {
     let finDia: Date | undefined;
 
     if (fecha) {
-      inicioDia = new Date(`${fecha}T00:00:00.000Z`);
-      finDia = new Date(`${fecha}T23:59:59.999Z`);
+      const rango = obtenerRangoDiaArgentina(fecha);
+      inicioDia = rango.inicioDia;
+      finDia = rango.finDia;
     }
 
     const reservas = await this.reservasRepository.obtenerReservasPorUsuario(
@@ -227,8 +290,8 @@ export class ReservasClasesService {
       id_clase_reserva: r.id_clase_reserva,
       id_clase: r.id_clase,
       id_usuario: r.id_usuario,
-      fecha_inicio: r.fecha_inicio,
-      fecha_fin: r.fecha_fin,
+      fecha_inicio: r.fecha_inicio.toISOString(),
+      fecha_fin: r.fecha_fin.toISOString(),
       id_clase_reserva_estado: r.id_clase_reserva_estado,
       estado:
         r.clase_reserva_estado?.descripcion?.toUpperCase() ||

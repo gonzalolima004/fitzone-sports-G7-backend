@@ -17,11 +17,11 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { AccesosService } from '../services/accesos.service';
-/*
+
 import { ValidarIngresoDto } from '../dto/validar-ingreso.dto';
 import { AccesoResponseDto } from '../dto/acceso-response.dto';
-import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
-*/
+//import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+
 import { RegistrarEgresoDto } from '../dto/registrar-egreso.dto';
 import { EgresoResponseDto } from '../dto/egreso-response.dto';
 import { AforoStatusResponseDto } from '../dto/aforo-status-response.dto';
@@ -32,7 +32,7 @@ import { AforoStatusResponseDto } from '../dto/aforo-status-response.dto';
 export class AccesosController {
   constructor(private readonly accesosService: AccesosService) {}
 
-  /*@Post('validar-ingreso')
+  @Post('validar-ingreso')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Validar token QR e ingresar a la sede',
@@ -45,7 +45,7 @@ export class AccesosController {
     type: AccesoResponseDto,
   })
   @ApiResponse({
-    status: 401,
+    status: 400,
     description: 'Token QR inválido o expirado.',
   })
   @ApiResponse({
@@ -54,13 +54,14 @@ export class AccesosController {
   })
   @ApiResponse({
     status: 409,
-    description: 'Conflicto por anti-doble ingreso (RN-01): El usuario registra un ingreso activo sin egreso.',
+    description:
+      'Conflicto por anti-doble ingreso: El usuario registra un ingreso activo sin egreso.',
   })
-  
-  async validarIngreso(@Body() validarIngresoDto: ValidarIngresoDto): Promise<AccesoResponseDto> {
+  async validarIngreso(
+    @Body() validarIngresoDto: ValidarIngresoDto,
+  ): Promise<AccesoResponseDto> {
     return this.accesosService.validarYRegistrarIngreso(validarIngresoDto);
   }
-    */
 
   /**
    * Endpoint HTTP de Egreso

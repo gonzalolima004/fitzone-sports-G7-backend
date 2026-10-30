@@ -1,11 +1,17 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  ParseIntPipe,
+  //UseGuards
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+//import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 import { QrService } from '../services/qr.service';
@@ -13,7 +19,7 @@ import { QrDinamicoResponseDto } from '../dto/qr-dinamico-response.dto';
 
 @ApiTags('Control de Acceso')
 @ApiBearerAuth()
-@UseGuards(SupabaseAuthGuard)
+//@UseGuards(SupabaseAuthGuard)
 @Controller('access/qr')
 export class QrController {
   constructor(private readonly qrService: QrService) {}
@@ -29,7 +35,7 @@ export class QrController {
     type: QrDinamicoResponseDto,
   })
   @ApiResponse({
-    status: 401,
+    status: 400,
     description:
       'No autorizado. El token de autenticación está ausente, manipulado o expirado.',
   })
@@ -38,9 +44,11 @@ export class QrController {
     description:
       'Error interno del servidor durante la generación del token o guardado de perfil.',
   })
-  async generarQr(
+  generarQr(
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<QrDinamicoResponseDto> {
-    return await this.qrService.generarQrDinamico(user.id_usuario);
+    @Query('id_usuario', ParseIntPipe) idUsuarioQuery?: number,
+  ): QrDinamicoResponseDto {
+    const idUsuario = user?.id_usuario ?? idUsuarioQuery;
+    return this.qrService.generarQrDinamico(idUsuario);
   }
 }

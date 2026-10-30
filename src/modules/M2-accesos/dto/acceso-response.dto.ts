@@ -13,6 +13,9 @@ export class AccesoResponseDto {
   @ApiProperty({ description: 'Fecha y hora exacta del registro de ingreso' })
   readonly fechaIngreso: Date;
 
+  @ApiProperty({ description: 'Mensaje indicativo' })
+  readonly mensaje: string;
+
   constructor(partial: Partial<AccesoResponseDto>) {
     Object.assign(this, partial);
   }

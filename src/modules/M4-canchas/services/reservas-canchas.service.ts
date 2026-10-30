@@ -137,4 +137,12 @@ export class ReservasCanchasService {
 
     return reserva;
   }
+
+  async obtenerReservaPorId(id: number) {
+    const reserva = await this.reservasRepository.obtenerPorId(id);
+    if (!reserva) {
+      throw new NotFoundException(`La reserva #${id} no existe.`);
+    }
+    return reserva;
+  }
 }
