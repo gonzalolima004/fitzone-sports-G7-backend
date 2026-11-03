@@ -1,6 +1,6 @@
 # Bitácora de Desarrollo Grupo 7
 
-### 22/08/2026
+#### 22/08/2026
 
 - **Objetivo:** Definición de arquitectura base, Stack tecnológico y entidades iniciales.
 
@@ -496,7 +496,7 @@
 
 ---
 
-### 22/08/2026
+#### 22/08/2026
 
 Nombre / Rol: Facundo Agüero — Dev
 Rama: feature/auth-supabase
