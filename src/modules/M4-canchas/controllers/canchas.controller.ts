@@ -113,8 +113,13 @@ export class CanchasController {
   obtenerDisponibilidadPorSede(
     @Query('sedeId', ParseIntPipe) sedeId: number,
     @Query('fecha') fecha: string,
+    @Query('tipoId', new ParseIntPipe({ optional: true })) tipoId?: number,
   ) {
-    return this.canchasService.obtenerDisponibilidadPorSede(sedeId, fecha);
+    return this.canchasService.obtenerDisponibilidadPorSede(
+      sedeId,
+      fecha,
+      tipoId,
+    );
   }
 
   @Get(':id')

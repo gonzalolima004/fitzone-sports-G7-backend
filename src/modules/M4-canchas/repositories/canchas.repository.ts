@@ -21,6 +21,20 @@ export class CanchasRepository {
     });
   }
 
+  /**
+   * Consulta nueva para la grilla
+   * con filtro opcional para tipo de cancha.
+   */
+  async obtenerCanchasParaGrilla(sedeId: number, tipoId?: number) {
+    return this.prisma.cancha.findMany({
+      where: {
+        id_sede: sedeId,
+        activo: true,
+        ...(tipoId ? { id_cancha_tipo: tipoId } : {}),
+      },
+    });
+  }
+
   async obtenerTodasActivas(sedeId?: number): Promise<Cancha[]> {
     const temp = await this.prisma.cancha.findMany({
       where: { activo: true, ...(sedeId ? { id_sede: sedeId } : {}) },

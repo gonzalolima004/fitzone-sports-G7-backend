@@ -211,25 +211,46 @@ export class CanchasService {
     return slots;
   }
 
-  async obtenerDisponibilidadPorSede(sedeId: number, fechaStr: string) {
+  async obtenerDisponibilidadPorSede(
+    sedeId: number,
+    fechaStr: string,
+    tipoId?: number,
+  ) {
     // 1. Obtener canchas y horario operativo en paralelo (solo 2 viajes a Supabase)
     const [canchas, horarioSede] = await Promise.all([
-      this.canchasRepository.obtenerTodasActivas(sedeId),
+      this.canchasRepository.obtenerCanchasParaGrilla(sedeId, tipoId),
       this.sedeService.getHorarioOperativo(sedeId, fechaStr),
     ]);
 
-    if (!canchas.length) {
-      return [];
-    }
+    const respuestaBase = {
+      horario: {
+        abierto: horarioSede.abierto,
+        hora_apertura: horarioSede.hora_apertura,
+        hora_cierre: horarioSede.hora_cierre,
+        motivo_cierre: !horarioSede.abierto
+          ? 'motivo_cierre' in horarioSede
+            ? horarioSede.motivo_cierre
+            : 'Sede cerrada'
+          : undefined,
+      },
+      canchas: [] as Array<{
+        id_cancha: number;
+        nombre_cancha: string;
+        costo_base: number;
+        slots: DisponibilidadSlotResponseDto[];
+      }>,
+    };
 
-    // Si la sede está cerrada ese día, retornamos las canchas con slots vacíos sin consultar reservas
-    if (!horarioSede.abierto) {
-      return canchas.map((cancha) => ({
-        id_cancha: cancha.id_cancha,
-        nombre_cancha: cancha.nombre,
-        costo_base: Number(cancha.costo_base),
-        slots: [],
-      }));
+    if (!canchas.length || !horarioSede.abierto) {
+      if (!horarioSede.abierto && canchas.length) {
+        respuestaBase.canchas = canchas.map((cancha) => ({
+          id_cancha: cancha.id_cancha,
+          nombre_cancha: cancha.nombre,
+          costo_base: Number(cancha.costo_base),
+          slots: [],
+        }));
+      }
+      return respuestaBase;
     }
 
     // 2. Calcular límites horarios del día
@@ -254,7 +275,7 @@ export class CanchasService {
 
     const idsCanchas = canchas.map((c) => c.id_cancha);
 
-    // 3. Obtener TODAS las reservas y mantenimientos de la sede en paralelo (1 solo viaje)
+    // 3. Obtener TODAS las reservas y mantenimientos de la sede en paralelo
     const [todasLasReservas, todosLosMantenimientos] = await Promise.all([
       this.reservasRepository.obtenerReservasPorCanchasYFecha(
         idsCanchas,
@@ -283,19 +304,17 @@ export class CanchasService {
       mantenimientosPorCancha.set(m.id_cancha, list);
     }
 
-    // 5. Construir los resultados en memoria (cero llamadas de red)
-    return canchas.map((cancha) => {
-      const reservasCancha = reservasPorCancha.get(cancha.id_cancha) ?? [];
-      const mantenimientosCancha =
+    // 5. Construir los resultados en memoria
+    respuestaBase.canchas = canchas.map((cancha) => {
+      const reservas = reservasPorCancha.get(cancha.id_cancha) ?? [];
+      const mantenimientos =
         mantenimientosPorCancha.get(cancha.id_cancha) ?? [];
-
       const slots = this.calcularSlotsEnMemoria(
         inicioDia,
         finDia,
-        reservasCancha,
-        mantenimientosCancha,
+        reservas,
+        mantenimientos,
       );
-
       return {
         id_cancha: cancha.id_cancha,
         nombre_cancha: cancha.nombre,
@@ -303,6 +322,7 @@ export class CanchasService {
         slots,
       };
     });
+    return respuestaBase;
   }
 
   /**
