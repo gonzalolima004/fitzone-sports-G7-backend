@@ -1181,6 +1181,25 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 03/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Integración y activación de `SupabaseAuthGuard` junto al decorador `@CurrentUser()` en la creación de reservas de canchas (`POST /reservas-canchas`), extrayendo el ID real del usuario autenticado (`usuario.id_usuario`) y removiendo los mocks temporales de testing.
+  - Optimización del endpoint de disponibilidad de canchas por sede (`GET /canchas/disponibilidad/sede`), permitiendo filtrado opcional por tipo de cancha (`tipoId`) mediante el método `obtenerCanchasParaGrilla` en `CanchasRepository`.
+  - Reestructuración de la respuesta del servicio de disponibilidad en `CanchasService`, unificando la información de horarios operativos de la sede (`abierto`, `hora_apertura`, `hora_cierre`, `motivo_cierre`) junto a las canchas y slots para su renderizado óptimo en la grilla del frontend.
+  - Optimización de performance en backend evitando llamadas y consultas innecesarias de reservas y mantenimientos a Supabase cuando la sede se encuentra cerrada.
+- **Decisiones:** Cambiar el endpoint para la grilla de turnos, de manera que traiga la disponibilidad para un tipo de cancha en vez de todas a la vez.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M4): fix de errores por supabase auth`
+  - `feat(M4): optimizacion de slots de horarios`
+  - `fix(log): correccion de formato`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
 #### 26/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
