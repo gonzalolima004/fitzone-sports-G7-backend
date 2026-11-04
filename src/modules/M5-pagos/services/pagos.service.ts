@@ -29,6 +29,7 @@ import { etiquetaPlan } from '../../M1-usuarios/utils/plan-duracion';
 @Injectable()
 export class PagosService {
   private readonly logger = new Logger(PagosService.name);
+  private readonly syncUsuariosEnCurso = new Map<number, Promise<void>>();
 
   constructor(
     private readonly mercadopagoService: MercadoPagoService,
@@ -275,7 +276,7 @@ export class PagosService {
    * 4. Si el estado es 'approved', ejecuta la confirmación atómica con $transaction.
    * 5. Si el estado es 'rejected' o 'cancelled', marca el pago como 'Rechazado'.
    */
-  async procesarWebhook(paymentId: string | number) {
+  async procesarWebhook(paymentId: string | number, fallbackIdPago?: number) {
     this.logger.log(
       `Iniciando procesamiento de webhook para el pago #${paymentId}...`,
     );
@@ -339,6 +340,11 @@ export class PagosService {
       pago = await this.pagosRepository.obtenerPorTokenTransaccion(
         String(payment.id),
       );
+    }
+
+    // D. Fallback por ID de pago explícito (cuando se invoca desde verificación de retorno)
+    if (!pago && fallbackIdPago) {
+      pago = await this.pagosRepository.obtenerPorId(fallbackIdPago);
     }
 
     if (!pago) {
@@ -641,24 +647,114 @@ export class PagosService {
   }
 
   /**
+   * Reconcilia un pago local en estado 'Pendiente' buscando en Mercado Pago por external_reference.
+   * Cubre entornos locales o flujos donde el usuario vuelve a la app sin webhook ni query payment_id.
+   */
+  async sincronizarPagoPendientePorReferencia(pago: {
+    id_pago: number;
+    id_membresia?: number | null;
+    id_cancha_reserva?: number | null;
+  }): Promise<boolean> {
+    if (!this.mercadopagoService.buscarPagosPorReferenciaExterna) {
+      return false;
+    }
+
+    const externalReference = pago.id_membresia
+      ? `membresia-${pago.id_membresia}`
+      : pago.id_cancha_reserva
+        ? `cancha-${pago.id_cancha_reserva}`
+        : null;
+
+    if (!externalReference) return false;
+
+    try {
+      const resultados =
+        await this.mercadopagoService.buscarPagosPorReferenciaExterna(
+          externalReference,
+        );
+      if (!resultados.length) return false;
+
+      const pagoAprobado = [...resultados]
+        .reverse()
+        .find((r) => r.status === 'approved');
+      const candidato = pagoAprobado ?? resultados[resultados.length - 1];
+      if (!candidato?.id) return false;
+
+      if (
+        candidato.status === 'approved' ||
+        candidato.status === 'rejected' ||
+        candidato.status === 'cancelled'
+      ) {
+        await this.procesarWebhook(candidato.id, pago.id_pago);
+        return true;
+      }
+    } catch (error: unknown) {
+      this.logger.warn(
+        `No se pudo reconciliar el pago pendiente #${pago.id_pago} (${externalReference}) con Mercado Pago:`,
+        error,
+      );
+    }
+
+    return false;
+  }
+
+  /**
+   * Reconcilia todos los pagos en estado 'Pendiente' de un usuario contra Mercado Pago.
+   * Deduplica ejecuciones concurrentes para el mismo usuario.
+   */
+  async sincronizarPagosPendientesUsuario(id_usuario: number): Promise<void> {
+    if (!this.pagosRepository.obtenerPagosPendientesPorUsuario) return;
+
+    const existente = this.syncUsuariosEnCurso.get(id_usuario);
+    if (existente) {
+      await existente;
+      return;
+    }
+
+    const tarea = (async () => {
+      try {
+        const pendientes =
+          await this.pagosRepository.obtenerPagosPendientesPorUsuario(
+            id_usuario,
+          );
+        for (const pago of pendientes) {
+          await this.sincronizarPagoPendientePorReferencia(pago);
+        }
+      } catch (error: unknown) {
+        this.logger.warn(
+          `Error al sincronizar pagos pendientes del usuario #${id_usuario}:`,
+          error,
+        );
+      } finally {
+        this.syncUsuariosEnCurso.delete(id_usuario);
+      }
+    })();
+
+    this.syncUsuariosEnCurso.set(id_usuario, tarea);
+    await tarea;
+  }
+
+  /**
    * Obtiene la lista cronológica de pagos realizados por un socio
    */
   async obtenerHistorialUsuario(
     id_usuario: number,
   ): Promise<PagoDetalleResponseDto[]> {
+    await this.sincronizarPagosPendientesUsuario(id_usuario);
     const pagos =
       await this.pagosRepository.obtenerHistorialPorUsuario(id_usuario);
     return pagos.map((pago) => this.formatearDetallePago(pago));
   }
 
   /**
-   * Obtiene el detalle de un pago por su ID y opcionalmente valida su pertenencia
+   * Obtiene el detalle de un pago por su ID, valida su pertenencia y, si sigue
+   * 'Pendiente', certifica y acredita el pago en línea contra Mercado Pago.
    */
   async obtenerDetallePago(
     id_pago: number,
     id_usuario?: number,
   ): Promise<PagoDetalleResponseDto> {
-    const pago = await this.pagosRepository.obtenerDetallePorId(id_pago);
+    let pago = await this.pagosRepository.obtenerDetallePorId(id_pago);
     if (!pago) {
       throw new NotFoundException(`El pago #${id_pago} no existe.`);
     }
@@ -673,6 +769,18 @@ export class PagosService {
       }
     }
 
+    if (pago.pago_estado?.descripcion?.toLowerCase() === 'pendiente') {
+      const reconciliado =
+        await this.sincronizarPagoPendientePorReferencia(pago);
+      if (reconciliado) {
+        const pagoActualizado =
+          await this.pagosRepository.obtenerDetallePorId(id_pago);
+        if (pagoActualizado) {
+          pago = pagoActualizado;
+        }
+      }
+    }
+
     return this.formatearDetallePago(pago);
   }
 
@@ -684,6 +792,7 @@ export class PagosService {
   async obtenerPendientesUsuario(
     id_usuario: number,
   ): Promise<PagoPendienteResponseDto[]> {
+    await this.sincronizarPagosPendientesUsuario(id_usuario);
     const pendientes: PagoPendienteResponseDto[] = [];
 
     const membresia =

@@ -445,6 +445,53 @@ export class PagosRepository {
               fecha_fin: fechaFin,
             },
           });
+
+          // Promover permanentemente al usuario con rol 'externo' (o sin roles) al rol 'socio'
+          const rolesActuales = await tx.usuarioRol.findMany({
+            where: { id_usuario: memb.id_usuario },
+            include: { rol: true },
+          });
+
+          const tieneRolExterno = rolesActuales.some(
+            (ur) => ur.rol?.nombre?.trim().toLowerCase() === 'externo',
+          );
+          const sinRoles = rolesActuales.length === 0;
+
+          if (tieneRolExterno || sinRoles) {
+            if (tieneRolExterno) {
+              await tx.usuarioRol.deleteMany({
+                where: {
+                  id_usuario: memb.id_usuario,
+                  rol: {
+                    nombre: { equals: 'externo', mode: 'insensitive' },
+                  },
+                },
+              });
+            }
+
+            let rolSocio = await tx.rol.findFirst({
+              where: { nombre: { equals: 'socio', mode: 'insensitive' } },
+            });
+            if (!rolSocio) {
+              rolSocio = await tx.rol.create({
+                data: { nombre: 'socio' },
+              });
+            }
+
+            await tx.usuarioRol.upsert({
+              where: {
+                id_usuario_id_rol: {
+                  id_usuario: memb.id_usuario,
+                  id_rol: rolSocio.id_rol,
+                },
+              },
+              update: {},
+              create: {
+                id_usuario: memb.id_usuario,
+                id_rol: rolSocio.id_rol,
+              },
+            });
+          }
         }
       }
 
@@ -648,6 +695,29 @@ export class PagosRepository {
     return this.prisma.pago.update({
       where: { id_pago },
       data: { comprobante_url },
+    });
+  }
+
+  /**
+   * Obtiene todos los pagos en estado 'Pendiente' pertenecientes a un usuario
+   * (tanto de membresía como de reserva de cancha).
+   */
+  async obtenerPagosPendientesPorUsuario(
+    id_usuario: number,
+  ): Promise<PagoConRelaciones[]> {
+    return this.prisma.pago.findMany({
+      where: {
+        pago_estado: {
+          descripcion: { equals: 'Pendiente', mode: 'insensitive' },
+        },
+        OR: [{ membresia: { id_usuario } }, { cancha_reserva: { id_usuario } }],
+      },
+      orderBy: { id_pago: 'desc' },
+      include: {
+        pago_estado: true,
+        cancha_reserva: true,
+        membresia: true,
+      },
     });
   }
 }
