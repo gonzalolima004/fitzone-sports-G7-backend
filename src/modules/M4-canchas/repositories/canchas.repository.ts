@@ -54,12 +54,73 @@ export class CanchasRepository {
     });
   }
 
-  async obtenerPorId(id_cancha: number): Promise<Cancha | null> {
+  async obtenerPorId(id_cancha: number) {
     return this.prisma.cancha.findUnique({
       where: { id_cancha },
       include: {
         sede: true,
         cancha_tipo: true,
+      },
+    });
+  }
+
+  /**
+   * Obtiene los datos del usuario requeridos para la cotización de turnos mediante Prisma.
+   * Utiliza selección granular de campos (select) y filtrado opcional de membresía por fecha
+   * para minimizar la transferencia de datos y la sobrecarga de consultas relacionales.
+   */
+  async obtenerDatosUsuarioParaCotizacion(
+    idUsuario: number,
+    fechaTurno?: string,
+  ) {
+    const fechaFiltro = fechaTurno ? new Date(fechaTurno) : undefined;
+
+    return this.prisma.usuario.findUnique({
+      where: { id_usuario: idUsuario },
+      select: {
+        id_usuario: true,
+        id_sede: true,
+        sede: {
+          select: {
+            id_sede: true,
+            id_ciudad: true,
+          },
+        },
+        usuario_rol: {
+          select: {
+            id_usuario: true,
+            id_rol: true,
+            rol: {
+              select: {
+                id_rol: true,
+                nombre: true,
+              },
+            },
+          },
+        },
+        membresia: {
+          where: fechaFiltro
+            ? {
+                fecha_inicio: { lte: fechaFiltro },
+                fecha_fin: { gte: fechaFiltro },
+              }
+            : undefined,
+          select: {
+            id_membresia: true,
+            id_usuario: true,
+            id_membresia_plan: true,
+            id_membresia_estado: true,
+            fecha_inicio: true,
+            fecha_fin: true,
+            renovacion_automatica: true,
+            membresia_estado: {
+              select: {
+                id_membresia_estado: true,
+                descripcion: true,
+              },
+            },
+          },
+        },
       },
     });
   }
