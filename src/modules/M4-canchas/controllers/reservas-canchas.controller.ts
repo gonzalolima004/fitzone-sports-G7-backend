@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Get,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,9 +16,9 @@ import {
 import { ReservasCanchasService } from '../services/reservas-canchas.service';
 import { CrearReservaCanchaDto } from '../dto/crear-reserva-cancha.dto';
 import { ReservaCanchaResponseDto } from '../dto/reserva-cancha-response.dto';
-// Ajustar rutas relativas si los decorators/guards de la Épica 1 están en otra ubicación
-// import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
-// import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import * as authenticatedUserInterface from '../../../common/interfaces/authenticated-user.interface';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 
 @ApiTags('Reservas de Canchas')
 @Controller('reservas-canchas')
@@ -25,7 +26,7 @@ export class ReservasCanchasController {
   constructor(private readonly reservasService: ReservasCanchasService) {}
 
   @Post()
-  // @UseGuards(SupabaseAuthGuard) <-- Descomentar cuando la Épica 1 esté integrada
+  @UseGuards(SupabaseAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Crear una reserva de cancha garantizando concurrencia (RN-02)',
@@ -33,10 +34,9 @@ export class ReservasCanchasController {
   @ApiResponse({ status: 201, type: ReservaCanchaResponseDto })
   crearReserva(
     @Body() dto: CrearReservaCanchaDto,
-    // @CurrentUser() usuario: AuthenticatedUser <-- Descomentar luego
+    @CurrentUser() usuario: authenticatedUserInterface.AuthenticatedUser,
   ) {
-    const idUsuarioMock = 1; // Temporal para testing local sin JWT
-    return this.reservasService.crearReserva(dto, idUsuarioMock);
+    return this.reservasService.crearReserva(dto, usuario.id_usuario);
   }
   @Get(':id')
   @ApiOperation({ summary: 'Obtener detalle de una reserva por ID' })
