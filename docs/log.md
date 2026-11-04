@@ -1200,6 +1200,31 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 04/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Implementación del endpoint de cotización de turnos de canchas (`GET /canchas/cotizar`) en el módulo M4, protegido mediante `SupabaseAuthGuard` y extrayendo el usuario autenticado con `@CurrentUser()`.
+  - Creación de los DTOs de validación y respuesta (`CotizarTurnoQueryDto` y `CotizacionResponseDto`) con `class-validator`, normalización de tipos y esquemas documentados en Swagger.
+  - Implementación de la regla de descuento para socios (15%) condicionado a: rol socio, membresía activa en la fecha del turno y reserva en una sede de su misma ciudad (`id_ciudad`).
+  - Implementación del recargo por horario pico (+20%) para turnos entre las 19:00 y las 21:00 hs mediante el patrón Strategy (`PrecioStrategy`, `PrecioEstandarStrategy`, `DescuentoSocioStrategy`, `HorarioPicoStrategy`, `PrecioContextService`).
+  - Optimización de consultas en `CanchasRepository` mediante Prisma utilizando selección granular (`select`) y filtrado relacional de membresías activas por fecha, reduciendo la sobrecarga de datos transferidos.
+  - Diseño e implementación de un servicio de caché desacoplado (`CotizacionCacheService`) bajo el patrón Adapter/Cache Provider, con política de desalojo LRU (máx. 500 entradas), TTL de 30 segundos y contrato asíncrono para facilitar la integración futura con Redis sin alterar la lógica de negocio.
+  - Cobertura completa de pruebas unitarias en `canchas-cotizar.service.spec.ts` y `cotizacion-cache.service.spec.ts`, validando cálculos de precios, reglas de descuento, horario pico, expiración y desalojo de caché.
+- **Decisiones:**
+  - Utilizar el patrón Strategy para la aplicación de tarifas dinámicas (descuento socio y recargo pico), garantizando extensibilidad sin acoplar reglas en el servicio principal.
+  - Implementar un Cache Provider dedicado en memoria con política LRU en lugar de caché dentro del servicio o un Map directo, asegurando que `CanchasService` se mantenga 100% stateless y evitando fugas de memoria.
+- **Dificultades:**
+  - El servidor de la base de datos se encuentra en Oregon (EE.UU.), haciendo que hasta la petición más básica de SELECT 1 demore 250ms en el MEJOR caso posible. El uso de cache es una forma de evitar realizar consultas redundantes. Funciona bien por ahora en tests manuales y automatizados, por lo que si mañana sigue funcionando sin errores, planeo incluir una tarea, o más, en trello para integrarlo en otros puntos donde sea apropiado, sin afectar que realmente requieran ir a la base de datos real. 
+- **Commits:**
+  - `feat(M4): crear endpoint para cotizar precios`
+  - `feat(M4): endpoint para cotizar canchas`
+  - `test(M4): test para cache de cotizacion`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
 #### 26/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
