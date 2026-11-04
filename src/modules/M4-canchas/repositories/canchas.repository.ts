@@ -54,12 +54,35 @@ export class CanchasRepository {
     });
   }
 
-  async obtenerPorId(id_cancha: number): Promise<Cancha | null> {
+  async obtenerPorId(id_cancha: number) {
     return this.prisma.cancha.findUnique({
       where: { id_cancha },
       include: {
         sede: true,
         cancha_tipo: true,
+      },
+    });
+  }
+
+  /**
+   * Obtiene los datos del usuario requeridos para la cotización de turnos:
+   * Sede asignada (para verificar la ciudad), roles y membresías registradas.
+   */
+  async obtenerDatosUsuarioParaCotizacion(idUsuario: number) {
+    return this.prisma.usuario.findUnique({
+      where: { id_usuario: idUsuario },
+      include: {
+        sede: true,
+        usuario_rol: {
+          include: {
+            rol: true,
+          },
+        },
+        membresia: {
+          include: {
+            membresia_estado: true,
+          },
+        },
       },
     });
   }

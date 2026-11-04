@@ -12,8 +12,14 @@ import {
   DisponibilidadSlotResponseDto,
   SlotEstado,
 } from '../dto/disponibilidad-slot-response.dto';
+import {
+  CotizarTurnoQueryDto,
+  CotizacionResponseDto,
+  MotivoSinDescuento,
+} from '../dto/cotizacion-turno.dto';
 import { SedeService } from '../../M0-sedes/services/sede.service';
 import { CanchaMantenimiento, CanchaReserva } from '@prisma/client';
+import { PrecioContextService } from './precio-context.service';
 
 @Injectable()
 export class CanchasService {
@@ -21,6 +27,7 @@ export class CanchasService {
     private readonly canchasRepository: CanchasRepository,
     private readonly reservasRepository: ReservasCanchasRepository,
     private readonly sedeService: SedeService,
+    private readonly precioContext?: PrecioContextService,
   ) {}
 
   async crearCancha(dto: CrearCanchaDto) {
@@ -364,28 +371,131 @@ export class CanchasService {
 
     return slots;
   }
-  /*
-  async obtenerDisponibilidadPorSede(sedeId: number, fechaStr: string) {
-    // 1. Obtiene las canchas de la sede mediante el repositorio existente
-    const canchas = await this.canchasRepository.obtenerTodasActivas(sedeId);
 
-    // 2. Ejecuta la disponibilidad en paralelo reutilizando la función que ya tienen
-    const resultados = await Promise.all(
-      canchas.map(async (cancha) => {
-        const slots = await this.obtenerDisponibilidad(
-          cancha.id_cancha,
-          fechaStr,
-        );
-        return {
-          id_cancha: cancha.id_cancha,
-          nombre_cancha: cancha.nombre,
-          costo_base: Number(cancha.costo_base),
-          slots,
-        };
-      }),
-    );
+  /**
+   * Conecta el cálculo de precios dinámicos con el endpoint /canchas/cotizar,
+   * validando que el descuento de socio aplique solo si tiene membresía activa
+   * y reserva en una sede de su misma ciudad.
+   */
+  async cotizarTurno(
+    query: CotizarTurnoQueryDto,
+    idUsuario: number,
+  ): Promise<CotizacionResponseDto> {
+    // 1. Validar fecha válida en calendario
+    const [year, month, day] = query.fecha.split('-').map(Number);
+    const parsedDate = new Date(Date.UTC(year, month - 1, day));
+    if (
+      isNaN(parsedDate.getTime()) ||
+      parsedDate.getUTCFullYear() !== year ||
+      parsedDate.getUTCMonth() !== month - 1 ||
+      parsedDate.getUTCDate() !== day
+    ) {
+      throw new BadRequestException('Formato de fecha inválido.');
+    }
 
-    return resultados;
+    // 2. Obtener cancha y usuario en paralelo
+    const [cancha, usuario] = await Promise.all([
+      this.canchasRepository.obtenerPorId(query.canchaId),
+      this.canchasRepository.obtenerDatosUsuarioParaCotizacion(idUsuario),
+    ]);
+
+    // Validar cancha (RN: si no existe o está inactiva -> 404)
+    if (!cancha || !cancha.activo) {
+      throw new NotFoundException(
+        `La cancha con ID ${query.canchaId} no existe o se encuentra inactiva.`,
+      );
+    }
+
+    // Validar usuario
+    if (!usuario) {
+      throw new NotFoundException(
+        `El usuario con ID ${idUsuario} no fue encontrado.`,
+      );
+    }
+
+    const costoBase = Number(cancha.costo_base);
+
+    // 3. Evaluar condiciones para descuento de socio (15%)
+    // a) El usuario tiene rol 'socio' (si es 'externo' u otro rol, no aplica)
+    const esSocio =
+      usuario.usuario_rol?.some(
+        (ur) => ur.rol?.nombre?.trim().toLowerCase() === 'socio',
+      ) ?? false;
+
+    let aplicaDescuentoSocio = false;
+    let motivoSinDescuento: MotivoSinDescuento = null;
+
+    if (!esSocio) {
+      motivoSinDescuento = 'ROL_EXTERNO';
+    } else {
+      // b) Membresía ACTIVA vigente para la fecha del turno: fecha_inicio <= fecha <= fecha_fin
+      const tieneMembresiaActiva = (usuario.membresia ?? []).some((m) => {
+        const esEstadoActivo =
+          m.id_membresia_estado === 1 ||
+          m.membresia_estado?.descripcion?.trim().toLowerCase() === 'activa';
+
+        if (!esEstadoActivo) {
+          return false;
+        }
+
+        const fechaInicioStr = m.fecha_inicio.toISOString().slice(0, 10);
+        const fechaFinStr = m.fecha_fin.toISOString().slice(0, 10);
+
+        return fechaInicioStr <= query.fecha && query.fecha <= fechaFinStr;
+      });
+
+      if (!tieneMembresiaActiva) {
+        motivoSinDescuento = 'SIN_MEMBRESIA';
+      } else {
+        // c) Misma Ciudad: usuario.id_sede -> sede.id_ciudad coincide con cancha.id_sede -> sede.id_ciudad
+        const usuarioCiudadId = usuario.sede?.id_ciudad;
+        const canchaCiudadId = cancha.sede?.id_ciudad;
+
+        if (
+          !usuarioCiudadId ||
+          !canchaCiudadId ||
+          usuarioCiudadId !== canchaCiudadId
+        ) {
+          motivoSinDescuento = 'OTRA_CIUDAD';
+        } else {
+          aplicaDescuentoSocio = true;
+          motivoSinDescuento = null;
+        }
+      }
+    }
+
+    // 4. Delegar cálculo de precios dinámicos a PrecioContextService
+    if (this.precioContext) {
+      return this.precioContext.calcularCotizacion({
+        costoBase,
+        hora: query.hora,
+        esSocio,
+        aplicaDescuentoSocio,
+        motivoSinDescuento,
+      });
+    }
+
+    // Fallback defensivo si se instancia sin DI
+    const [horaStr] = query.hora.split(':');
+    const horaNum = parseInt(horaStr, 10);
+    const esHorarioPico = horaNum >= 19 && horaNum < 21;
+    const montoRecargoPico = esHorarioPico ? Math.round(costoBase * 0.2) : 0;
+    const descuentoPorcentaje = aplicaDescuentoSocio ? 15 : 0;
+    const montoDescuento = aplicaDescuentoSocio
+      ? Math.round(costoBase * 0.15)
+      : 0;
+    const precioFinal = costoBase - montoDescuento + montoRecargoPico;
+
+    return {
+      costo_base: costoBase,
+      descuento_porcentaje: descuentoPorcentaje,
+      monto_descuento: montoDescuento,
+      es_horario_pico: esHorarioPico,
+      monto_recargo_pico: montoRecargoPico,
+      precio_final: precioFinal,
+      es_socio: esSocio,
+      aplica_descuento_socio: aplicaDescuentoSocio,
+      motivo_sin_descuento: motivoSinDescuento,
+    };
   }
-    */
 }
