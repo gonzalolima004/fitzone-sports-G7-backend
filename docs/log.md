@@ -1419,3 +1419,20 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   - `fix(clases): filtrar reservas activas y robustecer transaccion atomica de cancelacion y promocion`
   - `test(clases): probar condicion de carrera en reservas con bloqueo pesimista y lista de espera`
+
+
+  ### 04/11/2026
+  #### Angelina María Vialle| Rol: QA Backend
+  - **Actividades:**
+  -Prueba unitaria de acceso.service
+  -
+  -Prueba unitaria de aforo-realtime.service
+  -
+  -Prueba unitaria de qr.service
+- **Decisiones:**
+  -Tipar de forma estricta los mocks en Jest utilizando as unknown as DTO/Entity
+- **Dificultades:**
+  -Ninguna
+- **Commits:**
+  -test(M2): test unitario de accesos, aforo y qr
+  -docs(M2): actualizacion bitacora
