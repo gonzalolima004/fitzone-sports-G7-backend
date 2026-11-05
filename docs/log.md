@@ -1385,6 +1385,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(M2): correcion de excepciones y metodo para buscar por dni o token`
   - `fix(M2): arreglo tipo de excepcion`
   - `docs(log): actualizacion de bitacora`
+
 #### 29/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
@@ -1400,6 +1401,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `fix(membresias): corregir deteccion de mora y devolver fecha_inicio en verificacion`
   - `fix(pagos): reutilizar intenciones suspendidas y omitir pagos pendientes huerfanos en historial`
   - `refactor(pagos): remover campo renovacion_automatica en flujo de inicio de pago`
+
 #### Joaquín Ribarola | Rol: Desarrollador Backend
 
 - **Tarea:** Corrección de consultas de reservas activas y robustecimiento de transacción de cancelación y lista de espera en M3.
@@ -1420,9 +1422,26 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `fix(clases): filtrar reservas activas y robustecer transaccion atomica de cancelacion y promocion`
   - `test(clases): probar condicion de carrera en reservas con bloqueo pesimista y lista de espera`
 
+---
 
-  ### 04/11/2026
-  #### Angelina María Vialle| Rol: QA Backend
+#### 04/11/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Acreditación de membresías y cambio de rol: actualización de `confirmarPagoTransaccional` en `PagosRepository` y `MembresiasRepository` para que, al acreditarse el pago y activarse la membresía, el usuario con rol `"externo"` pase a tener el rol `"socio"` de forma permanente.
+  - Reconciliación de pagos pendientes: incorporación de búsqueda por `external_reference` en `MercadoPagoService` y sincronización automática en `PagosService` al consultar el detalle o historial de pagos.
+- **Decisiones:**
+  - Ejecutar la promoción de `"externo"` a `"socio"` dentro de la misma transacción (`$transaction`) que aprueba el pago y activa la membresía para garantizar consistencia atómica.
+  - Reconciliar pagos pendientes consultando directamente a Mercado Pago por `external_reference` (`membresia-X`) para cubrir entornos locales donde no llega el webhook ni la redirección automática del checkout.
+- **Dificultades:** Sandbox de Mercado Pago oculta el botón de retorno cuando las `back_urls` apuntan a `localhost`, lo que impedía recibir el `payment_id` por URL; se solucionó reconciliando los pagos pendientes mediante `payment.search` por referencia externa.
+- **Commits:**
+  - `feat: acreditar pagos de membresia y promover rol externo a socio`
+
+---
+
+  #### 04/11/2026
+  #### Angelina María Vialle | Rol: QA Backend
   - **Actividades:**
   -Prueba unitaria de acceso.service
   -
@@ -1436,3 +1455,5 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   -test(M2): test unitario de accesos, aforo y qr
   -docs(M2): actualizacion bitacora
+
+---

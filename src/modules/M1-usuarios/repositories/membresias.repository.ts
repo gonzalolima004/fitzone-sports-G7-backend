@@ -141,7 +141,7 @@ export class MembresiasRepository {
       fecha_fin,
       renovacion_automatica = false,
     } = data;
-    return await this.prisma.membresia.create({
+    const creada = await this.prisma.membresia.create({
       data: {
         fecha_inicio,
         fecha_fin,
@@ -152,6 +152,14 @@ export class MembresiasRepository {
       },
       include: MEMBRESIA_INCLUDE,
     });
+
+    if (
+      creada.membresia_estado?.descripcion?.trim().toLowerCase() === 'activa'
+    ) {
+      await this.promoverExternoASocio(id_usuario);
+    }
+
+    return creada;
   }
 
   async findById(id_membresia: number) {
@@ -242,13 +250,22 @@ export class MembresiasRepository {
   }
 
   async updateEstado(id_membresia: number, id_membresia_estado: number) {
-    return await this.prisma.membresia.update({
+    const actualizada = await this.prisma.membresia.update({
       where: { id_membresia },
       data: {
         membresia_estado: { connect: { id_membresia_estado } },
       },
       include: MEMBRESIA_INCLUDE,
     });
+
+    if (
+      actualizada.membresia_estado?.descripcion?.trim().toLowerCase() ===
+      'activa'
+    ) {
+      await this.promoverExternoASocio(actualizada.id_usuario);
+    }
+
+    return actualizada;
   }
 
   // Modifica la fecha de vencimiento o la renovación automática.
@@ -287,6 +304,56 @@ export class MembresiasRepository {
       },
       data: {
         id_membresia_estado: idSuspendida,
+      },
+    });
+  }
+
+  /**
+   * Si el usuario posee el rol 'externo', lo promueve de forma permanente al rol 'socio'.
+   */
+  async promoverExternoASocio(id_usuario: number): Promise<void> {
+    const rolesActuales = await this.prisma.usuarioRol.findMany({
+      where: { id_usuario },
+      include: { rol: true },
+    });
+
+    const tieneRolExterno = rolesActuales.some(
+      (ur) => ur.rol?.nombre?.trim().toLowerCase() === 'externo',
+    );
+
+    if (!tieneRolExterno) {
+      return;
+    }
+
+    await this.prisma.usuarioRol.deleteMany({
+      where: {
+        id_usuario,
+        rol: {
+          nombre: { equals: 'externo', mode: 'insensitive' },
+        },
+      },
+    });
+
+    let rolSocio = await this.prisma.rol.findFirst({
+      where: { nombre: { equals: 'socio', mode: 'insensitive' } },
+    });
+    if (!rolSocio) {
+      rolSocio = await this.prisma.rol.create({
+        data: { nombre: 'socio' },
+      });
+    }
+
+    await this.prisma.usuarioRol.upsert({
+      where: {
+        id_usuario_id_rol: {
+          id_usuario,
+          id_rol: rolSocio.id_rol,
+        },
+      },
+      update: {},
+      create: {
+        id_usuario,
+        id_rol: rolSocio.id_rol,
       },
     });
   }
