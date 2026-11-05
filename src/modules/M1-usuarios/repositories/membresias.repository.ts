@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { CrearPlanDto } from '../dto/crear-plan.dto';
 import { ActualizarPlanDto } from '../dto/actualizar-plan.dto';
+import { WHERE_SUSPENDIDA_CON_PAGO } from '../utils/membresia-beneficios';
 
 /**
  * Objeto de inclusión estándar para consultas de Membresías de usuario.
@@ -21,22 +22,6 @@ export const MEMBRESIA_INCLUDE = {
   },
 } as const;
 
-/**
- * Filtro de una membresía suspendida por el socio: estado 'Suspendida'
- * con al menos un pago aprobado.
- */
-export const WHERE_SUSPENDIDA_CON_PAGO = {
-  membresia_estado: {
-    descripcion: { equals: 'Suspendida', mode: 'insensitive' as const },
-  },
-  pagos: {
-    some: {
-      pago_estado: {
-        descripcion: { equals: 'Aprobado', mode: 'insensitive' as const },
-      },
-    },
-  },
-};
 @Injectable()
 export class MembresiasRepository {
   constructor(private readonly prisma: PrismaService) {}

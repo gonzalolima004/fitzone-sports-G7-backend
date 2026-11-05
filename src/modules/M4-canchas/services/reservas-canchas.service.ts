@@ -9,6 +9,7 @@ import { PrecioContextService } from './precio-context.service';
 import { CrearReservaCanchaDto } from '../dto/crear-reserva-cancha.dto';
 import { CotizacionContext } from '../dto/cotizacion-turno.dto';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
+import { whereBeneficiosVigentes } from '../../M1-usuarios/utils/membresia-beneficios';
 import { SedeService } from '../../M0-sedes/services/sede.service';
 
 @Injectable()
@@ -101,11 +102,7 @@ export class ReservasCanchasService {
 
     // 5. Validar estado del usuario (RN-03: membresía al día)
     const membresiaActiva = await this.prisma.membresia.findFirst({
-      where: {
-        id_usuario: idUsuario,
-        id_membresia_estado: 1, // 1 = Activa
-        fecha_fin: { gte: new Date() },
-      },
+      where: whereBeneficiosVigentes(idUsuario),
     });
 
     // 6. Configurar contexto y calcular precio con Strategy
