@@ -1,6 +1,6 @@
 # Bitácora de Desarrollo Grupo 7
 
-### 22/08/2026
+#### 22/08/2026
 
 - **Objetivo:** Definición de arquitectura base, Stack tecnológico y entidades iniciales.
 
@@ -496,7 +496,7 @@
 
 ---
 
-### 22/08/2026
+#### 22/08/2026
 
 Nombre / Rol: Facundo Agüero — Dev
 Rama: feature/auth-supabase
@@ -1181,6 +1181,50 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 03/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Integración y activación de `SupabaseAuthGuard` junto al decorador `@CurrentUser()` en la creación de reservas de canchas (`POST /reservas-canchas`), extrayendo el ID real del usuario autenticado (`usuario.id_usuario`) y removiendo los mocks temporales de testing.
+  - Optimización del endpoint de disponibilidad de canchas por sede (`GET /canchas/disponibilidad/sede`), permitiendo filtrado opcional por tipo de cancha (`tipoId`) mediante el método `obtenerCanchasParaGrilla` en `CanchasRepository`.
+  - Reestructuración de la respuesta del servicio de disponibilidad en `CanchasService`, unificando la información de horarios operativos de la sede (`abierto`, `hora_apertura`, `hora_cierre`, `motivo_cierre`) junto a las canchas y slots para su renderizado óptimo en la grilla del frontend.
+  - Optimización de performance en backend evitando llamadas y consultas innecesarias de reservas y mantenimientos a Supabase cuando la sede se encuentra cerrada.
+- **Decisiones:** Cambiar el endpoint para la grilla de turnos, de manera que traiga la disponibilidad para un tipo de cancha en vez de todas a la vez.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M4): fix de errores por supabase auth`
+  - `feat(M4): optimizacion de slots de horarios`
+  - `fix(log): correccion de formato`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
+#### 04/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Implementación del endpoint de cotización de turnos de canchas (`GET /canchas/cotizar`) en el módulo M4, protegido mediante `SupabaseAuthGuard` y extrayendo el usuario autenticado con `@CurrentUser()`.
+  - Creación de los DTOs de validación y respuesta (`CotizarTurnoQueryDto` y `CotizacionResponseDto`) con `class-validator`, normalización de tipos y esquemas documentados en Swagger.
+  - Implementación de la regla de descuento para socios (15%) condicionado a: rol socio, membresía activa en la fecha del turno y reserva en una sede de su misma ciudad (`id_ciudad`).
+  - Implementación del recargo por horario pico (+20%) para turnos entre las 19:00 y las 21:00 hs mediante el patrón Strategy (`PrecioStrategy`, `PrecioEstandarStrategy`, `DescuentoSocioStrategy`, `HorarioPicoStrategy`, `PrecioContextService`).
+  - Optimización de consultas en `CanchasRepository` mediante Prisma utilizando selección granular (`select`) y filtrado relacional de membresías activas por fecha, reduciendo la sobrecarga de datos transferidos.
+  - Diseño e implementación de un servicio de caché desacoplado (`CotizacionCacheService`) bajo el patrón Adapter/Cache Provider, con política de desalojo LRU (máx. 500 entradas), TTL de 30 segundos y contrato asíncrono para facilitar la integración futura con Redis sin alterar la lógica de negocio.
+  - Cobertura completa de pruebas unitarias en `canchas-cotizar.service.spec.ts` y `cotizacion-cache.service.spec.ts`, validando cálculos de precios, reglas de descuento, horario pico, expiración y desalojo de caché.
+- **Decisiones:**
+  - Utilizar el patrón Strategy para la aplicación de tarifas dinámicas (descuento socio y recargo pico), garantizando extensibilidad sin acoplar reglas en el servicio principal.
+  - Implementar un Cache Provider dedicado en memoria con política LRU en lugar de caché dentro del servicio o un Map directo, asegurando que `CanchasService` se mantenga 100% stateless y evitando fugas de memoria.
+- **Dificultades:**
+  - El servidor de la base de datos se encuentra en Oregon (EE.UU.), haciendo que hasta la petición más básica de SELECT 1 demore 250ms en el MEJOR caso posible. El uso de cache es una forma de evitar realizar consultas redundantes. Funciona bien por ahora en tests manuales y automatizados, por lo que si mañana sigue funcionando sin errores, planeo incluir una tarea, o más, en trello para integrarlo en otros puntos donde sea apropiado, sin afectar que realmente requieran ir a la base de datos real. 
+- **Commits:**
+  - `feat(M4): crear endpoint para cotizar precios`
+  - `feat(M4): endpoint para cotizar canchas`
+  - `test(M4): test para cache de cotizacion`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
 #### 26/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
@@ -1393,3 +1437,23 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Dificultades:** Sandbox de Mercado Pago oculta el botón de retorno cuando las `back_urls` apuntan a `localhost`, lo que impedía recibir el `payment_id` por URL; se solucionó reconciliando los pagos pendientes mediante `payment.search` por referencia externa.
 - **Commits:**
   - `feat: acreditar pagos de membresia y promover rol externo a socio`
+
+---
+
+  #### 04/11/2026
+  #### Angelina María Vialle | Rol: QA Backend
+  - **Actividades:**
+  -Prueba unitaria de acceso.service
+  -
+  -Prueba unitaria de aforo-realtime.service
+  -
+  -Prueba unitaria de qr.service
+- **Decisiones:**
+  -Tipar de forma estricta los mocks en Jest utilizando as unknown as DTO/Entity
+- **Dificultades:**
+  -Ninguna
+- **Commits:**
+  -test(M2): test unitario de accesos, aforo y qr
+  -docs(M2): actualizacion bitacora
+
+---

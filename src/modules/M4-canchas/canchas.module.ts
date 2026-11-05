@@ -9,6 +9,7 @@ import { CanchasService } from './services/canchas.service';
 import { ReservasCanchasService } from './services/reservas-canchas.service';
 import { MantenimientoService } from './services/mantenimiento.service';
 import { PrecioContextService } from './services/precio-context.service';
+import { CotizacionCacheService } from './services/cotizacion-cache.service';
 
 // Repositorios
 import { CanchasRepository } from './repositories/canchas.repository';
@@ -31,6 +32,7 @@ import { SedesModule } from '../M0-sedes/sedes.module';
     ReservasCanchasService,
     MantenimientoService,
     PrecioContextService,
+    CotizacionCacheService,
     CanchasRepository,
     ReservasCanchasRepository,
     PrecioEstandarStrategy,
