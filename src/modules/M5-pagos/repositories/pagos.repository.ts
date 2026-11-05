@@ -651,9 +651,26 @@ export class PagosRepository {
     return this.prisma.membresia.findFirst({
       where: {
         id_usuario,
-        membresia_estado: {
-          descripcion: { in: ['Activa', 'Vencida'] },
-        },
+        OR: [
+          {
+            membresia_estado: {
+              descripcion: { in: ['Activa', 'Vencida'] },
+            },
+          },
+          // Suspendida por el socio (con pago aprobado): no genera pendiente.
+          {
+            membresia_estado: {
+              descripcion: { equals: 'Suspendida', mode: 'insensitive' },
+            },
+            pagos: {
+              some: {
+                pago_estado: {
+                  descripcion: { equals: 'Aprobado', mode: 'insensitive' },
+                },
+              },
+            },
+          },
+        ],
       },
       orderBy: { fecha_fin: 'desc' },
       include: {

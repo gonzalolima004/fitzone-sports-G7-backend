@@ -21,6 +21,22 @@ export const MEMBRESIA_INCLUDE = {
   },
 } as const;
 
+/**
+ * Filtro de una membresía suspendida por el socio: estado 'Suspendida'
+ * con al menos un pago aprobado.
+ */
+export const WHERE_SUSPENDIDA_CON_PAGO = {
+  membresia_estado: {
+    descripcion: { equals: 'Suspendida', mode: 'insensitive' as const },
+  },
+  pagos: {
+    some: {
+      pago_estado: {
+        descripcion: { equals: 'Aprobado', mode: 'insensitive' as const },
+      },
+    },
+  },
+};
 @Injectable()
 export class MembresiasRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -200,6 +216,22 @@ export class MembresiasRepository {
   }
 
   /**
+   * Membresía suspendida por el socio que todavía conserva beneficios:
+   * estado 'Suspendida' con al menos un pago aprobado y fecha_fin vigente.
+   * (Una 'Suspendida' sin pago aprobado es solo una intención de checkout.)
+   */
+  async findSuspendidaVigenteByUsuarioId(id_usuario: number) {
+    return await this.prisma.membresia.findFirst({
+      where: {
+        id_usuario,
+        ...WHERE_SUSPENDIDA_CON_PAGO,
+        fecha_fin: { gte: new Date() },
+      },
+      orderBy: { fecha_fin: 'desc' },
+      include: MEMBRESIA_INCLUDE,
+    });
+  }
+  /**
    * Obtiene la última membresía Activa o Vencida del usuario (vigente o expirada)
    * para verificar si se encuentra al día o en mora.
    */
@@ -277,6 +309,18 @@ export class MembresiasRepository {
       where: { id_membresia },
       data,
       include: MEMBRESIA_INCLUDE,
+    });
+  }
+
+  // Cantidad de pagos aprobados de una membresía.
+  async countPagosAprobados(id_membresia: number) {
+    return await this.prisma.pago.count({
+      where: {
+        id_membresia,
+        pago_estado: {
+          descripcion: { equals: 'Aprobado', mode: 'insensitive' },
+        },
+      },
     });
   }
 

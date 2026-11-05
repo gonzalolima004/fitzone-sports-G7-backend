@@ -798,7 +798,12 @@ export class PagosService {
     const membresia =
       await this.pagosRepository.obtenerUltimaMembresiaDeUsuario(id_usuario);
 
-    if (membresia) {
+    // Una membresía suspendida por el socio conserva beneficios hasta su
+    // fecha_fin y nunca genera un pago pendiente.
+    const suspendida =
+      membresia?.membresia_estado?.descripcion?.toLowerCase() === 'suspendida';
+
+    if (membresia && !suspendida) {
       const estadoActiva =
         membresia.membresia_estado?.descripcion?.toLowerCase() === 'activa';
       const vencida = new Date(membresia.fecha_fin) < new Date();
