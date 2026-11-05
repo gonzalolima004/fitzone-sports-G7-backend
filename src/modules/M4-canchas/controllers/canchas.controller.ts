@@ -9,8 +9,22 @@ import {
   ParseIntPipe,
   Query,
   ParseBoolPipe,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import {
+  CotizarTurnoQueryDto,
+  CotizacionResponseDto,
+} from '../dto/cotizacion-turno.dto';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 import { CanchasService } from '../services/canchas.service';
 import { CrearCanchaDto } from '../dto/crear-cancha.dto';
 import { ActualizarCanchaDto } from '../dto/actualizar-cancha.dto';
@@ -113,8 +127,46 @@ export class CanchasController {
   obtenerDisponibilidadPorSede(
     @Query('sedeId', ParseIntPipe) sedeId: number,
     @Query('fecha') fecha: string,
+    @Query('tipoId', new ParseIntPipe({ optional: true })) tipoId?: number,
   ) {
-    return this.canchasService.obtenerDisponibilidadPorSede(sedeId, fecha);
+    return this.canchasService.obtenerDisponibilidadPorSede(
+      sedeId,
+      fecha,
+      tipoId,
+    );
+  }
+
+  @Get('cotizar')
+  @UseGuards(SupabaseAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Cotizar el costo de un turno de cancha validando horario pico y descuento de socio en misma ciudad',
+  })
+  @ApiResponse({
+    status: 200,
+    type: CotizacionResponseDto,
+    description: 'Cotización calculada exitosamente.',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Parámetros inválidos o formato incorrecto de fecha/hora (RFC 9457).',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado / Token de autenticación ausente o inválido.',
+  })
+  @ApiResponse({
+    status: 404,
+    description:
+      'Cancha inactiva/inexistente o usuario no encontrado (RFC 9457).',
+  })
+  cotizar(
+    @Query() query: CotizarTurnoQueryDto,
+    @CurrentUser() usuario: AuthenticatedUser,
+  ): Promise<CotizacionResponseDto> {
+    return this.canchasService.cotizarTurno(query, usuario.id_usuario);
   }
 
   @Get(':id')
