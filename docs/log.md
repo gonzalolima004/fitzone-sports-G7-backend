@@ -1225,6 +1225,32 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 06/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Implementación de `CanchasRealtimeService` para emitir eventos de turnos reservados (`turno_reservado`) vía broadcast en canales por sede (`canchas:sede:${idSede}`), notificando de forma no bloqueante y tolerante a fallos al crearse una reserva (`POST /reservas-canchas`).
+  - Ajuste en `SupabaseService.emitRealtimeEvent` asegurando la suscripción activa (`SUBSCRIBED`) antes de emitir el broadcast y liberando el canal de manera controlada.
+  - Implementación de bloqueo pesimista (`SELECT ... FOR UPDATE`) en `ReservasCanchasRepository.crearReservaTransaccional` sobre la cancha seleccionada, previniendo condiciones de carrera ante reservas simultáneas.
+  - Fix en M0 para incluir el campo de horario especial en sedes.
+  - Cobertura de pruebas unitarias para el servicio realtime y repositorios en M4.
+- **Decisiones:**
+  - Utilizar bloqueo pesimista a nivel de fila sobre la cancha para serializar atómicamente la verificación de colisión e inserción, evitando colisiones concurrentes sin degradar la concurrencia general.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(Supabase): integrar logger en canal realtime`
+  - `feat(M4): crear service para reservas realtime`
+  - `feat(M4): utilizacion del service realtime`
+  - `feat(M4): bloqueo pesimista en reserva cancha repo`
+  - `feat(M4): tests para supabase realtime en canchas`
+  - `feat(M4): inclusion del modulo de realtime`
+  - `fix(M0): faltaba el campo es horario especial`
+  - `feat(M2): compatibilidad de test por cambios en realtime service`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
 #### 26/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
