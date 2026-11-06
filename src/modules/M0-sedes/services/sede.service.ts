@@ -119,7 +119,7 @@ export class SedeService {
           abierto: false,
           hora_apertura: '00:00',
           hora_cierre: '00:00',
-          motivo_cierre: 'La sede no abre los días domingo / este día',
+          motivo_cierre: 'La sede no abre este día',
         };
       }
 
@@ -127,6 +127,7 @@ export class SedeService {
         abierto: true,
         hora_apertura: horarioBase.hora_apertura,
         hora_cierre: horarioBase.hora_cierre,
+        es_horario_especial: false,
       };
     }
 
