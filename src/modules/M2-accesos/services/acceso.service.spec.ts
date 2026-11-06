@@ -120,9 +120,7 @@ describe('AccesosService', () => {
             id_sede: 1,
             nombre: 'Sede Central',
             id_ciudad: 1,
-          } as unknown as Awaited<
-            ReturnType<AccesosRepository['buscarSedePorId']>
-          >);
+          });
           return callback({} as unknown as Prisma.TransactionClient);
         },
       );
@@ -182,9 +180,7 @@ describe('AccesosService', () => {
             id_sede: 1,
             nombre: 'Sede Central',
             id_ciudad: 1,
-          } as unknown as Awaited<
-            ReturnType<AccesosRepository['buscarSedePorId']>
-          >);
+          });
           return callback({} as unknown as Prisma.TransactionClient);
         },
       );
@@ -272,9 +268,7 @@ describe('AccesosService', () => {
             id_sede: 1,
             nombre: 'Sede Central',
             id_ciudad: 1,
-          } as unknown as Awaited<
-            ReturnType<AccesosRepository['buscarSedePorId']>
-          >);
+          });
 
           return callback({} as unknown as Prisma.TransactionClient);
         },
@@ -321,9 +315,7 @@ describe('AccesosService', () => {
             id_sede: 99,
             nombre: 'Sede Paraná',
             id_ciudad: 2,
-          } as unknown as Awaited<
-            ReturnType<AccesosRepository['buscarSedePorId']>
-          >);
+          });
 
           return callback({} as unknown as Prisma.TransactionClient);
         },
