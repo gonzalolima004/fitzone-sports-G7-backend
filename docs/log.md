@@ -1248,6 +1248,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `fix(M0): faltaba el campo es horario especial`
   - `feat(M2): compatibilidad de test por cambios en realtime service`
   - `docs(log): actualizacion de bitacora`
+  - `fix(entorno): reestablecer husky y eliminar settings`
 
 ---
 
