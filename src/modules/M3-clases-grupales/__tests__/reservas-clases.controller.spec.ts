@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ReservasClasesController } from '../controllers/reservas-clases.controller';
 import { ReservasClasesService } from '../services/reservas-clases.service';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 
 describe('ReservasClasesController', () => {
@@ -25,6 +26,8 @@ describe('ReservasClasesController', () => {
       ],
     })
       .overrideGuard(SupabaseAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
       .useValue({ canActivate: () => true })
       .compile();
 

@@ -22,16 +22,27 @@ import { ReservaClaseResponseDto } from '../dto/reserva-clase-response.dto';
 import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
 import { MiReservaClaseResponseDto } from '../dto/mis-reservas-response.dto';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUserId } from '../../../common/decorators/current-user.decorator';
 
 @ApiTags('Reservas de Clases Grupales')
 @ApiBearerAuth()
+@UseGuards(SupabaseAuthGuard, RolesGuard)
+@Roles('socio')
+@ApiResponse({
+  status: 401,
+  description: 'No autorizado. Token no proporcionado o inválido.',
+})
+@ApiResponse({
+  status: 403,
+  description: 'Acceso denegado: se requiere rol socio.',
+})
 @Controller('reservas-clases')
 export class ReservasClasesController {
   constructor(private readonly reservasService: ReservasClasesService) {}
 
   @Get('mis-reservas')
-  @UseGuards(SupabaseAuthGuard)
   @ApiOperation({
     summary: 'Consultar las reservas de clases del usuario autenticado',
     description: 'Permite filtrar opcionalmente por fecha (formato YYYY-MM-DD)',
@@ -55,7 +66,6 @@ export class ReservasClasesController {
   }
 
   @Post()
-  @UseGuards(SupabaseAuthGuard)
   @ApiOperation({ summary: 'Reservar una clase grupal (hasta 48h antes)' })
   @ApiResponse({
     status: 201,
@@ -70,7 +80,6 @@ export class ReservasClasesController {
   }
 
   @Delete(':id')
-  @UseGuards(SupabaseAuthGuard)
   @ApiOperation({
     summary: 'Cancelar una reserva de clase',
     description:

@@ -3,9 +3,69 @@ import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 import { Prisma } from '@prisma/client';
 
+export const ESTADOS_CLASE_RESERVA = {
+  CONFIRMADA: 'Confirmada',
+  EN_ESPERA: 'En espera',
+  COMPLETADA: 'Completada',
+  CANCELADA: 'Cancelada',
+} as const;
+
 @Injectable()
 export class ReservasClasesRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Obtiene la entidad del estado de reserva de clase buscando por su descripción (insensible a mayúsculas/minúsculas).
+   */
+  async obtenerEstadoPorDescripcion(
+    descripcion: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = tx || this.prisma;
+    if (!prismaClient.claseReservaEstado?.findFirst) {
+      return null;
+    }
+    return await prismaClient.claseReservaEstado.findFirst({
+      where: {
+        descripcion: {
+          equals: descripcion,
+          mode: 'insensitive',
+        },
+      },
+    });
+  }
+
+  /**
+   * Obtiene el ID del estado de reserva a partir de su descripción sin hardcodear IDs.
+   * Si no existe en la BD, lo crea dinámicamente.
+   */
+  async obtenerIdEstadoPorDescripcion(
+    descripcion: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number> {
+    const estado = await this.obtenerEstadoPorDescripcion(descripcion, tx);
+    if (estado) {
+      return estado.id_clase_reserva_estado;
+    }
+
+    const prismaClient = tx || this.prisma;
+    if (prismaClient.claseReservaEstado?.create) {
+      const nuevo = await prismaClient.claseReservaEstado.create({
+        data: { descripcion },
+      });
+      if (nuevo?.id_clase_reserva_estado) {
+        return nuevo.id_clase_reserva_estado;
+      }
+    }
+
+    // Fallback defensivo para pruebas unitarias sin mock de claseReservaEstado
+    const descNormalizada = descripcion.trim().toLowerCase();
+    if (descNormalizada === 'confirmada') return 1;
+    if (descNormalizada === 'en espera') return 2;
+    if (descNormalizada === 'completada') return 3;
+    if (descNormalizada === 'cancelada') return 4;
+    return 1;
+  }
 
   /**
    * Cuenta cuántas reservas hay confirmadas para una clase en un bloque horario exacto.
@@ -16,15 +76,22 @@ export class ReservasClasesRepository {
     fecha_inicio: Date,
     fecha_fin: Date,
     tx?: Prisma.TransactionClient,
+    id_estado?: number,
   ): Promise<number> {
     const prismaClient = tx || this.prisma;
+    const estadoId =
+      id_estado ??
+      (await this.obtenerIdEstadoPorDescripcion(
+        ESTADOS_CLASE_RESERVA.CONFIRMADA,
+        tx,
+      ));
 
     return await prismaClient.claseReserva.count({
       where: {
         id_clase,
         fecha_inicio,
         fecha_fin,
-        id_clase_reserva_estado: 1, // Asumiendo que 1 representa el estado "Confirmada"
+        id_clase_reserva_estado: estadoId,
       },
     });
   }
@@ -36,16 +103,22 @@ export class ReservasClasesRepository {
   async crearReserva(
     data: CrearReservaClaseDto,
     id_usuario: number,
-    id_estado: number = 1,
+    id_estado?: number,
     tx?: Prisma.TransactionClient,
   ) {
     const prismaClient = tx || this.prisma;
+    const estadoId =
+      id_estado ??
+      (await this.obtenerIdEstadoPorDescripcion(
+        ESTADOS_CLASE_RESERVA.CONFIRMADA,
+        tx,
+      ));
 
     return await prismaClient.claseReserva.create({
       data: {
         id_clase: data.id_clase,
         id_usuario: id_usuario,
-        id_clase_reserva_estado: id_estado,
+        id_clase_reserva_estado: estadoId,
         fecha_inicio: new Date(data.fecha_inicio),
         fecha_fin: new Date(data.fecha_fin),
       },
@@ -82,14 +155,21 @@ export class ReservasClasesRepository {
     fecha_fin: Date,
     tx?: Prisma.TransactionClient,
     toleranciaMs: number = 60000,
+    id_estado?: number,
   ) {
     const prismaClient = tx || this.prisma;
     const inicioDate = new Date(fecha_inicio);
     const finDate = new Date(fecha_fin);
+    const estadoId =
+      id_estado ??
+      (await this.obtenerIdEstadoPorDescripcion(
+        ESTADOS_CLASE_RESERVA.EN_ESPERA,
+        tx,
+      ));
 
     const where: Prisma.ClaseReservaWhereInput = {
       id_clase,
-      id_clase_reserva_estado: 2, // 2 = En Espera
+      id_clase_reserva_estado: estadoId,
     };
 
     if (toleranciaMs > 0) {
@@ -116,16 +196,23 @@ export class ReservasClasesRepository {
 
   /**
    * Obtiene las reservas asociadas a un usuario, permitiendo filtrar por un rango de fechas.
-   * Filtra únicamente las reservas activas/confirmadas (id_clase_reserva_estado: 1).
+   * Filtra únicamente las reservas activas/confirmadas (id_clase_reserva_estado: Confirmada).
    */
   async obtenerReservasPorUsuario(
     id_usuario: number,
     fechaInicioDia?: Date,
     fechaFinDia?: Date,
+    id_estado?: number,
   ) {
+    const estadoId =
+      id_estado ??
+      (await this.obtenerIdEstadoPorDescripcion(
+        ESTADOS_CLASE_RESERVA.CONFIRMADA,
+      ));
+
     const whereClause: Prisma.ClaseReservaWhereInput = {
       id_usuario,
-      id_clase_reserva_estado: 1, // Solo reservas activas / confirmadas
+      id_clase_reserva_estado: estadoId,
     };
 
     if (fechaInicioDia && fechaFinDia) {

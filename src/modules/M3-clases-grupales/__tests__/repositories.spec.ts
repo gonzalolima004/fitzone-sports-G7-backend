@@ -29,6 +29,14 @@ interface MockPrismaClient {
     findMany: jest.Mock;
     update: jest.Mock;
   };
+  claseListaEsperaEstado: {
+    findFirst: jest.Mock;
+    create: jest.Mock;
+  };
+  claseReservaEstado: {
+    findFirst: jest.Mock;
+    create: jest.Mock;
+  };
 }
 
 describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
@@ -57,6 +65,14 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
         count: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
+      },
+      claseListaEsperaEstado: {
+        findFirst: jest.fn(),
+        create: jest.fn(),
+      },
+      claseReservaEstado: {
+        findFirst: jest.fn(),
+        create: jest.fn(),
       },
     };
   });
@@ -326,6 +342,40 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
         }),
       );
     });
+
+    it('obtenerEstadoPorDescripcion debe consultar claseReservaEstado con insensible a mayusculas', async () => {
+      mockPrisma.claseReservaEstado.findFirst.mockResolvedValue({
+        id_clase_reserva_estado: 1,
+        descripcion: 'Confirmada',
+      });
+
+      const res = await repo.obtenerEstadoPorDescripcion('confirmada');
+
+      expect(mockPrisma.claseReservaEstado.findFirst).toHaveBeenCalledWith({
+        where: {
+          descripcion: {
+            equals: 'confirmada',
+            mode: 'insensitive',
+          },
+        },
+      });
+      expect(res?.id_clase_reserva_estado).toBe(1);
+    });
+
+    it('obtenerIdEstadoPorDescripcion debe retornar ID existente o crearlo si no existe', async () => {
+      mockPrisma.claseReservaEstado.findFirst.mockResolvedValueOnce(null);
+      mockPrisma.claseReservaEstado.create.mockResolvedValueOnce({
+        id_clase_reserva_estado: 5,
+        descripcion: 'Nueva',
+      });
+
+      const id = await repo.obtenerIdEstadoPorDescripcion('Nueva');
+
+      expect(mockPrisma.claseReservaEstado.create).toHaveBeenCalledWith({
+        data: { descripcion: 'Nueva' },
+      });
+      expect(id).toBe(5);
+    });
   });
 
   describe('ListaEsperaRepository', () => {
@@ -498,6 +548,40 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
         },
       });
       expect(posicion).toBe(2);
+    });
+
+    it('obtenerEstadoPorDescripcion debe consultar claseListaEsperaEstado con insensible a mayusculas', async () => {
+      mockPrisma.claseListaEsperaEstado.findFirst.mockResolvedValue({
+        id_clase_lista_espera_estado: 2,
+        descripcion: 'Promovida',
+      });
+
+      const res = await repo.obtenerEstadoPorDescripcion('promovida');
+
+      expect(mockPrisma.claseListaEsperaEstado.findFirst).toHaveBeenCalledWith({
+        where: {
+          descripcion: {
+            equals: 'promovida',
+            mode: 'insensitive',
+          },
+        },
+      });
+      expect(res?.id_clase_lista_espera_estado).toBe(2);
+    });
+
+    it('obtenerIdEstadoPorDescripcion debe retornar ID existente o crearlo si no existe', async () => {
+      mockPrisma.claseListaEsperaEstado.findFirst.mockResolvedValueOnce(null);
+      mockPrisma.claseListaEsperaEstado.create.mockResolvedValueOnce({
+        id_clase_lista_espera_estado: 2,
+        descripcion: 'Promovida',
+      });
+
+      const id = await repo.obtenerIdEstadoPorDescripcion('Promovida');
+
+      expect(mockPrisma.claseListaEsperaEstado.create).toHaveBeenCalledWith({
+        data: { descripcion: 'Promovida' },
+      });
+      expect(id).toBe(2);
     });
   });
 });

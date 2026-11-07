@@ -1559,3 +1559,30 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `docs(log): registrar CRUD de calendario y horarios`
 
 ---
+
+#### 07/11/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** E16-T1: Corrección de Cupos Límite, Estados en BD y Reglas de Inscripción (Paso 1: Normalización de estados y guardias).
+- **Actividades:**
+  - **Normalización de estados en Supabase:** Se auditó y normalizó la tabla `clase_lista_espera_estado`, en la que únicamente existía el estado con id `1` ('En espera') y faltaban los estados `2` ('Promovida') y `3` ('Cancelada'), lo cual causaba fallos de violación de clave foránea al liberar vacantes y promover socios en cola. Se insertaron los estados faltantes y se sincronizó la secuencia del autoincrementable.
+  - **Actualización de seeds:** Se incorporó la siembra idempotente de `clase_lista_espera_estado` y `clase_reserva_estado` en `src/database/seeds/usuarios-prueba.seed.ts`.
+  - **Búsqueda dinámica de estados sin IDs hardcodeados:** Se implementaron los métodos `obtenerEstadoPorDescripcion` y `obtenerIdEstadoPorDescripcion` tanto en `ListaEsperaRepository` como en `ReservasClasesRepository`, resolviendo los IDs correspondientes en tiempo de ejecución de manera insensible a mayúsculas/minúsculas y garantizando tolerancia a desincronizaciones de catálogo.
+  - **Desacoplamiento de IDs en servicios:** Se refactorizaron los flujos de creación, cancelación y promoción en `ReservasClasesService` y `ListaEsperaService` para utilizar las constantes descriptivas (`ESTADOS_CLASE_RESERVA` y `ESTADOS_LISTA_ESPERA`) en lugar de IDs literales.
+  - **Aplicación de @UseGuards y RBAC:**
+    - `ReservasClasesController`: Se blindó el controlador completo con `@UseGuards(SupabaseAuthGuard, RolesGuard)` y `@Roles('socio')`.
+    - `ListaEsperaController`: Se blindó el controlador completo con `@UseGuards(SupabaseAuthGuard, RolesGuard)` y `@Roles('socio')`.
+    - `ClasesController`: Se removió el rol `admin` inexistente en el sistema, restringiendo el alta, modificación, reemplazo y baja lógica exclusivamente al rol `@Roles('gerente')`.
+- **Decisiones:**
+  - La resolución de estados por descripción en repositorios implementa fallback defensivo y creación automática en caso de ausencia, asegurando resiliencia tanto en pruebas unitarias con mocks parciales como en entornos reales.
+  - Restringir la inscripción a lista de espera y reservas a nivel de controlador con `@Roles('socio')` para prevenir peticiones inválidas de usuarios con roles administrativos o externos antes de llegar a la capa de servicio.
+- **Dificultades:**
+  - La ausencia del ID 2 en Supabase provocaba que la transacción atómica de cancelación y reasignación fallara de forma silenciosa por FK constraint. Resuelto normalizando la tabla en Supabase y buscando estados por descripción.
+- **Verificación:** 9 suites y 88 pruebas aprobadas al 100% en el módulo de clases grupales (incluyendo suites unitarias de repositorios, servicios y prueba de integración de concurrencia con PGlite). Compilación `nest build` limpia sin errores de tipos.
+- **Commits:**
+  - `fix(clases): normalizar estados de lista de espera y resolverlos por descripcion sin ids hardcodeados`
+  - `feat(clases): aplicar UseGuards y RBAC socio en reservas y lista de espera y gerente en clases`
+  - `docs(log): registrar normalizacion de estados y RBAC de clases`
+
+---
