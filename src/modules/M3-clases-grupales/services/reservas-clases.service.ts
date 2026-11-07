@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
+import { whereBeneficiosVigentes } from '../../M1-usuarios/utils/membresia-beneficios';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
@@ -64,13 +65,10 @@ export class ReservasClasesService {
     }
 
     // 2. Verificación de no mora del socio (RN-03)
-    // Asumimos que tener una membresía activa (estado 1) y no vencida significa no tener mora.
+    // Tener una membresía activa (o suspendida por el socio pero con ciclo
+    // abonado vigente) y no vencida significa no tener mora.
     const membresiaActiva = await this.prisma.membresia.findFirst({
-      where: {
-        id_usuario: id_usuario,
-        id_membresia_estado: 1,
-        fecha_fin: { gte: ahora },
-      },
+      where: whereBeneficiosVigentes(id_usuario, ahora),
     });
 
     if (!membresiaActiva) {

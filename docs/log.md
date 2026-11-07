@@ -1216,7 +1216,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Utilizar el patrón Strategy para la aplicación de tarifas dinámicas (descuento socio y recargo pico), garantizando extensibilidad sin acoplar reglas en el servicio principal.
   - Implementar un Cache Provider dedicado en memoria con política LRU en lugar de caché dentro del servicio o un Map directo, asegurando que `CanchasService` se mantenga 100% stateless y evitando fugas de memoria.
 - **Dificultades:**
-  - El servidor de la base de datos se encuentra en Oregon (EE.UU.), haciendo que hasta la petición más básica de SELECT 1 demore 250ms en el MEJOR caso posible. El uso de cache es una forma de evitar realizar consultas redundantes. Funciona bien por ahora en tests manuales y automatizados, por lo que si mañana sigue funcionando sin errores, planeo incluir una tarea, o más, en trello para integrarlo en otros puntos donde sea apropiado, sin afectar que realmente requieran ir a la base de datos real. 
+  - El servidor de la base de datos se encuentra en Oregon (EE.UU.), haciendo que hasta la petición más básica de SELECT 1 demore 250ms en el MEJOR caso posible. El uso de cache es una forma de evitar realizar consultas redundantes. Funciona bien por ahora en tests manuales y automatizados, por lo que si mañana sigue funcionando sin errores, planeo incluir una tarea, o más, en trello para integrarlo en otros puntos donde sea apropiado, sin afectar que realmente requieran ir a la base de datos real.
 - **Commits:**
   - `feat(M4): crear endpoint para cotizar precios`
   - `feat(M4): endpoint para cotizar canchas`
@@ -1440,14 +1440,19 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
-  #### 04/11/2026
-  #### Angelina María Vialle | Rol: QA Backend
-  - **Actividades:**
+#### 04/11/2026
+
+#### Angelina María Vialle | Rol: QA Backend
+
+- **Actividades:**
   -Prueba unitaria de acceso.service
-  -
-  -Prueba unitaria de aforo-realtime.service
-  -
-  -Prueba unitaria de qr.service
+-
+
+-Prueba unitaria de aforo-realtime.service
+-
+
+-Prueba unitaria de qr.service
+
 - **Decisiones:**
   -Tipar de forma estricta los mocks en Jest utilizando as unknown as DTO/Entity
 - **Dificultades:**
@@ -1455,6 +1460,25 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   -test(M2): test unitario de accesos, aforo y qr
   -docs(M2): actualizacion bitacora
+
+---
+
+#### 07/11/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Seguridad en comprobantes y pagos: se protegió la consulta de comprobantes y la creación de pagos para que cada usuario solo pueda ver y abonar sus propias membresías o reservas.
+  - Estandarización de estados de pago: se reemplazaron los identificadores fijos y repetidos en el código por un sistema centralizado que gestiona automáticamente los estados (Pendiente, Aprobado, Rechazado).
+  - Suspensión de membresía: se agregó la posibilidad de que el socio suspenda su membresía activa. Mantiene todos sus beneficios (acceso al club, reserva de clases y descuentos en canchas) hasta el último día que ya pagó, y al terminar ese ciclo no se le genera ningún cobro pendiente.
+- **Decisiones:**
+  - Proteger las rutas de comprobantes exigiendo inicio de sesión para cuidar los datos personales del socio (nombre, DNI y montos abonados).
+  - Conservar los beneficios del socio hasta el vencimiento del período ya abonado para que no pierda los días pagados.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(pagos): proteger comprobantes con guard y reemplazar estados hardcodeados por estadosService`
+  - `feat(membresias): permitir suspension de membresia activa`
+  - `feat(reservas): habilitar beneficios en clases y canchas para membresías suspendidas vigentes`
 
 ---
 
