@@ -24,6 +24,9 @@ interface MockPrismaService {
   clase: {
     findUnique: jest.Mock;
   };
+  usuario: {
+    findUnique: jest.Mock;
+  };
   $executeRaw: jest.Mock;
   $transaction: jest.Mock;
 }
@@ -86,6 +89,9 @@ describe('ReservasClasesService', () => {
         update: jest.fn(),
       },
       clase: {
+        findUnique: jest.fn(),
+      },
+      usuario: {
         findUnique: jest.fn(),
       },
       $executeRaw: jest.fn().mockResolvedValue(1),
@@ -260,6 +266,47 @@ describe('ReservasClasesService', () => {
         capacidad_maxima: 20,
         dias_semana: diasDistintos,
         fecha: null,
+      });
+
+      await expect(service.crearReserva(dto, idUsuario)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('debe rechazar con BadRequestException si el socio pertenece a una sede de otra ciudad', async () => {
+      const ahora = new Date();
+      const fechaInicio = new Date(ahora.getTime() + 10 * 3600000);
+      const fechaFin = new Date(ahora.getTime() + 11 * 3600000);
+      const fechaStr = fechaInicio.toISOString().slice(0, 10);
+      const diaSemana = new Date(
+        Date.UTC(
+          Number(fechaStr.slice(0, 4)),
+          Number(fechaStr.slice(5, 7)) - 1,
+          Number(fechaStr.slice(8, 10)),
+          12,
+          0,
+          0,
+        ),
+      ).getUTCDay();
+
+      const dto: CrearReservaClaseDto = {
+        id_clase: 1,
+        fecha_inicio: fechaInicio.toISOString(),
+        fecha_fin: fechaFin.toISOString(),
+      };
+
+      mockPrisma.membresia.findFirst.mockResolvedValue({ id_membresia: 1 });
+      mockPrisma.claseReserva.findFirst.mockResolvedValue(null);
+      mockPrisma.clase.findUnique.mockResolvedValue({
+        id_clase: 1,
+        capacidad_maxima: 20,
+        dias_semana: [diaSemana],
+        fecha: null,
+        sede: { id_sede: 1, id_ciudad: 1 },
+      });
+      mockPrisma.usuario.findUnique.mockResolvedValue({
+        id_usuario: idUsuario,
+        sede: { id_sede: 2, id_ciudad: 2 },
       });
 
       await expect(service.crearReserva(dto, idUsuario)).rejects.toThrow(

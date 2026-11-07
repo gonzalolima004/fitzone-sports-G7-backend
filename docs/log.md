@@ -1586,3 +1586,23 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `docs(log): registrar normalizacion de estados y RBAC de clases`
 
 ---
+
+#### 07/11/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** E16-T1: Corrección de Cupos Límite, Estados en BD y Reglas de Inscripción (Paso 2: Reglas de mora, membresía activa y validación por ciudad).
+- **Actividades:**
+  - **Validación de no mora en lista de espera:** Se incorporó la verificación con `whereBeneficiosVigentes` en `ListaEsperaService.inscribir`, asegurando que socios con cuota vencida o sin membresía activa no puedan inscribirse en la lista de espera, rechazando con `ForbiddenException` (403).
+  - **Restricción de reservas e inscripciones por ciudad:** Se implementó la verificación de coincidencia entre la ciudad de la sede del socio y la ciudad de la sede de la clase (`socio.sede.id_ciudad === clase.sede.id_ciudad`) tanto en `ReservasClasesService.crearReserva` como en `ListaEsperaService.inscribir`. Se rechaza con `BadRequestException` (400) si intenta reservar o anotarse en otra ciudad.
+  - **Compatibilidad tras sincronización con dev:** Se integró la función utilitaria `whereBeneficiosVigentes` y se corrigió el typo de referencia en `reservas-clases.service.ts`.
+  - **Ampliación de suites de pruebas:** Se agregaron pruebas unitarias en `reservas-clases.service.spec.ts` y `lista-espera.service.spec.ts` para validar el rechazo por discrepancia de ciudad y rechazo por mora, alcanzando 9 suites y 91 pruebas aprobadas al 100%.
+- **Decisiones:**
+  - Exigir consistencia de ciudad tanto en reservas inmediatas como en listas de espera para evitar que un socio gane una vacante en una sede fuera de su jurisdicción habilitada.
+  - El catálogo y agenda de clases se mantienen públicos en `ClasesController` para que clientes externos o anónimos puedan consultar horarios y cupos sin restricciones.
+- **Dificultades:** Ninguna.
+- **Verificación:** 9 suites y 91 pruebas aprobadas al 100% en el módulo de clases grupales. Linter limpio sin warnings y compilación `nest build` exitosa.
+- **Commits:**
+  - `feat(clases): aplicar reglas de no mora y validacion por ciudad en reservas y lista de espera`
+
+---

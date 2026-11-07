@@ -1,9 +1,14 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ListaEsperaService } from '../services/lista-espera.service';
 import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { ClasesRepository } from '../repositories/clases.repository';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { InscribirListaEsperaDto } from '../dto/inscribir-lista-espera.dto';
+import { PrismaService } from '../../../database/prisma-service/prisma.service';
 
 describe('ListaEsperaService', () => {
   let service: ListaEsperaService;
@@ -230,6 +235,76 @@ describe('ListaEsperaService', () => {
         inscripcion: inscripcionCreada,
       });
       expect(mockListaEsperaRepo.crearInscripcion).toHaveBeenCalled();
+    });
+
+    it('debe lanzar ForbiddenException si el socio presenta mora o no tiene membresía activa', async () => {
+      const mockPrisma = {
+        membresia: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+      };
+      const serviceConPrisma = new ListaEsperaService(
+        mockListaEsperaRepo as ListaEsperaRepository,
+        mockClasesRepo as ClasesRepository,
+        mockReservasClasesRepo as ReservasClasesRepository,
+        mockPrisma as unknown as PrismaService,
+      );
+
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase,
+      );
+
+      const ahora = Date.now();
+      const dto: InscribirListaEsperaDto = {
+        id_clase: 1,
+        fecha_inicio: new Date(ahora + 3600000).toISOString(),
+        fecha_fin: new Date(ahora + 7200000).toISOString(),
+      };
+
+      await expect(serviceConPrisma.inscribir(dto, idUsuario)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('debe lanzar BadRequestException si el socio pertenece a una sede de otra ciudad', async () => {
+      const mockPrisma = {
+        membresia: {
+          findFirst: jest.fn().mockResolvedValue({ id_membresia: 1 }),
+        },
+        usuario: {
+          findUnique: jest.fn().mockResolvedValue({
+            id_usuario: idUsuario,
+            sede: { id_sede: 2, id_ciudad: 2 },
+          }),
+        },
+        clase: {
+          findUnique: jest.fn().mockResolvedValue({
+            id_clase: 1,
+            sede: { id_sede: 1, id_ciudad: 1 },
+          }),
+        },
+      };
+      const serviceConPrisma = new ListaEsperaService(
+        mockListaEsperaRepo as ListaEsperaRepository,
+        mockClasesRepo as ClasesRepository,
+        mockReservasClasesRepo as ReservasClasesRepository,
+        mockPrisma as unknown as PrismaService,
+      );
+
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase,
+      );
+
+      const ahora = Date.now();
+      const dto: InscribirListaEsperaDto = {
+        id_clase: 1,
+        fecha_inicio: new Date(ahora + 3600000).toISOString(),
+        fecha_fin: new Date(ahora + 7200000).toISOString(),
+      };
+
+      await expect(serviceConPrisma.inscribir(dto, idUsuario)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

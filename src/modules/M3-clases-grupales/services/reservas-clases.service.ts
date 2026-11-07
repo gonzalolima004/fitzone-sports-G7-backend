@@ -22,6 +22,7 @@ import {
   claseAplicaEnFecha,
   obtenerRangoDiaArgentina,
 } from '../../../common/utils/date-time.util';
+import { whereBeneficiosVigentes } from '../../M1-usuarios/utils/membresia-beneficios';
 
 @Injectable()
 export class ReservasClasesService {
@@ -118,6 +119,7 @@ export class ReservasClasesService {
 
       const clase = await tx.clase.findUnique({
         where: { id_clase: data.id_clase },
+        include: { sede: true },
       });
 
       if (!clase) {
@@ -131,6 +133,24 @@ export class ReservasClasesService {
         throw new BadRequestException(
           'La clase no se dicta en el día o fecha seleccionada.',
         );
+      }
+
+      // 4.2. Validación de misma ciudad entre socio y sede de la clase
+      if (tx.usuario?.findUnique) {
+        const socio = await tx.usuario.findUnique({
+          where: { id_usuario },
+          include: { sede: true },
+        });
+
+        if (
+          socio?.sede?.id_ciudad &&
+          clase?.sede?.id_ciudad &&
+          socio.sede.id_ciudad !== clase.sede.id_ciudad
+        ) {
+          throw new BadRequestException(
+            'No puedes reservar clases en sedes de una ciudad diferente a la de tu sede de origen.',
+          );
+        }
       }
 
       const idEstadoConfirmadaTx = this.reservasRepository
@@ -323,7 +343,7 @@ export class ReservasClasesService {
       finDia = rango.finDia;
     }
 
-    const idEstadoConfirmada = tis.reservasRepository
+    const idEstadoConfirmada = this.reservasRepository
       .obtenerIdEstadoPorDescripcion
       ? await this.reservasRepository.obtenerIdEstadoPorDescripcion(
           ESTADOS_CLASE_RESERVA.CONFIRMADA,
