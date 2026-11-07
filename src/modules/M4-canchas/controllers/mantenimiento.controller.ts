@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Get,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +15,9 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { MantenimientoService } from '../services/mantenimiento.service';
 import { CrearMantenimientoDto } from '../dto/crear-mantenimiento.dto';
 import { MantenimientoResponseDto } from '../dto/mantenimiento-response.dto';
@@ -24,11 +28,19 @@ export class MantenimientoController {
   constructor(private readonly mantenimientoService: MantenimientoService) {}
 
   @Post(':id/mantenimiento')
-  @ApiBearerAuth() // Dejar preparado para cuando se integre el guard JWT de la Épica 1
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente', 'recepcionista')
+  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Programar mantenimiento inhabilitando turnos futuros (RF-12)',
+    summary:
+      'Programar mantenimiento inhabilitando turnos futuros (Solo personal)',
   })
   @ApiResponse({ status: 201, type: MantenimientoResponseDto })
+  @ApiResponse({ status: 401, description: 'No autorizado / Token inválido.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido / Requiere rol gerente o recepcionista.',
+  })
   programarMantenimiento(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: CrearMantenimientoDto,
@@ -37,8 +49,17 @@ export class MantenimientoController {
   }
 
   @Get('mantenimientos')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente', 'recepcionista')
+  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Listar mantenimientos de canchas con filtros opcionales',
+    summary:
+      'Listar mantenimientos de canchas con filtros opcionales (Solo personal)',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado / Token inválido.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido / Requiere rol gerente o recepcionista.',
   })
   @ApiQuery({
     name: 'sedeId',

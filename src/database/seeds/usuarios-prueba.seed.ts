@@ -82,6 +82,15 @@ async function catalogos() {
     });
   }
 
+  const estadosCanchaReserva = ['Pendiente de Pago', 'Confirmada'];
+  for (const [i, descripcion] of estadosCanchaReserva.entries()) {
+    await prisma.canchaReservaEstado.upsert({
+      where: { id_cancha_reserva_estado: i + 1 },
+      update: { descripcion },
+      create: { id_cancha_reserva_estado: i + 1, descripcion },
+    });
+  }
+
   const planes = [
     {
       id_membresia_plan: 1,

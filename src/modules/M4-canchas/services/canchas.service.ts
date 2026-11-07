@@ -448,13 +448,15 @@ export class CanchasService {
       if (!esSocio) {
         motivoSinDescuento = 'ROL_EXTERNO';
       } else {
-        // b) Membresía ACTIVA vigente para la fecha del turno: fecha_inicio <= fecha <= fecha_fin
+        // b) Membresía ACTIVA (o SUSPENDIDA con pago aprobado) vigente para la fecha del turno: fecha_inicio <= fecha <= fecha_fin
         const tieneMembresiaActiva = (usuario.membresia ?? []).some((m) => {
+          const desc = m.membresia_estado?.descripcion?.trim().toLowerCase();
           const esEstadoActivo =
-            m.id_membresia_estado === 1 ||
-            m.membresia_estado?.descripcion?.trim().toLowerCase() === 'activa';
+            m.id_membresia_estado === 1 || desc === 'activa';
+          const esSuspendidaConPago =
+            desc === 'suspendida' && (m.pagos?.length ?? 0) > 0;
 
-          if (!esEstadoActivo) {
+          if (!esEstadoActivo && !esSuspendidaConPago) {
             return false;
           }
 

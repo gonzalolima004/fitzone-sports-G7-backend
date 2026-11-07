@@ -52,4 +52,41 @@ describe('CanchasController - cotizar', () => {
     expect(canchasService.cotizarTurno).toHaveBeenCalledWith(query, 10);
     expect(response).toEqual(mockCotizacionResponse);
   });
+
+  describe('Verificación de @UseGuards y @Roles en endpoints administrativos', () => {
+    const getRoles = (methodName: keyof CanchasController): string[] => {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        CanchasController.prototype,
+        methodName,
+      );
+      const handler = descriptor?.value as object | undefined;
+      if (!handler) return [];
+      const meta = Reflect.getMetadata('roles', handler) as unknown;
+      return Array.isArray(meta) ? (meta as string[]) : [];
+    };
+
+    it('debe proteger POST /canchas con rol gerente', () => {
+      expect(getRoles('crear')).toEqual(['gerente']);
+    });
+
+    it('debe proteger POST /canchas/tipos con rol gerente', () => {
+      expect(getRoles('crearTipo')).toEqual(['gerente']);
+    });
+
+    it('debe proteger PATCH /canchas/tipos/:id con rol gerente', () => {
+      expect(getRoles('actualizarTipo')).toEqual(['gerente']);
+    });
+
+    it('debe proteger DELETE /canchas/tipos/:id con rol gerente', () => {
+      expect(getRoles('eliminarTipo')).toEqual(['gerente']);
+    });
+
+    it('debe proteger PATCH /canchas/:id con rol gerente', () => {
+      expect(getRoles('actualizar')).toEqual(['gerente']);
+    });
+
+    it('debe proteger DELETE /canchas/:id con rol gerente', () => {
+      expect(getRoles('eliminar')).toEqual(['gerente']);
+    });
+  });
 });

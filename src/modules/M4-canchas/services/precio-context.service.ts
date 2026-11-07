@@ -38,8 +38,8 @@ export class PrecioContextService {
       resultadoBase = this.estandarStrategy.calcular(costoBase, context);
     }
 
-    // 2. Composición: Si es socio activo Y además es horario pico,
-    // se aplica el descuento sobre el precio con recargo según la regla de negocio
+    // 2. Composición: Si es socio activo y además es horario pico,
+    // se aplica el descuento sobre el costo base sin modificar el recargo pico
     if (esHorarioPico && context.esSocioActivo) {
       const resultadoSocio = this.descuentoSocioStrategy.calcular(
         costoBase,

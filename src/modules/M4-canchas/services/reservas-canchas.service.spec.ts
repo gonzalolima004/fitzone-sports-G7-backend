@@ -38,7 +38,7 @@ describe('ReservasCanchasService', () => {
         id_cancha_reserva: 101,
         id_cancha: 1,
         id_usuario: 5,
-        id_cancha_reserva_estado: 1,
+        id_cancha_reserva_estado: 99,
         fecha_inicio: new Date('2026-11-20T18:00:00.000Z'),
         fecha_fin: new Date('2026-11-20T19:00:00.000Z'),
         descuento_porcentaje: new Prisma.Decimal('15'),
@@ -47,6 +47,7 @@ describe('ReservasCanchasService', () => {
       }),
       obtenerMantenimientosPorFecha: jest.fn().mockResolvedValue([]),
       obtenerPorId: jest.fn(),
+      obtenerIdEstadoPorDescripcion: jest.fn().mockResolvedValue(99),
     };
 
     canchasRepo = {
@@ -128,7 +129,15 @@ describe('ReservasCanchasService', () => {
     const resultado = await service.crearReserva(dto, idUsuario);
 
     expect(resultado).toBeDefined();
+    expect(reservasRepo.obtenerIdEstadoPorDescripcion).toHaveBeenCalledWith(
+      'Pendiente de Pago',
+    );
     expect(reservasRepo.crearReservaTransaccional).toHaveBeenCalledTimes(1);
+    expect(reservasRepo.crearReservaTransaccional).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id_cancha_reserva_estado: 99,
+      }),
+    );
 
     expect(canchasRealtime.notificarTurnoReservado).toHaveBeenCalledTimes(1);
     expect(canchasRealtime.notificarTurnoReservado).toHaveBeenCalledWith(

@@ -10,8 +10,7 @@ import {
 
 export class CotizacionContext {
   @ApiProperty({
-    description:
-      'Indica si el usuario tiene una membresía activa y al día (RN-03)',
+    description: 'Indica si el usuario tiene una membresía activa y al día',
   })
   esSocioActivo: boolean;
 

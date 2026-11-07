@@ -350,4 +350,96 @@ describe('CanchasService - cotizarTurno', () => {
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('debe aplicar descuento de socio si la membresía está Suspendida pero tiene pago aprobado y ciclo vigente', async () => {
+    (canchasRepository.obtenerPorId as jest.Mock).mockResolvedValue(mockCancha);
+    (
+      canchasRepository.obtenerDatosUsuarioParaCotizacion as jest.Mock
+    ).mockResolvedValue({
+      ...mockUsuarioSocioRosario,
+      membresia: [
+        {
+          id_membresia: 2,
+          id_usuario: 5,
+          id_membresia_plan: 1,
+          id_membresia_estado: 3,
+          fecha_inicio: new Date('2026-01-01T00:00:00.000Z'),
+          fecha_fin: new Date('2026-12-31T00:00:00.000Z'), // Pagó el año completo
+          renovacion_automatica: false,
+          membresia_estado: {
+            id_membresia_estado: 3,
+            descripcion: 'Suspendida',
+          },
+          pagos: [{ id_pago: 101 }], // Tiene pago aprobado
+        },
+      ],
+    });
+
+    const resultado = await service.cotizarTurno(
+      {
+        canchaId: 1,
+        fecha: '2026-11-15',
+        hora: '10:00', // No pico
+      },
+      5,
+    );
+
+    expect(resultado).toEqual({
+      costo_base: 12000,
+      descuento_porcentaje: 15,
+      monto_descuento: 1800,
+      es_horario_pico: false,
+      monto_recargo_pico: 0,
+      precio_final: 10200,
+      es_socio: true,
+      aplica_descuento_socio: true,
+      motivo_sin_descuento: null,
+    });
+  });
+
+  it('debe rechazar descuento si la membresía está Suspendida pero no tiene pago aprobado', async () => {
+    (canchasRepository.obtenerPorId as jest.Mock).mockResolvedValue(mockCancha);
+    (
+      canchasRepository.obtenerDatosUsuarioParaCotizacion as jest.Mock
+    ).mockResolvedValue({
+      ...mockUsuarioSocioRosario,
+      membresia: [
+        {
+          id_membresia: 2,
+          id_usuario: 5,
+          id_membresia_plan: 1,
+          id_membresia_estado: 3,
+          fecha_inicio: new Date('2026-01-01T00:00:00.000Z'),
+          fecha_fin: new Date('2026-12-31T00:00:00.000Z'),
+          renovacion_automatica: false,
+          membresia_estado: {
+            id_membresia_estado: 3,
+            descripcion: 'Suspendida',
+          },
+          pagos: [], // Sin pago aprobado
+        },
+      ],
+    });
+
+    const resultado = await service.cotizarTurno(
+      {
+        canchaId: 1,
+        fecha: '2026-11-15',
+        hora: '10:00',
+      },
+      5,
+    );
+
+    expect(resultado).toEqual({
+      costo_base: 12000,
+      descuento_porcentaje: 0,
+      monto_descuento: 0,
+      es_horario_pico: false,
+      monto_recargo_pico: 0,
+      precio_final: 12000,
+      es_socio: true,
+      aplica_descuento_socio: false,
+      motivo_sin_descuento: 'SIN_MEMBRESIA',
+    });
+  });
 });
