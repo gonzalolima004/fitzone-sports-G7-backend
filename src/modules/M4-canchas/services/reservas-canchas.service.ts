@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ReservasCanchasRepository } from '../repositories/reservas-canchas.repository';
 import { CanchasRepository } from '../repositories/canchas.repository';
@@ -11,6 +13,8 @@ import { CotizacionContext } from '../dto/cotizacion-turno.dto';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { SedeService } from '../../M0-sedes/services/sede.service';
 import { CanchasRealtimeService } from './canchas-realtime.service';
+import { CanchasService } from './canchas.service';
+import * as authenticatedUserInterface from '../../../common/interfaces/authenticated-user.interface';
 
 @Injectable()
 export class ReservasCanchasService {
@@ -21,6 +25,7 @@ export class ReservasCanchasService {
     private readonly prisma: PrismaService, // Para consultar membresía del usuario
     private readonly sedeService: SedeService,
     private readonly canchasRealtime?: CanchasRealtimeService,
+    @Optional() private readonly canchasService?: CanchasService,
   ) {}
 
   async crearReserva(dto: CrearReservaCanchaDto, idUsuario: number) {
@@ -86,51 +91,101 @@ export class ReservasCanchasService {
       );
     }
 
-    // 4. Verificar que la cancha no esté en mantenimiento programado
-    const enMantenimiento = await this.prisma.canchaMantenimiento.findFirst({
-      where: {
-        id_cancha: dto.id_cancha,
-        fecha_inicio: { lt: fin },
-        fecha_fin: { gt: inicio },
-      },
-    });
+    // 4. Verificar que la cancha no esté en mantenimiento programado vía repositorio (Patrón Repository)
+    const mantenimientos =
+      await this.reservasRepository.obtenerMantenimientosPorFecha(
+        dto.id_cancha,
+        inicio,
+        fin,
+      );
 
-    if (enMantenimiento) {
+    if (mantenimientos.length > 0) {
       throw new BadRequestException(
         'La cancha se encuentra en mantenimiento programado durante este horario.',
       );
     }
 
-    // 5. Validar estado del usuario (RN-03: membresía al día)
-    const membresiaActiva = await this.prisma.membresia.findFirst({
-      where: {
-        id_usuario: idUsuario,
-        id_membresia_estado: 1, // 1 = Activa
-        fecha_fin: { gte: new Date() },
-      },
-    });
+    // 5. Cotización unificada de precio (Single Source of Truth / DRY)
+    let descuentoPorcentaje = 0;
+    let esHorarioPico = false;
+    let precioCongelado = Number(cancha.costo_base);
 
-    // 6. Configurar contexto y calcular precio con Strategy
-    const contextoCotizacion: CotizacionContext = {
-      esSocioActivo: !!membresiaActiva,
-      horaInicio: inicio,
-    };
+    if (this.canchasService) {
+      const cotizacion = await this.canchasService.cotizarTurno(
+        {
+          canchaId: dto.id_cancha,
+          fecha: fechaStr,
+          hora: horaInicioStr,
+        },
+        idUsuario,
+      );
+      descuentoPorcentaje = cotizacion.descuento_porcentaje;
+      esHorarioPico = cotizacion.es_horario_pico;
+      precioCongelado = cotizacion.precio_final;
+    } else {
+      // Fallback usando CanchasRepository y PrecioContextService (Strategy Pattern)
+      const usuario =
+        await this.canchasRepository.obtenerDatosUsuarioParaCotizacion(
+          idUsuario,
+          fechaStr,
+        );
 
-    const calculo = this.precioContext.calcularPrecioFinal(
-      Number(cancha.costo_base),
-      contextoCotizacion,
-    );
+      const esSocio =
+        usuario?.usuario_rol?.some(
+          (ur) => ur.rol?.nombre?.trim().toLowerCase() === 'socio',
+        ) ?? false;
 
-    // 7. Ejecutar transacción atómica anti-colisiones (RN-02)
+      let esSocioActivo = false;
+      if (esSocio && usuario) {
+        const tieneMembresiaActiva = (usuario.membresia ?? []).some((m) => {
+          const esEstadoActivo =
+            m.id_membresia_estado === 1 ||
+            m.membresia_estado?.descripcion?.trim().toLowerCase() === 'activa';
+          if (!esEstadoActivo) return false;
+
+          const fInicio = m.fecha_inicio.toISOString().slice(0, 10);
+          const fFin = m.fecha_fin.toISOString().slice(0, 10);
+          return fInicio <= fechaStr && fechaStr <= fFin;
+        });
+
+        const usuarioCiudadId = usuario.sede?.id_ciudad;
+        const canchaCiudadId = cancha.sede?.id_ciudad;
+
+        if (
+          tieneMembresiaActiva &&
+          usuarioCiudadId &&
+          canchaCiudadId &&
+          usuarioCiudadId === canchaCiudadId
+        ) {
+          esSocioActivo = true;
+        }
+      }
+
+      const contextoCotizacion: CotizacionContext = {
+        esSocioActivo,
+        horaInicio: inicio,
+      };
+
+      const calculo = this.precioContext.calcularPrecioFinal(
+        Number(cancha.costo_base),
+        contextoCotizacion,
+      );
+
+      descuentoPorcentaje = calculo.descuento_porcentaje;
+      esHorarioPico = calculo.es_horario_pico;
+      precioCongelado = calculo.precio_congelado;
+    }
+
+    // 6. Ejecutar transacción atómica anti-colisiones (RN-02)
     const reserva = await this.reservasRepository.crearReservaTransaccional({
       id_cancha: dto.id_cancha,
       id_usuario: idUsuario,
       id_cancha_reserva_estado: 1, // 1 = Confirmada/Pendiente Pago
       fecha_inicio: inicio,
       fecha_fin: fin,
-      descuento_porcentaje: calculo.descuento_porcentaje,
-      es_horario_pico: calculo.es_horario_pico,
-      precio_congelado: calculo.precio_congelado,
+      descuento_porcentaje: descuentoPorcentaje,
+      es_horario_pico: esHorarioPico,
+      precio_congelado: precioCongelado,
     });
 
     // 8. Emitir evento en tiempo real vía Supabase Realtime Broadcast (no bloqueante)
@@ -146,11 +201,38 @@ export class ReservasCanchasService {
     return reserva;
   }
 
-  async obtenerReservaPorId(id: number) {
+  async obtenerReservaPorId(
+    id: number,
+    usuarioAuth?: authenticatedUserInterface.AuthenticatedUser,
+  ) {
     const reserva = await this.reservasRepository.obtenerPorId(id);
     if (!reserva) {
       throw new NotFoundException(`La reserva #${id} no existe.`);
     }
-    return reserva;
+
+    if (usuarioAuth) {
+      const rolesStaff = ['gerente', 'recepcionista', 'administrador'];
+      const esStaff =
+        rolesStaff.includes(usuarioAuth.rol?.toLowerCase() || '') ||
+        usuarioAuth.roles?.some((r) => rolesStaff.includes(r.toLowerCase()));
+
+      if (!esStaff && reserva.id_usuario !== usuarioAuth.id_usuario) {
+        throw new ForbiddenException(
+          'No tienes permiso para acceder a esta reserva.',
+        );
+      }
+    }
+
+    return {
+      ...reserva,
+      precio_congelado: Number(reserva.precio_congelado),
+      descuento_porcentaje: Number(reserva.descuento_porcentaje),
+      cancha: reserva.cancha
+        ? {
+            ...reserva.cancha,
+            costo_base: Number(reserva.cancha.costo_base),
+          }
+        : undefined,
+    };
   }
 }
