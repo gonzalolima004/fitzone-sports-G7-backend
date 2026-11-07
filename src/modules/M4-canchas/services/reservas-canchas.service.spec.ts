@@ -45,11 +45,31 @@ describe('ReservasCanchasService', () => {
         es_horario_pico: false,
         precio_congelado: new Prisma.Decimal('8500'),
       }),
+      obtenerMantenimientosPorFecha: jest.fn().mockResolvedValue([]),
       obtenerPorId: jest.fn(),
     };
 
     canchasRepo = {
       obtenerPorId: jest.fn().mockResolvedValue(mockCancha),
+      obtenerDatosUsuarioParaCotizacion: jest.fn().mockResolvedValue({
+        id_usuario: 5,
+        id_sede: 3,
+        sede: { id_sede: 3, id_ciudad: 1 },
+        usuario_rol: [{ rol: { id_rol: 2, nombre: 'socio' } }],
+        membresia: [
+          {
+            id_usuario: 5,
+            id_membresia_plan: 1,
+            id_membresia_estado: 1,
+            fecha_inicio: new Date('2026-01-01'),
+            fecha_fin: new Date('2026-12-31'),
+            membresia_estado: {
+              id_membresia_estado: 1,
+              descripcion: 'Activa',
+            },
+          },
+        ],
+      }),
     };
 
     precioContext = {

@@ -76,6 +76,15 @@ export class ReservasCanchasRepository {
           },
         },
         cancha_reserva_estado: true,
+        usuario: {
+          select: {
+            id_usuario: true,
+            nombre: true,
+            apellido: true,
+            email: true,
+            dni: true,
+          },
+        },
       },
     });
   }

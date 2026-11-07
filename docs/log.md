@@ -1252,6 +1252,27 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 07/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Corrección en la composición del Patrón Strategy (`PrecioContextService`), garantizando que el descuento de socio se aplique sobre el costo base de la cancha y no sobre el recargo pico acumulado, eliminando la discrepancia entre cotización y confirmación de reserva.
+  - Unificación de la lógica de tarifas en `ReservasCanchasService`, delegando en `CanchasService.cotizarTurno` para mantener una única fuente de verdad y validar consistencia de membresía activa y misma ciudad.
+  - Corrección de fuga de abstracción en `ReservasCanchasService`, reemplazando consultas directas a Prisma por el método `obtenerMantenimientosPorFecha` de `ReservasCanchasRepository`.
+  - Protección y autorización en `GET /reservas-canchas/:id`, permitiendo el acceso únicamente al titular de la reserva o a roles de staff (`gerente`, `recepcionista`, `administrador`).
+  - Inclusión de los datos del usuario y parseo a tipo numérico de los campos `Decimal` en la consulta de reservas para consumo limpio desde el frontend.
+  - Mantenimiento y actualización de suites de pruebas unitarias y de integración en M4.
+- **Decisiones:**
+  - Asegurar `GET /reservas-canchas/:id` validando titularidad y roles de usuario para evitar consultas de un cliente a reservas ajenas.
+- **Dificultades:** Discrepancia de precios generada por calcular el descuento de socio sobre el subtotal con recargo pico en vez de sobre la tarifa base.
+- **Commits:**
+  - `fix(canchas): corregir calculo de precios`
+  - `feat(M4): autorizacion en endpoint de reservas`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
 #### 26/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
