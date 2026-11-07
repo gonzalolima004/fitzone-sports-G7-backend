@@ -39,8 +39,13 @@ export class ReservasCanchasController {
     return this.reservasService.crearReserva(dto, usuario.id_usuario);
   }
   @Get(':id')
+  @UseGuards(SupabaseAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener detalle de una reserva por ID' })
-  obtenerReserva(@Param('id', ParseIntPipe) id: number) {
-    return this.reservasService.obtenerReservaPorId(id);
+  obtenerReserva(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() usuario: authenticatedUserInterface.AuthenticatedUser,
+  ) {
+    return this.reservasService.obtenerReservaPorId(id, usuario);
   }
 }

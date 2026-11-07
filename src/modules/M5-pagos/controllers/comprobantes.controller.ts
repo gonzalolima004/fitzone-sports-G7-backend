@@ -1,15 +1,27 @@
-import { Controller, Get, Param, ParseIntPipe, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiProduces,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { PagosService } from '../services/pagos.service';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { CurrentUserId } from '../../../common/decorators/current-user.decorator';
 
 @ApiTags('Pagos y Facturación')
+@ApiBearerAuth()
+@UseGuards(SupabaseAuthGuard)
 @Controller('pagos')
 export class ComprobantesController {
   constructor(private readonly pagosService: PagosService) {}
@@ -38,14 +50,24 @@ export class ComprobantesController {
     description: 'Identificador de pago inválido (debe ser numérico entero).',
   })
   @ApiResponse({
+    status: 401,
+    description:
+      'No autorizado. El token de autenticación está ausente o es inválido.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'El pago no pertenece al usuario autenticado.',
+  })
+  @ApiResponse({
     status: 404,
     description: 'El pago especificado no existe en el sistema.',
   })
   async descargarComprobante(
     @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() userId: number,
     @Res() res: Response,
   ): Promise<void> {
-    const pdfBuffer = await this.pagosService.generarComprobantePdf(id);
+    const pdfBuffer = await this.pagosService.generarComprobantePdf(id, userId);
 
     res.set({
       'Content-Type': 'application/pdf',

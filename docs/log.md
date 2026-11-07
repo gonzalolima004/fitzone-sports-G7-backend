@@ -1225,6 +1225,54 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 06/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Implementación de `CanchasRealtimeService` para emitir eventos de turnos reservados (`turno_reservado`) vía broadcast en canales por sede (`canchas:sede:${idSede}`), notificando de forma no bloqueante y tolerante a fallos al crearse una reserva (`POST /reservas-canchas`).
+  - Ajuste en `SupabaseService.emitRealtimeEvent` asegurando la suscripción activa (`SUBSCRIBED`) antes de emitir el broadcast y liberando el canal de manera controlada.
+  - Implementación de bloqueo pesimista (`SELECT ... FOR UPDATE`) en `ReservasCanchasRepository.crearReservaTransaccional` sobre la cancha seleccionada, previniendo condiciones de carrera ante reservas simultáneas.
+  - Fix en M0 para incluir el campo de horario especial en sedes.
+  - Cobertura de pruebas unitarias para el servicio realtime y repositorios en M4.
+- **Decisiones:**
+  - Utilizar bloqueo pesimista a nivel de fila sobre la cancha para serializar atómicamente la verificación de colisión e inserción, evitando colisiones concurrentes sin degradar la concurrencia general.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(Supabase): integrar logger en canal realtime`
+  - `feat(M4): crear service para reservas realtime`
+  - `feat(M4): utilizacion del service realtime`
+  - `feat(M4): bloqueo pesimista en reserva cancha repo`
+  - `feat(M4): tests para supabase realtime en canchas`
+  - `feat(M4): inclusion del modulo de realtime`
+  - `fix(M0): faltaba el campo es horario especial`
+  - `feat(M2): compatibilidad de test por cambios en realtime service`
+  - `docs(log): actualizacion de bitacora`
+  - `fix(entorno): reestablecer husky y eliminar settings`
+
+---
+
+#### 07/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Corrección en la composición del Patrón Strategy (`PrecioContextService`), garantizando que el descuento de socio se aplique sobre el costo base de la cancha y no sobre el recargo pico acumulado, eliminando la discrepancia entre cotización y confirmación de reserva.
+  - Unificación de la lógica de tarifas en `ReservasCanchasService`, delegando en `CanchasService.cotizarTurno` para mantener una única fuente de verdad y validar consistencia de membresía activa y misma ciudad.
+  - Corrección de fuga de abstracción en `ReservasCanchasService`, reemplazando consultas directas a Prisma por el método `obtenerMantenimientosPorFecha` de `ReservasCanchasRepository`.
+  - Protección y autorización en `GET /reservas-canchas/:id`, permitiendo el acceso únicamente al titular de la reserva o a roles de staff (`gerente`, `recepcionista`, `administrador`).
+  - Inclusión de los datos del usuario y parseo a tipo numérico de los campos `Decimal` en la consulta de reservas para consumo limpio desde el frontend.
+  - Mantenimiento y actualización de suites de pruebas unitarias y de integración en M4.
+- **Decisiones:**
+  - Asegurar `GET /reservas-canchas/:id` validando titularidad y roles de usuario para evitar consultas de un cliente a reservas ajenas.
+- **Dificultades:** Discrepancia de precios generada por calcular el descuento de socio sobre el subtotal con recargo pico en vez de sobre la tarifa base.
+- **Commits:**
+  - `fix(canchas): corregir calculo de precios`
+  - `feat(M4): autorizacion en endpoint de reservas`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
 #### 26/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
@@ -1460,6 +1508,25 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   -test(M2): test unitario de accesos, aforo y qr
   -docs(M2): actualizacion bitacora
+
+---
+
+#### 07/11/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Seguridad en comprobantes y pagos: se protegió la consulta de comprobantes y la creación de pagos para que cada usuario solo pueda ver y abonar sus propias membresías o reservas.
+  - Estandarización de estados de pago: se reemplazaron los identificadores fijos y repetidos en el código por un sistema centralizado que gestiona automáticamente los estados (Pendiente, Aprobado, Rechazado).
+  - Suspensión de membresía: se agregó la posibilidad de que el socio suspenda su membresía activa. Mantiene todos sus beneficios (acceso al club, reserva de clases y descuentos en canchas) hasta el último día que ya pagó, y al terminar ese ciclo no se le genera ningún cobro pendiente.
+- **Decisiones:**
+  - Proteger las rutas de comprobantes exigiendo inicio de sesión para cuidar los datos personales del socio (nombre, DNI y montos abonados).
+  - Conservar los beneficios del socio hasta el vencimiento del período ya abonado para que no pierda los días pagados.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(pagos): proteger comprobantes con guard y reemplazar estados hardcodeados por estadosService`
+  - `feat(membresias): permitir suspension de membresia activa`
+  - `feat(reservas): habilitar beneficios en clases y canchas para membresías suspendidas vigentes`
 
 ---
 

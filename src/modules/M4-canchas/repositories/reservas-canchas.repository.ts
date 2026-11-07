@@ -76,6 +76,15 @@ export class ReservasCanchasRepository {
           },
         },
         cancha_reserva_estado: true,
+        usuario: {
+          select: {
+            id_usuario: true,
+            nombre: true,
+            apellido: true,
+            email: true,
+            dni: true,
+          },
+        },
       },
     });
   }
@@ -87,6 +96,9 @@ export class ReservasCanchasRepository {
     data: Prisma.CanchaReservaUncheckedCreateInput,
   ): Promise<CanchaReserva> {
     return this.prisma.$transaction(async (tx) => {
+      // Bloqueo pesimista (FOR UPDATE) para serializar reservas concurrentes y evitar race conditions
+      await tx.$executeRaw`SELECT id_cancha FROM cancha WHERE id_cancha = ${data.id_cancha} FOR UPDATE`;
+
       // 1. Buscar si ya existe una reserva que se solape en ese rango de tiempo
       const colision = await tx.canchaReserva.findFirst({
         where: {
@@ -99,7 +111,7 @@ export class ReservasCanchasRepository {
 
       if (colision) {
         throw new ConflictException(
-          'La cancha ya fue reservada en este horario exacto por otro usuario.',
+          'La cancha acaba de ser reservada en este horario por otro usuario.',
         );
       }
 
