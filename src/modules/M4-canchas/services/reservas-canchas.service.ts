@@ -11,6 +11,7 @@ import { CotizacionContext } from '../dto/cotizacion-turno.dto';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { whereBeneficiosVigentes } from '../../M1-usuarios/utils/membresia-beneficios';
 import { SedeService } from '../../M0-sedes/services/sede.service';
+import { CanchasRealtimeService } from './canchas-realtime.service';
 
 @Injectable()
 export class ReservasCanchasService {
@@ -20,6 +21,7 @@ export class ReservasCanchasService {
     private readonly precioContext: PrecioContextService,
     private readonly prisma: PrismaService, // Para consultar membresía del usuario
     private readonly sedeService: SedeService,
+    private readonly canchasRealtime?: CanchasRealtimeService,
   ) {}
 
   async crearReserva(dto: CrearReservaCanchaDto, idUsuario: number) {
@@ -128,9 +130,15 @@ export class ReservasCanchasService {
       precio_congelado: calculo.precio_congelado,
     });
 
-    console.log(
-      `[Realtime Broadcast] Grilla actualizada para cancha ${dto.id_cancha}`,
-    );
+    // 8. Emitir evento en tiempo real vía Supabase Realtime Broadcast (no bloqueante)
+    if (this.canchasRealtime) {
+      void this.canchasRealtime.notificarTurnoReservado(cancha.id_sede, {
+        id_cancha: dto.id_cancha,
+        fecha: fechaStr,
+        hora_inicio: horaInicioStr,
+        hora_fin: horaFinStr,
+      });
+    }
 
     return reserva;
   }
