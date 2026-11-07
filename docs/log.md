@@ -1481,3 +1481,33 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(reservas): habilitar beneficios en clases y canchas para membresías suspendidas vigentes`
 
 ---
+
+#### 06/11/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** CRUD de calendario, excepciones por sede y horario semanal para el gerente (parte backend).
+- **Actividades:**
+  - `/calendario` (M0): CRUD del calendario general, con los feriados nacionales o de toda la cadena: listado con filtro por rango (`desde` y `hasta`), detalle, alta, modificación y baja. Al marcar una fecha como feriado, por defecto queda como día no hábil.
+  - `/sedes/:idSede/calendario`: CRUD de las excepciones de cada sede (feriados locales, cierres y días con horario especial). Se cargan con la fecha: si no está en el calendario general, se agrega como día común. Sin horas es un cierre total; con horas, la sede abre con horario especial (formato HH:mm y apertura anterior al cierre). La respuesta incluye la fecha y si es feriado.
+  - `/sedes/:idSede/horarios`: CRUD del horario semanal, con un registro por día (0 domingo a 6 sábado) que indica apertura y cierre, o que la sede no abre.
+  - Todo el CRUD queda protegido con `SupabaseAuthGuard`, `RolesGuard` y `@Roles('gerente')` y documentado en Swagger. `GET /sedes/:id/horario-operativo` sigue siendo público y ya toma lo que se carga con estos endpoints.
+  - Pruebas de integración HTTP sobre PGlite: permisos (401 y 403), validaciones, fechas y días repetidos (409), sede inexistente (404), alcance por sede, baja de una fecha con excepciones (409) e impacto en el horario operativo.
+- **Decisiones:**
+  - No consultar antes de escribir: la existencia de la sede y los duplicados los valida la base con sus claves foráneas y restricciones únicas, y los errores se traducen a 404 o 409. Así cada operación hace una o dos consultas a la base (medido sobre PGlite), por la latencia de Supabase.
+  - Las modificaciones y bajas de excepciones no usan `include`: con `include`, Prisma abre una transacción y suma idas a la base, así que la fecha se busca aparte.
+  - El alta de una excepción en una fecha nueva hace un upsert del día y después el alta, sin transacción: si el alta falla, la fecha queda en el calendario como día común, que no cambia el horario de ninguna sede.
+  - Una fecha del calendario general con excepciones en alguna sede no se puede borrar (409): primero hay que borrar sus excepciones.
+  - Las fechas se reciben y se devuelven como `YYYY-MM-DD` para evitar corrimientos por zona horaria.
+  - Todos los endpoints nuevos, incluidos los GET, son solo para el gerente, como pide la tarea. Las pantallas de socios siguen usando `GET /sedes/:id/horario-operativo` y la disponibilidad de canchas.
+- **Dificultades:**
+  - Al borrar una fecha referenciada, PostgreSQL responde con el código 23001 (la clave foránea es `ON DELETE RESTRICT`) y Prisma lo informa como error genérico P2039 en lugar de P2003; se contempló ese caso para responder 409.
+- **Verificación:** 2 suites y 33 pruebas aprobadas en el módulo de sedes (20 nuevas). En el resto del backend siguen fallando 3 pruebas de M2 (accesos y QR) que ya fallaban en `dev` y no se tocaron. Typecheck sin errores nuevos y ESLint sin errores en los archivos nuevos.
+- **Commits:**
+  - `feat(calendario): agregar CRUD del calendario general para el gerente`
+  - `feat(calendario): agregar CRUD de excepciones de calendario por sede`
+  - `feat(sedes): agregar CRUD de horarios semanales por sede`
+  - `test(calendario): agregar pruebas de integracion del CRUD de calendario y horarios`
+  - `docs(log): registrar CRUD de calendario y horarios`
+
+---
