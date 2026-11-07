@@ -1216,7 +1216,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Utilizar el patrón Strategy para la aplicación de tarifas dinámicas (descuento socio y recargo pico), garantizando extensibilidad sin acoplar reglas en el servicio principal.
   - Implementar un Cache Provider dedicado en memoria con política LRU en lugar de caché dentro del servicio o un Map directo, asegurando que `CanchasService` se mantenga 100% stateless y evitando fugas de memoria.
 - **Dificultades:**
-  - El servidor de la base de datos se encuentra en Oregon (EE.UU.), haciendo que hasta la petición más básica de SELECT 1 demore 250ms en el MEJOR caso posible. El uso de cache es una forma de evitar realizar consultas redundantes. Funciona bien por ahora en tests manuales y automatizados, por lo que si mañana sigue funcionando sin errores, planeo incluir una tarea, o más, en trello para integrarlo en otros puntos donde sea apropiado, sin afectar que realmente requieran ir a la base de datos real. 
+  - El servidor de la base de datos se encuentra en Oregon (EE.UU.), haciendo que hasta la petición más básica de SELECT 1 demore 250ms en el MEJOR caso posible. El uso de cache es una forma de evitar realizar consultas redundantes. Funciona bien por ahora en tests manuales y automatizados, por lo que si mañana sigue funcionando sin errores, planeo incluir una tarea, o más, en trello para integrarlo en otros puntos donde sea apropiado, sin afectar que realmente requieran ir a la base de datos real.
 - **Commits:**
   - `feat(M4): crear endpoint para cotizar precios`
   - `feat(M4): endpoint para cotizar canchas`
@@ -1488,14 +1488,19 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
-  #### 04/11/2026
-  #### Angelina María Vialle | Rol: QA Backend
-  - **Actividades:**
+#### 04/11/2026
+
+#### Angelina María Vialle | Rol: QA Backend
+
+- **Actividades:**
   -Prueba unitaria de acceso.service
-  -
-  -Prueba unitaria de aforo-realtime.service
-  -
-  -Prueba unitaria de qr.service
+-
+
+-Prueba unitaria de aforo-realtime.service
+-
+
+-Prueba unitaria de qr.service
+
 - **Decisiones:**
   -Tipar de forma estricta los mocks en Jest utilizando as unknown as DTO/Entity
 - **Dificultades:**
@@ -1503,5 +1508,54 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   -test(M2): test unitario de accesos, aforo y qr
   -docs(M2): actualizacion bitacora
+
+---
+
+#### 07/11/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Seguridad en comprobantes y pagos: se protegió la consulta de comprobantes y la creación de pagos para que cada usuario solo pueda ver y abonar sus propias membresías o reservas.
+  - Estandarización de estados de pago: se reemplazaron los identificadores fijos y repetidos en el código por un sistema centralizado que gestiona automáticamente los estados (Pendiente, Aprobado, Rechazado).
+  - Suspensión de membresía: se agregó la posibilidad de que el socio suspenda su membresía activa. Mantiene todos sus beneficios (acceso al club, reserva de clases y descuentos en canchas) hasta el último día que ya pagó, y al terminar ese ciclo no se le genera ningún cobro pendiente.
+- **Decisiones:**
+  - Proteger las rutas de comprobantes exigiendo inicio de sesión para cuidar los datos personales del socio (nombre, DNI y montos abonados).
+  - Conservar los beneficios del socio hasta el vencimiento del período ya abonado para que no pierda los días pagados.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(pagos): proteger comprobantes con guard y reemplazar estados hardcodeados por estadosService`
+  - `feat(membresias): permitir suspension de membresia activa`
+  - `feat(reservas): habilitar beneficios en clases y canchas para membresías suspendidas vigentes`
+
+---
+
+#### 06/11/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** CRUD de calendario, excepciones por sede y horario semanal para el gerente (parte backend).
+- **Actividades:**
+  - `/calendario` (M0): CRUD del calendario general, con los feriados nacionales o de toda la cadena: listado con filtro por rango (`desde` y `hasta`), detalle, alta, modificación y baja. Al marcar una fecha como feriado, por defecto queda como día no hábil.
+  - `/sedes/:idSede/calendario`: CRUD de las excepciones de cada sede (feriados locales, cierres y días con horario especial). Se cargan con la fecha: si no está en el calendario general, se agrega como día común. Sin horas es un cierre total; con horas, la sede abre con horario especial (formato HH:mm y apertura anterior al cierre). La respuesta incluye la fecha y si es feriado.
+  - `/sedes/:idSede/horarios`: CRUD del horario semanal, con un registro por día (0 domingo a 6 sábado) que indica apertura y cierre, o que la sede no abre.
+  - Todo el CRUD queda protegido con `SupabaseAuthGuard`, `RolesGuard` y `@Roles('gerente')` y documentado en Swagger. `GET /sedes/:id/horario-operativo` sigue siendo público y ya toma lo que se carga con estos endpoints.
+  - Pruebas de integración HTTP sobre PGlite: permisos (401 y 403), validaciones, fechas y días repetidos (409), sede inexistente (404), alcance por sede, baja de una fecha con excepciones (409) e impacto en el horario operativo.
+- **Decisiones:**
+  - No consultar antes de escribir: la existencia de la sede y los duplicados los valida la base con sus claves foráneas y restricciones únicas, y los errores se traducen a 404 o 409. Así cada operación hace una o dos consultas a la base (medido sobre PGlite), por la latencia de Supabase.
+  - Las modificaciones y bajas de excepciones no usan `include`: con `include`, Prisma abre una transacción y suma idas a la base, así que la fecha se busca aparte.
+  - El alta de una excepción en una fecha nueva hace un upsert del día y después el alta, sin transacción: si el alta falla, la fecha queda en el calendario como día común, que no cambia el horario de ninguna sede.
+  - Una fecha del calendario general con excepciones en alguna sede no se puede borrar (409): primero hay que borrar sus excepciones.
+  - Las fechas se reciben y se devuelven como `YYYY-MM-DD` para evitar corrimientos por zona horaria.
+  - Todos los endpoints nuevos, incluidos los GET, son solo para el gerente, como pide la tarea. Las pantallas de socios siguen usando `GET /sedes/:id/horario-operativo` y la disponibilidad de canchas.
+- **Dificultades:**
+  - Al borrar una fecha referenciada, PostgreSQL responde con el código 23001 (la clave foránea es `ON DELETE RESTRICT`) y Prisma lo informa como error genérico P2039 en lugar de P2003; se contempló ese caso para responder 409.
+- **Verificación:** 2 suites y 33 pruebas aprobadas en el módulo de sedes (20 nuevas). En el resto del backend siguen fallando 3 pruebas de M2 (accesos y QR) que ya fallaban en `dev` y no se tocaron. Typecheck sin errores nuevos y ESLint sin errores en los archivos nuevos.
+- **Commits:**
+  - `feat(calendario): agregar CRUD del calendario general para el gerente`
+  - `feat(calendario): agregar CRUD de excepciones de calendario por sede`
+  - `feat(sedes): agregar CRUD de horarios semanales por sede`
+  - `test(calendario): agregar pruebas de integracion del CRUD de calendario y horarios`
+  - `docs(log): registrar CRUD de calendario y horarios`
 
 ---

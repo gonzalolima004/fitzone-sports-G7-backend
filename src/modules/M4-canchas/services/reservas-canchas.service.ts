@@ -11,6 +11,7 @@ import { PrecioContextService } from './precio-context.service';
 import { CrearReservaCanchaDto } from '../dto/crear-reserva-cancha.dto';
 import { CotizacionContext } from '../dto/cotizacion-turno.dto';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
+import { whereBeneficiosVigentes } from '../../M1-usuarios/utils/membresia-beneficios';
 import { SedeService } from '../../M0-sedes/services/sede.service';
 import { CanchasRealtimeService } from './canchas-realtime.service';
 import { CanchasService } from './canchas.service';
