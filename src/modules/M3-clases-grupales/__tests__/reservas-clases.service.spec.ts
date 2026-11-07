@@ -43,11 +43,32 @@ describe('ReservasClasesService', () => {
       actualizarEstadoReserva: jest.fn(),
       obtenerPrimerEnEspera: jest.fn(),
       obtenerReservasPorUsuario: jest.fn(),
+      obtenerEstadoPorDescripcion: jest.fn(),
+      obtenerIdEstadoPorDescripcion: jest
+        .fn()
+        .mockImplementation((desc: string) => {
+          const d = desc.toLowerCase();
+          if (d === 'confirmada') return Promise.resolve(1);
+          if (d === 'en espera') return Promise.resolve(2);
+          if (d === 'completada') return Promise.resolve(3);
+          if (d === 'cancelada') return Promise.resolve(4);
+          return Promise.resolve(1);
+        }),
     };
 
     mockListaEsperaRepo = {
       obtenerPrimerInscriptoActivo: jest.fn(),
       actualizarEstadoInscripcion: jest.fn(),
+      obtenerEstadoPorDescripcion: jest.fn(),
+      obtenerIdEstadoPorDescripcion: jest
+        .fn()
+        .mockImplementation((desc: string) => {
+          const d = desc.toLowerCase();
+          if (d === 'en espera') return Promise.resolve(1);
+          if (d === 'promovida') return Promise.resolve(2);
+          if (d === 'cancelada') return Promise.resolve(3);
+          return Promise.resolve(1);
+        }),
     };
 
     mockListaEsperaSubject = {

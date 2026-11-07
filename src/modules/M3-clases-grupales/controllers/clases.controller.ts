@@ -36,10 +36,10 @@ export class ClasesController {
 
   @Post()
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('admin', 'gerente')
+  @Roles('gerente')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Crear una nueva clase grupal (Solo admin y gerente)',
+    summary: 'Crear una nueva clase grupal (Solo gerente)',
   })
   @ApiResponse({
     status: 201,
@@ -52,7 +52,7 @@ export class ClasesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol admin o gerente.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   async crearClase(
     @Body() createClaseDto: CreateClaseDto,
@@ -116,11 +116,11 @@ export class ClasesController {
 
   @Patch(':id')
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('admin', 'gerente')
+  @Roles('gerente')
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Actualizar parcialmente datos o cupos de una clase (Solo admin y gerente)',
+      'Actualizar parcialmente datos o cupos de una clase (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -139,7 +139,7 @@ export class ClasesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol admin o gerente.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({ status: 404, description: 'Clase no encontrada.' })
   async actualizarClase(
@@ -151,11 +151,10 @@ export class ClasesController {
 
   @Put(':id')
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('admin', 'gerente')
+  @Roles('gerente')
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      'Reemplazar totalmente los datos de una clase (Solo admin y gerente)',
+    summary: 'Reemplazar totalmente los datos de una clase (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -174,7 +173,7 @@ export class ClasesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol admin o gerente.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({ status: 404, description: 'Clase no encontrada.' })
   async reemplazarClase(
@@ -186,11 +185,11 @@ export class ClasesController {
 
   @Delete(':id')
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('admin', 'gerente')
+  @Roles('gerente')
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Baja lógica de una clase grupal y cancelación preventiva de reservas futuras (Solo admin y gerente)',
+      'Baja lógica de una clase grupal y cancelación preventiva de reservas futuras (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -210,7 +209,7 @@ export class ClasesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol admin o gerente.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({ status: 404, description: 'Clase no encontrada.' })
   async eliminarClase(

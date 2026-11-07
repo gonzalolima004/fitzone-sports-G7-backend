@@ -59,6 +59,29 @@ async function catalogos() {
     });
   }
 
+  const estadosListaEspera = ['En espera', 'Promovida', 'Cancelada'];
+  for (const [i, descripcion] of estadosListaEspera.entries()) {
+    await prisma.claseListaEsperaEstado.upsert({
+      where: { id_clase_lista_espera_estado: i + 1 },
+      update: { descripcion },
+      create: { id_clase_lista_espera_estado: i + 1, descripcion },
+    });
+  }
+
+  const estadosClaseReserva = [
+    'Confirmada',
+    'En espera',
+    'Completada',
+    'Cancelada',
+  ];
+  for (const [i, descripcion] of estadosClaseReserva.entries()) {
+    await prisma.claseReservaEstado.upsert({
+      where: { id_clase_reserva_estado: i + 1 },
+      update: { descripcion },
+      create: { id_clase_reserva_estado: i + 1, descripcion },
+    });
+  }
+
   const planes = [
     {
       id_membresia_plan: 1,
