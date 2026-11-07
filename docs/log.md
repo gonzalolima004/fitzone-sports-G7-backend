@@ -1273,6 +1273,25 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 07/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Habilitación de descuento de socio para usuarios con membresías suspendidas cuyo ciclo abonado continúe vigente (con pago aprobado).
+  - Eliminación de IDs numéricos hardcodeados en M4 mediante resolución dinámica de estados en BD (`Pendiente de Pago` y `Confirmada`).
+  - Blindaje de endpoints administrativos y transaccionales en controladores de M4 mediante `@UseGuards(SupabaseAuthGuard, RolesGuard)` y RBAC.
+  - Saneamiento y limpieza de referencias y anotaciones de requisitos en controladores, DTOs y repositorios.
+- **Decisiones:** Ninguna
+- **Dificultades:** 
+  - Integrar compatibilidades con merges anteriores sobre beneficios de membresias desactivadas
+  - Asegurar la correcta asignación del estado inicial `Pendiente de Pago` antes del impacto del webhook de cobro.
+- **Commits:**
+  - `refactor(M4): integrar beneficios, normalizar estados, blindar con useguards y limpieza`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
 #### 26/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
