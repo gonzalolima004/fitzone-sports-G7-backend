@@ -25,6 +25,12 @@ import {
 } from '../dto/pago-detalle-response.dto';
 import { PagoPendienteResponseDto } from '../dto/pago-pendiente-response.dto';
 import { etiquetaPlan } from '../../M1-usuarios/utils/plan-duracion';
+import {
+  MEMBRESIA_ESTADO,
+  PAGO_ESTADO,
+  esEstado,
+} from '../constants/estados.constants';
+import { EstadosService } from './estados.service';
 
 @Injectable()
 export class PagosService {
@@ -35,6 +41,7 @@ export class PagosService {
     private readonly mercadopagoService: MercadoPagoService,
     private readonly pagosRepository: PagosRepository,
     private readonly generadorPdfService: GeneradorPdfService,
+    private readonly estadosService: EstadosService,
   ) {}
 
   /**
@@ -69,14 +76,15 @@ export class PagosService {
 
     // 2. Verificar existencia y resolver entidad asociada
     if (tieneCancha) {
-      const existe = await this.pagosRepository.existeCanchaReserva(
+      const reserva = await this.pagosRepository.obtenerCanchaReservaPorId(
         dto.id_cancha_reserva!,
       );
-      if (!existe) {
+      if (!reserva) {
         throw new NotFoundException(
           `La reserva de cancha #${dto.id_cancha_reserva} no existe.`,
         );
       }
+      this.asegurarPropiedad(reserva.id_usuario, userId);
       if (!montoTotal) {
         throw new BadRequestException(
           'El monto es requerido para reservas de cancha.',
@@ -115,7 +123,7 @@ export class PagosService {
       // Reutilizar intención de membresía 'Suspendida' sin pago aprobado si ya existía,
       // evitando acumular registros huérfanos cuando el usuario abre el checkout y no paga
       const intencionExistente =
-        await this.pagosRepository.obtenerMembresiaSuspendidaSinPagoAprobado?.(
+        await this.pagosRepository.obtenerMembresiaSuspendidaSinPagoAprobado(
           targetUserId,
         );
 
@@ -130,7 +138,7 @@ export class PagosService {
         idMembresiaParaPago = membresiaActualizada.id_membresia;
       } else {
         const idSuspendida =
-          await this.pagosRepository.obtenerEstadoMembresiaSuspendidaId();
+          await this.estadosService.getMembresiaSuspendidaId();
         const nuevaMembresia = await this.pagosRepository.crearMembresia({
           id_usuario: targetUserId,
           id_membresia_plan: plan.id_membresia_plan,
@@ -149,6 +157,7 @@ export class PagosService {
           `La membresía #${dto.id_membresia} no existe.`,
         );
       }
+      this.asegurarPropiedad(m.id_usuario, userId);
       idMembresiaParaPago = dto.id_membresia!;
       if (!montoTotal) {
         montoTotal = Math.round(Number(m.membresia_plan?.precio ?? 0));
@@ -156,7 +165,7 @@ export class PagosService {
     }
 
     // 3. Obtener el ID del estado 'Pendiente' en pago_estado
-    const idPagoEstado = await this.pagosRepository.obtenerEstadoPendienteId();
+    const idPagoEstado = await this.estadosService.getPagoPendienteId();
 
     // 4. Invocar el SDK oficial de Mercado Pago para crear la preferencia
     const itemId = tieneCancha
@@ -228,32 +237,31 @@ export class PagosService {
     // 5. Persistir o reutilizar la intención en la tabla `pago` con estado 'Pendiente'
     // RNF-02: Se almacena solo el ID en token_transaccion, sin datos sensibles de tarjeta.
     const pagoPendienteExistente = tieneCancha
-      ? await this.pagosRepository.obtenerUltimoPagoPendienteCancha?.(
+      ? await this.pagosRepository.obtenerUltimoPagoPendienteCancha(
           dto.id_cancha_reserva!,
         )
       : idMembresiaParaPago
-        ? await this.pagosRepository.obtenerUltimoPagoPendienteMembresia?.(
+        ? await this.pagosRepository.obtenerUltimoPagoPendienteMembresia(
             idMembresiaParaPago,
           )
         : null;
 
-    const nuevoPago =
-      pagoPendienteExistente && this.pagosRepository.actualizarPagoPendiente
-        ? await this.pagosRepository.actualizarPagoPendiente(
-            pagoPendienteExistente.id_pago,
-            {
-              monto: montoTotal,
-              token_transaccion: preference.id,
-            },
-          )
-        : await this.pagosRepository.crearPago({
-            id_pago_estado: idPagoEstado,
-            id_cancha_reserva: dto.id_cancha_reserva ?? null,
-            id_membresia: idMembresiaParaPago,
+    const nuevoPago = pagoPendienteExistente
+      ? await this.pagosRepository.actualizarPagoPendiente(
+          pagoPendienteExistente.id_pago,
+          {
             monto: montoTotal,
             token_transaccion: preference.id,
-            comprobante_url: null,
-          });
+          },
+        )
+      : await this.pagosRepository.crearPago({
+          id_pago_estado: idPagoEstado,
+          id_cancha_reserva: dto.id_cancha_reserva ?? null,
+          id_membresia: idMembresiaParaPago,
+          monto: montoTotal,
+          token_transaccion: preference.id,
+          comprobante_url: null,
+        });
 
     this.logger.log(
       `Intención de pago #${nuevoPago.id_pago} registrada exitosamente (Preferencia: ${preference.id}).`,
@@ -266,6 +274,21 @@ export class PagosService {
       sandboxInitPoint: preference.sandbox_init_point || '',
       id_pago: nuevoPago.id_pago,
     };
+  }
+
+  /**
+   * Lanza 403 si el recurso no pertenece al usuario autenticado.
+   * Si no hay usuario (flujo sin sesión) no se aplica la validación.
+   */
+  private asegurarPropiedad(
+    id_usuario_recurso: number | null | undefined,
+    id_usuario?: number,
+  ): void {
+    if (id_usuario !== undefined && id_usuario_recurso !== id_usuario) {
+      throw new ForbiddenException(
+        'No tienes permisos para operar sobre este recurso.',
+      );
+    }
   }
 
   /**
@@ -359,8 +382,7 @@ export class PagosService {
     }
 
     // 3. Control de Idempotencia: Si ya está Aprobado, omitir re-procesamiento
-    const estadoActual = pago.pago_estado?.descripcion?.toLowerCase();
-    if (estadoActual === 'aprobado') {
+    if (esEstado(pago.pago_estado, PAGO_ESTADO.APROBADO)) {
       this.logger.log(
         `Idempotencia garantizada: El pago local #${pago.id_pago} ya figura como 'Aprobado'. Notificación omitida sin errores.`,
       );
@@ -375,12 +397,13 @@ export class PagosService {
     const mpStatus = payment.status?.toLowerCase();
 
     if (mpStatus === 'approved') {
-      const idEstadoAprobado =
-        await this.pagosRepository.obtenerEstadoAprobadoId();
+      const idEstadoAprobado = await this.estadosService.getPagoAprobadoId();
       const idEstadoReservaConfirmada =
-        await this.pagosRepository.obtenerEstadoReservaConfirmadaId();
+        await this.estadosService.getReservaConfirmadaId();
       const idEstadoMembresiaActiva =
-        await this.pagosRepository.obtenerEstadoMembresiaActivaId();
+        await this.estadosService.getMembresiaActivaId();
+      const idEstadoMembresiaSuspendida =
+        await this.estadosService.getMembresiaSuspendidaId();
 
       const pagoConfirmado =
         await this.pagosRepository.confirmarPagoTransaccional({
@@ -392,6 +415,7 @@ export class PagosService {
           id_cancha_reserva_estado: idEstadoReservaConfirmada,
           id_membresia: pago.id_membresia,
           id_membresia_estado: idEstadoMembresiaActiva,
+          id_membresia_estado_suspendida: idEstadoMembresiaSuspendida,
         });
 
       this.logger.log(
@@ -406,8 +430,7 @@ export class PagosService {
     }
 
     if (mpStatus === 'rejected' || mpStatus === 'cancelled') {
-      const idEstadoRechazado =
-        await this.pagosRepository.obtenerEstadoRechazadoId();
+      const idEstadoRechazado = await this.estadosService.getPagoRechazadoId();
       await this.pagosRepository.marcarPagoRechazado(
         pago.id_pago,
         idEstadoRechazado,
@@ -442,12 +465,21 @@ export class PagosService {
    */
   async obtenerDatosComprobante(
     id_pago: number,
+    id_usuario: number,
   ): Promise<ComprobanteResponseDto> {
     const pago =
       await this.pagosRepository.obtenerPagoCompletoParaComprobante(id_pago);
 
     if (!pago) {
       throw new NotFoundException(`El pago #${id_pago} no fue encontrado.`);
+    }
+
+    const usuarioPago =
+      pago.cancha_reserva?.id_usuario ?? pago.membresia?.id_usuario;
+    if (usuarioPago !== id_usuario) {
+      throw new ForbiddenException(
+        'No tienes permisos para consultar este comprobante o pago.',
+      );
     }
 
     // Actualizar comprobante_url en BD si estaba nulo o desactualizado
@@ -560,8 +592,11 @@ export class PagosService {
   /**
    * Genera el buffer binario del comprobante PDF en memoria para descarga o visualización inline.
    */
-  async generarComprobantePdf(id_pago: number): Promise<Buffer> {
-    const datos = await this.obtenerDatosComprobante(id_pago);
+  async generarComprobantePdf(
+    id_pago: number,
+    id_usuario: number,
+  ): Promise<Buffer> {
+    const datos = await this.obtenerDatosComprobante(id_pago, id_usuario);
     return this.generadorPdfService.generarComprobante(datos);
   }
 
@@ -752,24 +787,22 @@ export class PagosService {
    */
   async obtenerDetallePago(
     id_pago: number,
-    id_usuario?: number,
+    id_usuario: number,
   ): Promise<PagoDetalleResponseDto> {
     let pago = await this.pagosRepository.obtenerDetallePorId(id_pago);
     if (!pago) {
       throw new NotFoundException(`El pago #${id_pago} no existe.`);
     }
 
-    if (id_usuario) {
-      const usuarioPago =
-        pago.cancha_reserva?.id_usuario ?? pago.membresia?.id_usuario;
-      if (usuarioPago !== undefined && usuarioPago !== id_usuario) {
-        throw new ForbiddenException(
-          'No tienes permisos para consultar este comprobante o pago.',
-        );
-      }
+    const usuarioPago =
+      pago.cancha_reserva?.id_usuario ?? pago.membresia?.id_usuario;
+    if (usuarioPago !== id_usuario) {
+      throw new ForbiddenException(
+        'No tienes permisos para consultar este comprobante o pago.',
+      );
     }
 
-    if (pago.pago_estado?.descripcion?.toLowerCase() === 'pendiente') {
+    if (esEstado(pago.pago_estado, PAGO_ESTADO.PENDIENTE)) {
       const reconciliado =
         await this.sincronizarPagoPendientePorReferencia(pago);
       if (reconciliado) {
@@ -800,12 +833,16 @@ export class PagosService {
 
     // Una membresía suspendida por el socio conserva beneficios hasta su
     // fecha_fin y nunca genera un pago pendiente.
-    const suspendida =
-      membresia?.membresia_estado?.descripcion?.toLowerCase() === 'suspendida';
+    const suspendida = esEstado(
+      membresia?.membresia_estado,
+      MEMBRESIA_ESTADO.SUSPENDIDA,
+    );
 
     if (membresia && !suspendida) {
-      const estadoActiva =
-        membresia.membresia_estado?.descripcion?.toLowerCase() === 'activa';
+      const estadoActiva = esEstado(
+        membresia.membresia_estado,
+        MEMBRESIA_ESTADO.ACTIVA,
+      );
       const vencida = new Date(membresia.fecha_fin) < new Date();
 
       // La aprobación de un pago siempre deja la membresía 'Activa', por lo que
