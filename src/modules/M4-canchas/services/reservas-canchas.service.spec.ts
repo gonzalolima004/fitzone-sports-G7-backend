@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ReservasCanchasService } from './reservas-canchas.service';
 import { ReservasCanchasRepository } from '../repositories/reservas-canchas.repository';
 import { CanchasRepository } from '../repositories/canchas.repository';
@@ -179,6 +183,89 @@ describe('ReservasCanchasService', () => {
         5,
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(canchasRealtime.notificarTurnoReservado).not.toHaveBeenCalled();
+  });
+
+  it('debe lanzar BadRequestException si el turno no comienza en punto (minutos !== 00)', async () => {
+    await expect(
+      service.crearReserva(
+        {
+          id_cancha: 1,
+          fecha_inicio: '2026-11-20T18:15:00.000Z',
+          fecha_fin: '2026-11-20T19:15:00.000Z',
+        },
+        5,
+      ),
+    ).rejects.toThrow(
+      new BadRequestException(
+        'Los turnos deben comenzar en punto (ej: 16:00, 17:00).',
+      ),
+    );
+
+    expect(canchasRealtime.notificarTurnoReservado).not.toHaveBeenCalled();
+  });
+
+  it('debe lanzar BadRequestException si el turno cruza la medianoche o abarca días operativos distintos', async () => {
+    await expect(
+      service.crearReserva(
+        {
+          id_cancha: 1,
+          fecha_inicio: '2026-11-20T23:00:00.000Z',
+          fecha_fin: '2026-11-21T00:00:00.000Z',
+        },
+        5,
+      ),
+    ).rejects.toThrow(
+      new BadRequestException(
+        'El turno debe comenzar y terminar en el mismo día operativo.',
+      ),
+    );
+
+    expect(canchasRealtime.notificarTurnoReservado).not.toHaveBeenCalled();
+  });
+
+  it('debe lanzar BadRequestException si la sede se encuentra cerrada por feriado o calendario', async () => {
+    (sedeService.getHorarioOperativo as jest.Mock).mockResolvedValue({
+      abierto: false,
+      hora_apertura: '00:00',
+      hora_cierre: '00:00',
+      motivo_cierre: 'Sede cerrada por feriado nacional',
+    });
+
+    await expect(
+      service.crearReserva(
+        {
+          id_cancha: 1,
+          fecha_inicio: '2026-11-20T18:00:00.000Z',
+          fecha_fin: '2026-11-20T19:00:00.000Z',
+        },
+        5,
+      ),
+    ).rejects.toThrow(
+      new BadRequestException('Sede cerrada por feriado nacional'),
+    );
+
+    expect(canchasRealtime.notificarTurnoReservado).not.toHaveBeenCalled();
+  });
+
+  it('debe propagar ConflictException (409) cuando el repositorio detecta colisión o solapamiento horario (RN-02)', async () => {
+    (reservasRepo.crearReservaTransaccional as jest.Mock).mockRejectedValue(
+      new ConflictException(
+        'La cancha acaba de ser reservada en este horario por otro usuario.',
+      ),
+    );
+
+    await expect(
+      service.crearReserva(
+        {
+          id_cancha: 1,
+          fecha_inicio: '2026-11-20T18:00:00.000Z',
+          fecha_fin: '2026-11-20T19:00:00.000Z',
+        },
+        5,
+      ),
+    ).rejects.toThrow(ConflictException);
 
     expect(canchasRealtime.notificarTurnoReservado).not.toHaveBeenCalled();
   });
