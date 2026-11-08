@@ -171,6 +171,52 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
       expect(agenda[0].estado).toBe('DISPONIBLE');
     });
 
+    it('debe calcular DISPONIBLE con todos los cupos libres en clase completamente vacía', async () => {
+      (mockClasesRepo.obtenerClasesPorSede as jest.Mock).mockResolvedValue([
+        mockClase, // capacidad: 20
+      ]);
+      (
+        mockReservasRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(0); // 0 ocupados
+      (
+        mockListaEsperaRepo.contarInscriptosActivos as jest.Mock
+      ).mockResolvedValue(0);
+
+      const agenda = (await service.obtenerClasesPorSede(
+        1,
+        '2026-10-12',
+      )) as ClaseAgendaResponseDto[];
+
+      expect(agenda).toHaveLength(1);
+      expect(agenda[0].cupos_ocupados).toBe(0);
+      expect(agenda[0].cupos_disponibles).toBe(20);
+      expect(agenda[0].en_espera).toBe(0);
+      expect(agenda[0].estado).toBe('DISPONIBLE');
+    });
+
+    it('debe calcular DISPONIBLE con 1 cupo disponible en clase casi llena', async () => {
+      (mockClasesRepo.obtenerClasesPorSede as jest.Mock).mockResolvedValue([
+        mockClase, // capacidad: 20
+      ]);
+      (
+        mockReservasRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(19); // 19 ocupados
+      (
+        mockListaEsperaRepo.contarInscriptosActivos as jest.Mock
+      ).mockResolvedValue(0);
+
+      const agenda = (await service.obtenerClasesPorSede(
+        1,
+        '2026-10-12',
+      )) as ClaseAgendaResponseDto[];
+
+      expect(agenda).toHaveLength(1);
+      expect(agenda[0].cupos_ocupados).toBe(19);
+      expect(agenda[0].cupos_disponibles).toBe(1);
+      expect(agenda[0].en_espera).toBe(0);
+      expect(agenda[0].estado).toBe('DISPONIBLE');
+    });
+
     it('debe calcular COMPLETO cuando los cupos ocupados alcanzan la capacidad máxima', async () => {
       (mockClasesRepo.obtenerClasesPorSede as jest.Mock).mockResolvedValue([
         mockClase,
