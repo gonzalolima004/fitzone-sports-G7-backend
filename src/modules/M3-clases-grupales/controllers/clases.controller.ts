@@ -81,6 +81,14 @@ export class ClasesController {
     description: 'Fecha en formato YYYY-MM-DD para calcular ocupación y agenda',
     example: '2026-10-12',
   })
+  @ApiQuery({
+    name: 'incluir_inactivas',
+    required: false,
+    type: Boolean,
+    description:
+      'Permite al gerente visualizar también clases dadas de baja lógica o inactivas',
+    example: false,
+  })
   @ApiResponse({
     status: 200,
     description:
@@ -90,7 +98,17 @@ export class ClasesController {
   async obtenerClasesPorSede(
     @Query('id_sede', ParseIntPipe) id_sede: number,
     @Query('fecha') fecha?: string,
+    @Query('incluir_inactivas') incluir_inactivas?: string,
   ): Promise<ClaseResponseDto[] | ClaseAgendaResponseDto[]> {
+    if (incluir_inactivas !== undefined) {
+      const incluirInactivasBool =
+        incluir_inactivas === 'true' || incluir_inactivas === '1';
+      return await this.clasesService.obtenerClasesPorSede(
+        id_sede,
+        fecha,
+        incluirInactivasBool,
+      );
+    }
     return await this.clasesService.obtenerClasesPorSede(id_sede, fecha);
   }
 

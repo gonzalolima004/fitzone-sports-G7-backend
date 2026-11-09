@@ -20,11 +20,11 @@ export class ClasesRepository {
     });
   }
 
-  async obtenerClasesPorSede(id_sede: number) {
+  async obtenerClasesPorSede(id_sede: number, incluirInactivas = false) {
     return await this.prisma.clase.findMany({
       where: {
         id_sede,
-        activo: true,
+        ...(incluirInactivas ? {} : { activo: true }),
       },
     });
   }

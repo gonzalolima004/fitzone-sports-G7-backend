@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { ClasesRepository } from '../repositories/clases.repository';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
+import { ClasesRealtimeService } from './clases-realtime.service';
 import { CreateClaseDto } from '../dto/create-clase.dto';
 import { UpdateClaseDto } from '../dto/update-clase.dto';
 import { ClaseResponseDto } from '../dto/clase-response.dto';
@@ -22,6 +28,7 @@ export class ClasesService {
     private readonly clasesRepository: ClasesRepository,
     private readonly reservasRepository: ReservasClasesRepository,
     private readonly listaEsperaRepository: ListaEsperaRepository,
+    @Optional() private readonly clasesRealtime?: ClasesRealtimeService,
   ) {}
 
   private formatearClaseResponse(
@@ -73,6 +80,31 @@ export class ClasesService {
   }
 
   async crearClase(createClaseDto: CreateClaseDto): Promise<ClaseResponseDto> {
+    await Promise.resolve();
+
+    // 1. Validación de horarios: fin debe ser estrictamente posterior al inicio si ambos están definidos
+    if (createClaseDto.horario_inicio && createClaseDto.horario_fin) {
+      const hInicio = normalizarHorarioHHmm(createClaseDto.horario_inicio);
+      const hFin = normalizarHorarioHHmm(createClaseDto.horario_fin);
+      if (hFin <= hInicio) {
+        throw new BadRequestException(
+          'El horario de fin debe ser posterior al horario de inicio.',
+        );
+      }
+    }
+
+    // 2. Validación de existencia de la sede
+    if (this.prisma?.sede?.findUnique && createClaseDto.id_sede) {
+      const sede = await this.prisma.sede.findUnique({
+        where: { id_sede: createClaseDto.id_sede },
+      });
+      if (!sede) {
+        throw new NotFoundException(
+          `La sede con ID ${createClaseDto.id_sede} no existe.`,
+        );
+      }
+    }
+
     const nuevaClase = await this.clasesRepository.crearClase(createClaseDto);
     return this.formatearClaseResponse(nuevaClase);
   }
@@ -80,8 +112,12 @@ export class ClasesService {
   async obtenerClasesPorSede(
     id_sede: number,
     fecha?: string,
+    incluirInactivas = false,
   ): Promise<ClaseResponseDto[] | ClaseAgendaResponseDto[]> {
-    const clases = await this.clasesRepository.obtenerClasesPorSede(id_sede);
+    const clases = await this.clasesRepository.obtenerClasesPorSede(
+      id_sede,
+      incluirInactivas,
+    );
 
     if (!fecha) {
       return clases.map((clase) => this.formatearClaseResponse(clase));
@@ -170,7 +206,33 @@ export class ClasesService {
     updateClaseDto: UpdateClaseDto,
   ): Promise<ClaseResponseDto> {
     // Verificamos que la clase exista antes de intentar actualizarla
-    await this.obtenerClasePorId(id_clase);
+    const claseExistente = await this.obtenerClasePorId(id_clase);
+
+    const nuevoHorarioInicio =
+      updateClaseDto.horario_inicio ?? claseExistente.horario_inicio;
+    const nuevoHorarioFin =
+      updateClaseDto.horario_fin ?? claseExistente.horario_fin;
+
+    if (nuevoHorarioInicio && nuevoHorarioFin) {
+      const hInicio = normalizarHorarioHHmm(nuevoHorarioInicio);
+      const hFin = normalizarHorarioHHmm(nuevoHorarioFin);
+      if (hFin <= hInicio) {
+        throw new BadRequestException(
+          'El horario de fin debe ser posterior al horario de inicio.',
+        );
+      }
+    }
+
+    if (this.prisma?.sede?.findUnique && updateClaseDto.id_sede) {
+      const sede = await this.prisma.sede.findUnique({
+        where: { id_sede: updateClaseDto.id_sede },
+      });
+      if (!sede) {
+        throw new NotFoundException(
+          `La sede con ID ${updateClaseDto.id_sede} no existe.`,
+        );
+      }
+    }
 
     const claseActualizada = await this.clasesRepository.actualizarClase(
       id_clase,
@@ -186,6 +248,27 @@ export class ClasesService {
   ): Promise<ClaseResponseDto> {
     // Verificamos que la clase exista antes de intentar reemplazarla
     await this.obtenerClasePorId(id_clase);
+
+    if (createClaseDto.horario_inicio && createClaseDto.horario_fin) {
+      const hInicio = normalizarHorarioHHmm(createClaseDto.horario_inicio);
+      const hFin = normalizarHorarioHHmm(createClaseDto.horario_fin);
+      if (hFin <= hInicio) {
+        throw new BadRequestException(
+          'El horario de fin debe ser posterior al horario de inicio.',
+        );
+      }
+    }
+
+    if (this.prisma?.sede?.findUnique && createClaseDto.id_sede) {
+      const sede = await this.prisma.sede.findUnique({
+        where: { id_sede: createClaseDto.id_sede },
+      });
+      if (!sede) {
+        throw new NotFoundException(
+          `La sede con ID ${createClaseDto.id_sede} no existe.`,
+        );
+      }
+    }
 
     const claseReemplazada = await this.clasesRepository.reemplazarClase(
       id_clase,
