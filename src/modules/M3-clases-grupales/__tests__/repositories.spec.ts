@@ -156,6 +156,46 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
       expect(res.nombre).toBe('Yoga Pro');
     });
 
+    it('actualizarClase debe sanitizar descripcion vacía a null', async () => {
+      const updateData: UpdateClaseDto = { descripcion: '   ' };
+      mockPrisma.clase.update.mockResolvedValue({
+        id_clase: 5,
+        descripcion: null,
+      });
+
+      await repo.actualizarClase(5, updateData);
+
+      expect(mockPrisma.clase.update).toHaveBeenCalledWith({
+        where: { id_clase: 5 },
+        data: { descripcion: null },
+      });
+    });
+
+    it('crearClase debe sanitizar descripcion vacía a null', async () => {
+      const createData: CreateClaseDto = {
+        id_sede: 1,
+        nombre: 'Pilates',
+        capacidad_maxima: 10,
+        descripcion: '',
+      };
+      mockPrisma.clase.create.mockResolvedValue({
+        id_clase: 11,
+        ...createData,
+        descripcion: null,
+      });
+
+      await repo.crearClase(createData);
+
+      expect(mockPrisma.clase.create).toHaveBeenCalledWith({
+        data: {
+          id_sede: 1,
+          nombre: 'Pilates',
+          capacidad_maxima: 10,
+          descripcion: null,
+        },
+      });
+    });
+
     it('reemplazarClase debe llamar prisma.clase.update', async () => {
       const replaceData: CreateClaseDto = {
         id_sede: 1,
