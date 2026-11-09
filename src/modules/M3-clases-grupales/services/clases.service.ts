@@ -79,6 +79,104 @@ export class ClasesService {
     };
   }
 
+  private async validarHorarioOperativoSede(
+    id_sede: number,
+    horarioInicioStr: string,
+    horarioFinStr: string,
+    diasSemana?: number[],
+    fechaStr?: string | null,
+  ): Promise<void> {
+    const hInicio = normalizarHorarioHHmm(horarioInicioStr);
+    const hFin = normalizarHorarioHHmm(horarioFinStr);
+
+    const diasAValidar = new Set<number>();
+    if (Array.isArray(diasSemana) && diasSemana.length > 0) {
+      diasSemana.forEach((d) => diasAValidar.add(d));
+    }
+
+    if (fechaStr && /^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) {
+      const [year, month, day] = fechaStr.split('-').map(Number);
+      const fechaUtc = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+      diasAValidar.add(fechaUtc.getUTCDay());
+    }
+
+    let horariosSede: Array<{
+      dia_semana: number;
+      hora_apertura: string;
+      hora_cierre: string;
+      abierto: boolean;
+    }> = [];
+
+    if (this.prisma?.sede_horario?.findMany && id_sede) {
+      horariosSede = await this.prisma.sede_horario.findMany({
+        where: { id_sede },
+      });
+    }
+
+    const mapaHorarios = new Map<
+      number,
+      { hora_apertura: string; hora_cierre: string; abierto: boolean }
+    >();
+    for (const h of horariosSede) {
+      mapaHorarios.set(h.dia_semana, h);
+    }
+
+    const nombresDias: Record<number, string> = {
+      0: 'Domingo',
+      1: 'Lunes',
+      2: 'Martes',
+      3: 'Miércoles',
+      4: 'Jueves',
+      5: 'Viernes',
+      6: 'Sábado',
+    };
+
+    const diasIterar =
+      diasAValidar.size > 0 ? Array.from(diasAValidar) : [null];
+
+    for (const dia of diasIterar) {
+      if (dia !== null) {
+        const configDia = mapaHorarios.get(dia);
+        const nombreDia = nombresDias[dia] ?? `Día ${dia}`;
+
+        if (configDia) {
+          if (!configDia.abierto) {
+            throw new BadRequestException(
+              `La sede se encuentra cerrada los días ${nombreDia}.`,
+            );
+          }
+
+          const horaApertura = normalizarHorarioHHmm(configDia.hora_apertura);
+          const horaCierre = normalizarHorarioHHmm(configDia.hora_cierre);
+
+          if (hInicio < horaApertura || hFin > horaCierre) {
+            throw new BadRequestException(
+              `El horario de la clase (${hInicio} a ${hFin}) está fuera del horario operativo de la sede para el día ${nombreDia} (${horaApertura} a ${horaCierre} hs).`,
+            );
+          }
+        } else {
+          // Fallback estándar 08:00 - 22:00
+          const horaApertura = '08:00';
+          const horaCierre = '22:00';
+          if (hInicio < horaApertura || hFin > horaCierre) {
+            throw new BadRequestException(
+              `El horario de la clase (${hInicio} a ${hFin}) está fuera del horario operativo de la sede para el día ${nombreDia} (${horaApertura} a ${horaCierre} hs).`,
+            );
+          }
+        }
+      } else {
+        // Fallback general sin días especificados
+        const horaApertura = '08:00';
+        const horaCierre = '22:00';
+        if (hInicio < horaApertura || hFin > horaCierre) {
+          throw new BadRequestException(
+            `El horario de la clase (${hInicio} a ${hFin}) está fuera del horario operativo estándar de la sede (${horaApertura} a ${horaCierre} hs).`,
+          );
+        }
+      }
+    }
+  }
+
   async crearClase(createClaseDto: CreateClaseDto): Promise<ClaseResponseDto> {
     await Promise.resolve();
 
@@ -103,6 +201,17 @@ export class ClasesService {
           `La sede con ID ${createClaseDto.id_sede} no existe.`,
         );
       }
+    }
+
+    // 3. Validación de horario operativo de apertura/cierre de la sede
+    if (createClaseDto.horario_inicio && createClaseDto.horario_fin) {
+      await this.validarHorarioOperativoSede(
+        createClaseDto.id_sede,
+        createClaseDto.horario_inicio,
+        createClaseDto.horario_fin,
+        createClaseDto.dias_semana,
+        createClaseDto.fecha,
+      );
     }
 
     const nuevaClase = await this.clasesRepository.crearClase(createClaseDto);
@@ -208,10 +317,17 @@ export class ClasesService {
     // Verificamos que la clase exista antes de intentar actualizarla
     const claseExistente = await this.obtenerClasePorId(id_clase);
 
+    const idSedeEfectivo = updateClaseDto.id_sede ?? claseExistente.id_sede;
     const nuevoHorarioInicio =
       updateClaseDto.horario_inicio ?? claseExistente.horario_inicio;
     const nuevoHorarioFin =
       updateClaseDto.horario_fin ?? claseExistente.horario_fin;
+    const diasSemanaEfectivos =
+      updateClaseDto.dias_semana ?? claseExistente.dias_semana;
+    const fechaEfectiva =
+      updateClaseDto.fecha !== undefined
+        ? updateClaseDto.fecha
+        : (claseExistente.fecha ?? undefined);
 
     if (nuevoHorarioInicio && nuevoHorarioFin) {
       const hInicio = normalizarHorarioHHmm(nuevoHorarioInicio);
@@ -232,6 +348,16 @@ export class ClasesService {
           `La sede con ID ${updateClaseDto.id_sede} no existe.`,
         );
       }
+    }
+
+    if (nuevoHorarioInicio && nuevoHorarioFin) {
+      await this.validarHorarioOperativoSede(
+        idSedeEfectivo,
+        nuevoHorarioInicio,
+        nuevoHorarioFin,
+        diasSemanaEfectivos,
+        fechaEfectiva,
+      );
     }
 
     const claseActualizada = await this.clasesRepository.actualizarClase(
@@ -268,6 +394,16 @@ export class ClasesService {
           `La sede con ID ${createClaseDto.id_sede} no existe.`,
         );
       }
+    }
+
+    if (createClaseDto.horario_inicio && createClaseDto.horario_fin) {
+      await this.validarHorarioOperativoSede(
+        createClaseDto.id_sede,
+        createClaseDto.horario_inicio,
+        createClaseDto.horario_fin,
+        createClaseDto.dias_semana,
+        createClaseDto.fecha,
+      );
     }
 
     const claseReemplazada = await this.clasesRepository.reemplazarClase(

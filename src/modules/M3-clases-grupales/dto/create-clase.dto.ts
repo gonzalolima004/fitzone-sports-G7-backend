@@ -51,10 +51,17 @@ export class CreateClaseDto {
       'Clase de spinning de alta intensidad combinada con ejercicios funcionales.',
     maxLength: 255,
   })
+  @Transform(({ value }: { value: unknown }): string | null | undefined => {
+    if (value === undefined) return undefined;
+    if (value === null || (typeof value === 'string' && value.trim() === '')) {
+      return null;
+    }
+    return typeof value === 'string' ? value.trim() : (value as string);
+  })
   @IsString()
   @IsOptional()
   @MaxLength(255)
-  descripcion?: string;
+  descripcion?: string | null;
 
   @ApiPropertyOptional({
     description: 'Nombre del profesor o instructor a cargo',
