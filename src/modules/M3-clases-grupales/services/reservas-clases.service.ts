@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   ConflictException,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import {
@@ -16,6 +17,7 @@ import {
 } from '../repositories/lista-espera.repository';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 import { ListaEsperaSubject } from '../patterns/observer/lista-espera.subject';
+import { ClasesRealtimeService } from './clases-realtime.service';
 import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
 import { Subject } from 'rxjs';
 import {
@@ -37,6 +39,7 @@ export class ReservasClasesService {
     private readonly reservasRepository: ReservasClasesRepository,
     private readonly listaEsperaSubject: ListaEsperaSubject,
     private readonly listaEsperaRepository: ListaEsperaRepository,
+    @Optional() private readonly clasesRealtime?: ClasesRealtimeService,
   ) {}
 
   async crearReserva(data: CrearReservaClaseDto, id_usuario: number) {
@@ -113,7 +116,7 @@ export class ReservasClasesService {
     }
 
     // 4. Validación atómica de cupo e inserción con control de concurrencia
-    return await this.prisma.$transaction(async (tx) => {
+    const resultadoTx = await this.prisma.$transaction(async (tx) => {
       // 4.1. Bloqueo pesimista (FOR UPDATE) para serializar reservas concurrentes y evitar race conditions
       await tx.$executeRaw`SELECT id_clase FROM clase WHERE id_clase = ${data.id_clase} FOR UPDATE`;
 
@@ -179,20 +182,58 @@ export class ReservasClasesService {
       }
 
       // 4.4. Crear reserva
-      return await this.reservasRepository.crearReserva(
+      const nuevaReserva = await this.reservasRepository.crearReserva(
         data,
         id_usuario,
         idEstadoConfirmadaTx,
         tx,
       );
+
+      return {
+        nuevaReserva,
+        id_sede: clase.id_sede,
+        capacidad_maxima: clase.capacidad_maxima,
+        fechaInicio,
+        fechaFin,
+        reservasConfirmadas: reservasConfirmadas + 1,
+      };
     });
+
+    if (this.clasesRealtime) {
+      const enEspera = await this.listaEsperaRepository.contarInscriptosActivos(
+        data.id_clase,
+        resultadoTx.fechaInicio,
+        resultadoTx.fechaFin,
+      );
+      const cuposDisponibles = Math.max(
+        0,
+        resultadoTx.capacidad_maxima - resultadoTx.reservasConfirmadas,
+      );
+      const estado: 'DISPONIBLE' | 'COMPLETO' =
+        cuposDisponibles > 0 ? 'DISPONIBLE' : 'COMPLETO';
+
+      void this.clasesRealtime.notificarCupoActualizado({
+        id_clase: data.id_clase,
+        id_sede: resultadoTx.id_sede,
+        fecha: resultadoTx.fechaInicio.toISOString().slice(0, 10),
+        fecha_inicio: resultadoTx.fechaInicio.toISOString(),
+        fecha_fin: resultadoTx.fechaFin.toISOString(),
+        cupos_ocupados: resultadoTx.reservasConfirmadas,
+        cupos_disponibles: cuposDisponibles,
+        capacidad_maxima: resultadoTx.capacidad_maxima,
+        en_espera: enEspera,
+        estado,
+      });
+    }
+
+    return resultadoTx.nuevaReserva;
   }
 
   async cancelarReserva(
     id_clase_reserva: number,
     id_usuario: number,
   ): Promise<CancelarReservaResponseDto> {
-    return await this.prisma.$transaction(async (tx) => {
+    const resultadoCancelacion = await this.prisma.$transaction(async (tx) => {
       // 1. Obtener la reserva original
       const reserva = await tx.claseReserva.findUnique({
         where: { id_clase_reserva },
@@ -329,8 +370,75 @@ export class ReservasClasesService {
           : 'Reserva cancelada exitosamente sin penalidad.',
         reserva: reservaCancelada,
         cupo_reasignado: idUsuarioPromovido !== null,
+        id_clase: reserva.id_clase,
+        fechaInicio,
+        fechaFin,
       };
     });
+
+    // 5. Notificaciones en tiempo real fuera de la transacción
+    if (this.clasesRealtime) {
+      const claseInfo = this.prisma?.clase?.findUnique
+        ? await this.prisma.clase.findUnique({
+            where: { id_clase: resultadoCancelacion.id_clase },
+          })
+        : null;
+
+      const reservasConfirmadas =
+        await this.reservasRepository.contarReservasConfirmadas(
+          resultadoCancelacion.id_clase,
+          resultadoCancelacion.fechaInicio,
+          resultadoCancelacion.fechaFin,
+        );
+
+      const enEspera = await this.listaEsperaRepository.contarInscriptosActivos(
+        resultadoCancelacion.id_clase,
+        resultadoCancelacion.fechaInicio,
+        resultadoCancelacion.fechaFin,
+      );
+
+      const capacidadMaxima = claseInfo?.capacidad_maxima ?? 20;
+      const cuposDisponibles = Math.max(
+        0,
+        capacidadMaxima - reservasConfirmadas,
+      );
+      const estado: 'DISPONIBLE' | 'COMPLETO' =
+        cuposDisponibles > 0 ? 'DISPONIBLE' : 'COMPLETO';
+
+      if (claseInfo) {
+        void this.clasesRealtime.notificarCupoActualizado({
+          id_clase: resultadoCancelacion.id_clase,
+          id_sede: claseInfo.id_sede,
+          fecha: resultadoCancelacion.fechaInicio.toISOString().slice(0, 10),
+          fecha_inicio: resultadoCancelacion.fechaInicio.toISOString(),
+          fecha_fin: resultadoCancelacion.fechaFin.toISOString(),
+          cupos_ocupados: reservasConfirmadas,
+          cupos_disponibles: cuposDisponibles,
+          capacidad_maxima: capacidadMaxima,
+          en_espera: enEspera,
+          estado,
+        });
+      }
+
+      // Si no se reasignó cupo a nadie en espera, se liberó una vacante abierta
+      if (!resultadoCancelacion.cupo_reasignado) {
+        void this.clasesRealtime.notificarVacanteLiberada({
+          id_clase: resultadoCancelacion.id_clase,
+          id_sede: claseInfo?.id_sede,
+          nombre_clase: claseInfo?.nombre,
+          fecha_inicio: resultadoCancelacion.fechaInicio,
+          fecha_fin: resultadoCancelacion.fechaFin,
+          mensaje: `¡Se ha liberado un cupo en ${claseInfo?.nombre ?? 'la clase'}!`,
+        });
+      }
+    }
+
+    return {
+      penalidadAplicada: resultadoCancelacion.penalidadAplicada,
+      mensaje: resultadoCancelacion.mensaje,
+      reserva: resultadoCancelacion.reserva,
+      cupo_reasignado: resultadoCancelacion.cupo_reasignado,
+    };
   }
 
   async obtenerMisReservas(id_usuario: number, fecha?: string) {
