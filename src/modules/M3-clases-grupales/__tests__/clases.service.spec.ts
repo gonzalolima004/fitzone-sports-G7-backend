@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ClasesService } from '../services/clases.service';
 import { ClasesRepository } from '../repositories/clases.repository';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
@@ -93,6 +93,44 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
       );
     });
+
+    it('debe lanzar BadRequestException si horario_fin es menor o igual a horario_inicio', async () => {
+      const dto: CreateClaseDto = {
+        id_sede: 1,
+        nombre: 'Horario Inválido',
+        capacidad_maxima: 10,
+        horario_inicio: '18:00',
+        horario_fin: '17:00',
+      };
+
+      await expect(service.crearClase(dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('debe lanzar NotFoundException si la sede especificada no existe', async () => {
+      const mockPrismaConSede = {
+        sede: {
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+      };
+      const serviceConSede = new ClasesService(
+        mockPrismaConSede as unknown as PrismaService,
+        mockClasesRepo as ClasesRepository,
+        mockReservasRepo as ReservasClasesRepository,
+        mockListaEsperaRepo as ListaEsperaRepository,
+      );
+
+      const dto: CreateClaseDto = {
+        id_sede: 999,
+        nombre: 'Clase en Sede Inexistente',
+        capacidad_maxima: 10,
+      };
+
+      await expect(serviceConSede.crearClase(dto)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
   describe('obtenerClasePorId', () => {
@@ -144,6 +182,18 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
       expect(clases[0].fecha_fin).toMatch(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
       );
+    });
+
+    it('debe propagar incluirInactivas = true al repositorio para vista de gerente', async () => {
+      (mockClasesRepo.obtenerClasesPorSede as jest.Mock).mockResolvedValue([
+        mockClase,
+        { ...mockClase, id_clase: 2, activo: false },
+      ]);
+
+      const clases = await service.obtenerClasesPorSede(1, undefined, true);
+
+      expect(mockClasesRepo.obtenerClasesPorSede).toHaveBeenCalledWith(1, true);
+      expect(clases).toHaveLength(2);
     });
   });
 
@@ -341,6 +391,16 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
       await expect(
         service.actualizarClase(999, { nombre: 'Nuevo' }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('debe lanzar BadRequestException si el horario actualizado es inconsistente', async () => {
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase,
+      );
+
+      await expect(
+        service.actualizarClase(1, { horario_fin: '17:00' }), // Inicio es 18:00
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
