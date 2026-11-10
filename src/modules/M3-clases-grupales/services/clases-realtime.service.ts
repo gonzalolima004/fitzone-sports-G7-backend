@@ -45,6 +45,33 @@ export class ClasesRealtimeService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   /**
+   * Envuelve cualquier emisión a Supabase Realtime en un timeout estricto
+   * para evitar promesas colgadas o bloqueos ante latencia en el WebSocket.
+   */
+  private async ejecutarConTimeout<T>(
+    promesa: Promise<T>,
+    timeoutMs = 3000,
+  ): Promise<T> {
+    return await Promise.race([
+      promesa,
+      new Promise<T>((_, reject) => {
+        const timer = setTimeout(
+          () =>
+            reject(
+              new Error(
+                `Timeout (${timeoutMs}ms) en comunicación Realtime con Supabase`,
+              ),
+            ),
+          timeoutMs,
+        );
+        if (typeof timer.unref === 'function') {
+          timer.unref();
+        }
+      }),
+    ]);
+  }
+
+  /**
    * Notifica en tiempo real vía Supabase Realtime Broadcast que los cupos de una clase
    * han cambiado (por reserva, cancelación o actualización de capacidad).
    * Emite en el canal de la sede (`clases:sede:${idSede}`) y en el canal puntual (`clases:${idClase}`).
@@ -75,8 +102,12 @@ export class ClasesRealtimeService {
       );
 
       await Promise.all([
-        this.supabaseService.emitRealtimeEvent(canalSede, evento, payload),
-        this.supabaseService.emitRealtimeEvent(canalClase, evento, payload),
+        this.ejecutarConTimeout(
+          this.supabaseService.emitRealtimeEvent(canalSede, evento, payload),
+        ),
+        this.ejecutarConTimeout(
+          this.supabaseService.emitRealtimeEvent(canalClase, evento, payload),
+        ),
       ]);
 
       this.logger.log(
@@ -118,15 +149,19 @@ export class ClasesRealtimeService {
       );
 
       const promesas: Promise<void>[] = [
-        this.supabaseService.emitRealtimeEvent(canalEspera, evento, payload),
+        this.ejecutarConTimeout(
+          this.supabaseService.emitRealtimeEvent(canalEspera, evento, payload),
+        ),
       ];
 
       if (data.id_sede) {
         promesas.push(
-          this.supabaseService.emitRealtimeEvent(
-            `clases:sede:${data.id_sede}`,
-            evento,
-            payload,
+          this.ejecutarConTimeout(
+            this.supabaseService.emitRealtimeEvent(
+              `clases:sede:${data.id_sede}`,
+              evento,
+              payload,
+            ),
           ),
         );
       }
@@ -190,10 +225,8 @@ export class ClasesRealtimeService {
         `Notificando al usuario promovido ID: ${idUsuario} en canal [${canalUsuario}]`,
       );
 
-      await this.supabaseService.emitRealtimeEvent(
-        canalUsuario,
-        evento,
-        payload,
+      await this.ejecutarConTimeout(
+        this.supabaseService.emitRealtimeEvent(canalUsuario, evento, payload),
       );
 
       this.logger.log(

@@ -353,16 +353,6 @@ export class ReservasClasesService {
         }
       }
 
-      // 4. Si se promovió a alguien, notificar a los observadores
-      if (idUsuarioPromovido) {
-        await this.listaEsperaSubject.notify({
-          id_clase: reserva.id_clase,
-          fecha_inicio: fechaInicio,
-          fecha_fin: fechaFin,
-          id_usuario_promovido: idUsuarioPromovido,
-        });
-      }
-
       return {
         penalidadAplicada,
         mensaje: penalidadAplicada
@@ -370,32 +360,43 @@ export class ReservasClasesService {
           : 'Reserva cancelada exitosamente sin penalidad.',
         reserva: reservaCancelada,
         cupo_reasignado: idUsuarioPromovido !== null,
+        idUsuarioPromovido,
         id_clase: reserva.id_clase,
         fechaInicio,
         fechaFin,
       };
     });
 
+    // 4. Si se promovió a alguien, notificar a los observadores FUERA de la transacción de BD (evita retener locks en PostgreSQL)
+    if (resultadoCancelacion.idUsuarioPromovido) {
+      await this.listaEsperaSubject.notify({
+        id_clase: resultadoCancelacion.id_clase,
+        fecha_inicio: resultadoCancelacion.fechaInicio,
+        fecha_fin: resultadoCancelacion.fechaFin,
+        id_usuario_promovido: resultadoCancelacion.idUsuarioPromovido,
+      });
+    }
+
     // 5. Notificaciones en tiempo real fuera de la transacción
     if (this.clasesRealtime) {
-      const claseInfo = this.prisma?.clase?.findUnique
-        ? await this.prisma.clase.findUnique({
-            where: { id_clase: resultadoCancelacion.id_clase },
-          })
-        : null;
-
-      const reservasConfirmadas =
-        await this.reservasRepository.contarReservasConfirmadas(
+      // Optimización de concurrencia: consultar información de clase, reservas y lista de espera en paralelo
+      const [claseInfo, reservasConfirmadas, enEspera] = await Promise.all([
+        this.prisma?.clase?.findUnique
+          ? this.prisma.clase.findUnique({
+              where: { id_clase: resultadoCancelacion.id_clase },
+            })
+          : Promise.resolve(null),
+        this.reservasRepository.contarReservasConfirmadas(
           resultadoCancelacion.id_clase,
           resultadoCancelacion.fechaInicio,
           resultadoCancelacion.fechaFin,
-        );
-
-      const enEspera = await this.listaEsperaRepository.contarInscriptosActivos(
-        resultadoCancelacion.id_clase,
-        resultadoCancelacion.fechaInicio,
-        resultadoCancelacion.fechaFin,
-      );
+        ),
+        this.listaEsperaRepository.contarInscriptosActivos(
+          resultadoCancelacion.id_clase,
+          resultadoCancelacion.fechaInicio,
+          resultadoCancelacion.fechaFin,
+        ),
+      ]);
 
       const capacidadMaxima = claseInfo?.capacidad_maxima ?? 20;
       const cuposDisponibles = Math.max(

@@ -12,6 +12,8 @@ export const ESTADOS_CLASE_RESERVA = {
 
 @Injectable()
 export class ReservasClasesRepository {
+  private readonly estadoIdCache = new Map<string, number>();
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -38,13 +40,22 @@ export class ReservasClasesRepository {
   /**
    * Obtiene el ID del estado de reserva a partir de su descripción sin hardcodear IDs.
    * Si no existe en la BD, lo crea dinámicamente.
+   * Cuenta con caché en memoria O(1) para evitar round-trips repetitivos a la base de datos.
    */
   async obtenerIdEstadoPorDescripcion(
     descripcion: string,
     tx?: Prisma.TransactionClient,
   ): Promise<number> {
+    const key = descripcion.trim().toLowerCase();
+    if (!tx && this.estadoIdCache.has(key)) {
+      return this.estadoIdCache.get(key)!;
+    }
+
     const estado = await this.obtenerEstadoPorDescripcion(descripcion, tx);
     if (estado) {
+      if (!tx) {
+        this.estadoIdCache.set(key, estado.id_clase_reserva_estado);
+      }
       return estado.id_clase_reserva_estado;
     }
 
@@ -54,17 +65,24 @@ export class ReservasClasesRepository {
         data: { descripcion },
       });
       if (nuevo?.id_clase_reserva_estado) {
+        if (!tx) {
+          this.estadoIdCache.set(key, nuevo.id_clase_reserva_estado);
+        }
         return nuevo.id_clase_reserva_estado;
       }
     }
 
     // Fallback defensivo para pruebas unitarias sin mock de claseReservaEstado
-    const descNormalizada = descripcion.trim().toLowerCase();
-    if (descNormalizada === 'confirmada') return 1;
-    if (descNormalizada === 'en espera') return 2;
-    if (descNormalizada === 'completada') return 3;
-    if (descNormalizada === 'cancelada') return 4;
-    return 1;
+    let fallbackId = 1;
+    if (key === 'confirmada') fallbackId = 1;
+    else if (key === 'en espera') fallbackId = 2;
+    else if (key === 'completada') fallbackId = 3;
+    else if (key === 'cancelada') fallbackId = 4;
+
+    if (!tx) {
+      this.estadoIdCache.set(key, fallbackId);
+    }
+    return fallbackId;
   }
 
   /**
