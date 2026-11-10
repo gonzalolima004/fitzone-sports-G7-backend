@@ -11,8 +11,17 @@ export class UsuariosRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   public readonly defaultIncludes = {
-    sede: true,
+    sede: {
+      include: {
+        ciudad: true,
+      },
+    },
     usuario_estado: true,
+    membresia: {
+      include: {
+        membresia_estado: true,
+      },
+    },
     usuario_rol: {
       include: {
         rol: true,
@@ -58,8 +67,13 @@ export class UsuariosRepository {
         usuario_rol: {
           include: { rol: true },
         },
+        membresia: { include: { membresia_estado: true } },
         usuario_estado: true,
-        sede: true,
+        sede: {
+          include: {
+            ciudad: true,
+          },
+        },
       },
     });
   }

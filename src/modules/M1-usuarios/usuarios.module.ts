@@ -40,6 +40,6 @@ import { AuthService } from './services/auth.service'; // <-- Nuevo
     FotoStorageService,
     AuthService,
   ],
-  exports: [UsuariosService, MembresiasService, JwtModule],
+  exports: [UsuariosService, MembresiasService, JwtModule, UsuariosRepository],
 })
 export class UsuariosModule {}
