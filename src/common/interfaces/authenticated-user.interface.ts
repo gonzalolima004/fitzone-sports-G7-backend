@@ -4,4 +4,6 @@ export interface AuthenticatedUser {
   email: string;
   rol?: string;
   roles?: string[];
+  dni?: string;
+  nombre?: string;
 }
