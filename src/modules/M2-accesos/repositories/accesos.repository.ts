@@ -78,6 +78,7 @@ export class AccesosRepository {
       return fn(tx);
     });
   }
+
   /**
    * Cuenta el número de accesos activos en una sede específica
    */
@@ -105,13 +106,17 @@ export class AccesosRepository {
       return null;
     }
   }
+
   /**
-   * Busca un usuario activo por su número de DNI
+   * Busca una sede por su ID, incluyendo los datos de su ciudad.
    */
-  async buscarUsuarioPorDni(dni: string, tx?: Prisma.TransactionClient) {
+  async buscarSedePorId(id_sede: number, tx?: Prisma.TransactionClient) {
     const client = tx ?? this.prisma;
-    return client.usuario.findUnique({
-      where: { dni },
+    return client.sede.findUnique({
+      where: { id_sede },
+      include: {
+        ciudad: true,
+      },
     });
   }
 }
