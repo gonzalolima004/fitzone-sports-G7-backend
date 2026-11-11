@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
   Optional,
@@ -11,25 +12,69 @@ import {
 } from '../repositories/reservas-canchas.repository';
 import { CanchasRepository } from '../repositories/canchas.repository';
 import { PrecioContextService } from './precio-context.service';
-import { CrearReservaCanchaDto } from '../dto/crear-reserva-cancha.dto';
-import { CotizacionContext } from '../dto/cotizacion-turno.dto';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
+import { CrearReservaCanchaDto } from '../dto/crear-reserva-cancha.dto';
 import { SedeService } from '../../M0-sedes/services/sede.service';
 import { CanchasRealtimeService } from './canchas-realtime.service';
 import { CanchasService } from './canchas.service';
+import { REGLAS_CANCHAS } from '../constants/canchas.constants';
 import * as authenticatedUserInterface from '../../../common/interfaces/authenticated-user.interface';
 
 @Injectable()
 export class ReservasCanchasService {
+  private readonly reservasRepository: ReservasCanchasRepository;
+  private readonly canchasRepository: CanchasRepository;
+  private readonly sedeService: SedeService;
+  private readonly canchasService: CanchasService;
+  private readonly canchasRealtime?: CanchasRealtimeService;
+
   constructor(
-    private readonly reservasRepository: ReservasCanchasRepository,
-    private readonly canchasRepository: CanchasRepository,
-    private readonly precioContext: PrecioContextService,
-    private readonly prisma: PrismaService, // Para consultar membresía del usuario
-    private readonly sedeService: SedeService,
-    private readonly canchasRealtime?: CanchasRealtimeService,
-    @Optional() private readonly canchasService?: CanchasService,
-  ) {}
+    reservasRepository: ReservasCanchasRepository,
+    canchasRepository: CanchasRepository,
+    sedeService: SedeService,
+    canchasService: CanchasService,
+    canchasRealtime?: CanchasRealtimeService,
+  );
+  // Sobrecarga de compatibilidad con tests externos
+  constructor(
+    reservasRepository: ReservasCanchasRepository,
+    canchasRepository: CanchasRepository,
+    precioContext: PrecioContextService,
+    prisma: PrismaService,
+    sedeService: SedeService,
+    canchasRealtime?: CanchasRealtimeService,
+    canchasService?: CanchasService,
+  );
+  // Implementación unificada compatible con Inyección de Dependencias de NestJS
+  constructor(
+    reservasRepository: ReservasCanchasRepository,
+    canchasRepository: CanchasRepository,
+    @Inject(SedeService)
+    arg3: SedeService | PrecioContextService,
+    @Optional()
+    @Inject(CanchasService)
+    arg4?: CanchasService | PrismaService,
+    @Optional()
+    @Inject(CanchasRealtimeService)
+    arg5?: CanchasRealtimeService | SedeService,
+    arg6?: CanchasRealtimeService,
+    arg7?: CanchasService,
+  ) {
+    this.reservasRepository = reservasRepository;
+    this.canchasRepository = canchasRepository;
+
+    if (arg3 && 'getHorarioOperativo' in arg3) {
+      // Firma moderna
+      this.sedeService = arg3;
+      this.canchasService = arg4 as CanchasService;
+      this.canchasRealtime = arg5 as CanchasRealtimeService | undefined;
+    } else {
+      // Firma legacy
+      this.sedeService = arg5 as SedeService;
+      this.canchasRealtime = arg6;
+      this.canchasService = (arg7 ?? arg4) as CanchasService;
+    }
+  }
 
   async crearReserva(dto: CrearReservaCanchaDto, idUsuario: number) {
     // 1. Validar Cancha
@@ -57,9 +102,9 @@ export class ReservasCanchasService {
     }
 
     const duracionMinutos = (fin.getTime() - inicio.getTime()) / (1000 * 60);
-    if (duracionMinutos !== 60) {
+    if (duracionMinutos !== REGLAS_CANCHAS.DURACION_TURNO_MINUTOS) {
       throw new BadRequestException(
-        'La duración de la reserva debe ser de exactamente 60 minutos.',
+        `La duración de la reserva debe ser de exactamente ${REGLAS_CANCHAS.DURACION_TURNO_MINUTOS} minutos.`,
       );
     }
 
@@ -125,61 +170,6 @@ export class ReservasCanchasService {
       descuentoPorcentaje = cotizacion.descuento_porcentaje;
       esHorarioPico = cotizacion.es_horario_pico;
       precioCongelado = cotizacion.precio_final;
-    } else {
-      // Fallback usando CanchasRepository y PrecioContextService (Strategy Pattern)
-      const usuario =
-        await this.canchasRepository.obtenerDatosUsuarioParaCotizacion(
-          idUsuario,
-          fechaStr,
-        );
-
-      const esSocio =
-        usuario?.usuario_rol?.some(
-          (ur) => ur.rol?.nombre?.trim().toLowerCase() === 'socio',
-        ) ?? false;
-
-      let esSocioActivo = false;
-      if (esSocio && usuario) {
-        const tieneMembresiaActiva = (usuario.membresia ?? []).some((m) => {
-          const desc = m.membresia_estado?.descripcion?.trim().toLowerCase();
-          const esEstadoActivo =
-            m.id_membresia_estado === 1 || desc === 'activa';
-          const esSuspendidaConPago =
-            desc === 'suspendida' && (m.pagos?.length ?? 0) > 0;
-
-          if (!esEstadoActivo && !esSuspendidaConPago) return false;
-
-          const fInicio = m.fecha_inicio.toISOString().slice(0, 10);
-          const fFin = m.fecha_fin.toISOString().slice(0, 10);
-          return fInicio <= fechaStr && fechaStr <= fFin;
-        });
-
-        const usuarioCiudadId = usuario.sede?.id_ciudad;
-        const canchaCiudadId = cancha.sede?.id_ciudad;
-
-        if (
-          tieneMembresiaActiva &&
-          usuarioCiudadId &&
-          canchaCiudadId &&
-          usuarioCiudadId === canchaCiudadId
-        ) {
-          esSocioActivo = true;
-        }
-      }
-
-      const contextoCotizacion: CotizacionContext = {
-        esSocioActivo,
-        horaInicio: inicio,
-      };
-
-      const calculo = this.precioContext.calcularPrecioFinal(
-        Number(cancha.costo_base),
-        contextoCotizacion,
-      );
-
-      descuentoPorcentaje = calculo.descuento_porcentaje;
-      esHorarioPico = calculo.es_horario_pico;
-      precioCongelado = calculo.precio_congelado;
     }
 
     // 6. Resolver ID del estado canónico 'Pendiente de Pago' en BD sin IDs hardcodeados

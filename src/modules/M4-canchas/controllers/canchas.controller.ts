@@ -10,6 +10,7 @@ import {
   Query,
   ParseBoolPipe,
   UseGuards,
+  Optional,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -28,6 +29,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 import { CanchasService } from '../services/canchas.service';
+import { CanchasDisponibilidadService } from '../services/canchas-disponibilidad.service';
 import { CrearCanchaDto } from '../dto/crear-cancha.dto';
 import { ActualizarCanchaDto } from '../dto/actualizar-cancha.dto';
 import { DisponibilidadSlotResponseDto } from '../dto/disponibilidad-slot-response.dto';
@@ -38,7 +40,11 @@ import { ActualizarTipoCanchaDto } from '../dto/actualizar-tipo-cancha.dto';
 @ApiTags('Canchas Deportivas')
 @Controller('canchas')
 export class CanchasController {
-  constructor(private readonly canchasService: CanchasService) {}
+  constructor(
+    private readonly canchasService: CanchasService,
+    @Optional()
+    private readonly disponibilidadService?: CanchasDisponibilidadService,
+  ) {}
 
   @Post()
   @UseGuards(SupabaseAuthGuard, RolesGuard)
@@ -162,11 +168,8 @@ export class CanchasController {
     @Query('fecha') fecha: string,
     @Query('tipoId', new ParseIntPipe({ optional: true })) tipoId?: number,
   ) {
-    return this.canchasService.obtenerDisponibilidadPorSede(
-      sedeId,
-      fecha,
-      tipoId,
-    );
+    const service = this.disponibilidadService ?? this.canchasService;
+    return service.obtenerDisponibilidadPorSede(sedeId, fecha, tipoId);
   }
 
   @Get('cotizar')
@@ -258,6 +261,7 @@ export class CanchasController {
     @Param('id', ParseIntPipe) id: number,
     @Query() query: ConsultaDisponibilidadQueryDto,
   ) {
-    return this.canchasService.obtenerDisponibilidad(id, query.fecha);
+    const service = this.disponibilidadService ?? this.canchasService;
+    return service.obtenerDisponibilidad(id, query.fecha);
   }
 }

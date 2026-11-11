@@ -1,4 +1,4 @@
-import { CanchasService } from './canchas.service';
+import { CanchasDisponibilidadService } from './canchas-disponibilidad.service';
 import { CanchasRepository } from '../repositories/canchas.repository';
 import { ReservasCanchasRepository } from '../repositories/reservas-canchas.repository';
 import { SedeService } from '../../M0-sedes/services/sede.service';
@@ -10,8 +10,8 @@ import {
   Prisma,
 } from '@prisma/client';
 
-describe('CanchasService - Disponibilidad', () => {
-  let service: CanchasService;
+describe('CanchasDisponibilidadService', () => {
+  let service: CanchasDisponibilidadService;
   let canchasRepository: Partial<jest.Mocked<CanchasRepository>>;
   let reservasRepository: Partial<jest.Mocked<ReservasCanchasRepository>>;
   let sedeService: Partial<jest.Mocked<SedeService>>;
@@ -60,7 +60,7 @@ describe('CanchasService - Disponibilidad', () => {
       }),
     };
 
-    service = new CanchasService(
+    service = new CanchasDisponibilidadService(
       canchasRepository as unknown as CanchasRepository,
       reservasRepository as unknown as ReservasCanchasRepository,
       sedeService as unknown as SedeService,
