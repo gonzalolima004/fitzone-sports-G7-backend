@@ -11,15 +11,26 @@ import { InscribirListaEsperaDto } from '../dto/inscribir-lista-espera.dto';
 import { MiInscripcionListaEsperaResponseDto } from '../dto/mis-inscripciones-response.dto';
 import { CurrentUserId } from '../../../common/decorators/current-user.decorator';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
 
 @ApiTags('Lista de Espera')
 @ApiBearerAuth()
+@UseGuards(SupabaseAuthGuard, RolesGuard)
+@Roles('socio')
+@ApiResponse({
+  status: 401,
+  description: 'No autorizado. Token no proporcionado o inválido.',
+})
+@ApiResponse({
+  status: 403,
+  description: 'Acceso denegado: se requiere rol socio.',
+})
 @Controller('lista-espera')
 export class ListaEsperaController {
   constructor(private readonly listaEsperaService: ListaEsperaService) {}
 
   @Get('mis-inscripciones')
-  @UseGuards(SupabaseAuthGuard)
   @ApiOperation({
     summary:
       'Consultar las inscripciones activas en lista de espera del usuario autenticado',
@@ -48,7 +59,6 @@ export class ListaEsperaController {
   }
 
   @Post('inscribir')
-  @UseGuards(SupabaseAuthGuard)
   @ApiOperation({
     summary: 'Inscribirse en lista de espera de una clase agotada',
   })

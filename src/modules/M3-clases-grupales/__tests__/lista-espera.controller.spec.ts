@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ListaEsperaController } from '../controllers/lista-espera.controller';
 import { ListaEsperaService } from '../services/lista-espera.service';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 import { InscribirListaEsperaDto } from '../dto/inscribir-lista-espera.dto';
 
 describe('ListaEsperaController', () => {
@@ -24,6 +25,8 @@ describe('ListaEsperaController', () => {
       ],
     })
       .overrideGuard(SupabaseAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
       .useValue({ canActivate: () => true })
       .compile();
 

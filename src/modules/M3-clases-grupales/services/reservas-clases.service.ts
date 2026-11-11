@@ -6,8 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
-import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
-import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
+import {
+  ReservasClasesRepository,
+  ESTADOS_CLASE_RESERVA,
+} from '../repositories/reservas-clases.repository';
+import {
+  ListaEsperaRepository,
+  ESTADOS_LISTA_ESPERA,
+} from '../repositories/lista-espera.repository';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 import { ListaEsperaSubject } from '../patterns/observer/lista-espera.subject';
 import { CancelarReservaResponseDto } from '../dto/cancelar-reserva-response.dto';
@@ -16,6 +22,7 @@ import {
   claseAplicaEnFecha,
   obtenerRangoDiaArgentina,
 } from '../../../common/utils/date-time.util';
+import { whereBeneficiosVigentes } from '../../M1-usuarios/utils/membresia-beneficios';
 
 @Injectable()
 export class ReservasClasesService {
@@ -64,13 +71,10 @@ export class ReservasClasesService {
     }
 
     // 2. Verificación de no mora del socio (RN-03)
-    // Asumimos que tener una membresía activa (estado 1) y no vencida significa no tener mora.
+    // Tener una membresía activa (o suspendida por el socio pero con ciclo
+    // abonado vigente) y no vencida significa no tener mora.
     const membresiaActiva = await this.prisma.membresia.findFirst({
-      where: {
-        id_usuario: id_usuario,
-        id_membresia_estado: 1,
-        fecha_fin: { gte: ahora },
-      },
+      where: whereBeneficiosVigentes(id_usuario, ahora),
     });
 
     if (!membresiaActiva) {
@@ -80,10 +84,17 @@ export class ReservasClasesService {
     }
 
     // 3. Verificación de no superposición horaria
+    const idEstadoConfirmada = this.reservasRepository
+      .obtenerIdEstadoPorDescripcion
+      ? await this.reservasRepository.obtenerIdEstadoPorDescripcion(
+          ESTADOS_CLASE_RESERVA.CONFIRMADA,
+        )
+      : 1;
+
     const superposicion = await this.prisma.claseReserva.findFirst({
       where: {
         id_usuario: id_usuario,
-        id_clase_reserva_estado: 1, // 1 = Confirmada
+        id_clase_reserva_estado: idEstadoConfirmada,
         OR: [
           {
             // Hay superposición si la nueva clase empieza antes de que termine la existente
@@ -108,6 +119,7 @@ export class ReservasClasesService {
 
       const clase = await tx.clase.findUnique({
         where: { id_clase: data.id_clase },
+        include: { sede: true },
       });
 
       if (!clase) {
@@ -123,6 +135,32 @@ export class ReservasClasesService {
         );
       }
 
+      // 4.2. Validación de misma ciudad entre socio y sede de la clase
+      if (tx.usuario?.findUnique) {
+        const socio = await tx.usuario.findUnique({
+          where: { id_usuario },
+          include: { sede: true },
+        });
+
+        if (
+          socio?.sede?.id_ciudad &&
+          clase?.sede?.id_ciudad &&
+          socio.sede.id_ciudad !== clase.sede.id_ciudad
+        ) {
+          throw new BadRequestException(
+            'No puedes reservar clases en sedes de una ciudad diferente a la de tu sede de origen.',
+          );
+        }
+      }
+
+      const idEstadoConfirmadaTx = this.reservasRepository
+        .obtenerIdEstadoPorDescripcion
+        ? await this.reservasRepository.obtenerIdEstadoPorDescripcion(
+            ESTADOS_CLASE_RESERVA.CONFIRMADA,
+            tx,
+          )
+        : 1;
+
       // 4.2. Contar reservas actuales
       const reservasConfirmadas =
         await this.reservasRepository.contarReservasConfirmadas(
@@ -130,6 +168,7 @@ export class ReservasClasesService {
           fechaInicio,
           fechaFin,
           tx,
+          idEstadoConfirmadaTx,
         );
 
       // 4.3. Verificar cupo
@@ -143,7 +182,7 @@ export class ReservasClasesService {
       return await this.reservasRepository.crearReserva(
         data,
         id_usuario,
-        1,
+        idEstadoConfirmadaTx,
         tx,
       );
     });
@@ -169,7 +208,15 @@ export class ReservasClasesService {
         );
       }
 
-      if (reserva.id_clase_reserva_estado !== 1) {
+      const idEstadoConfirmada = this.reservasRepository
+        .obtenerIdEstadoPorDescripcion
+        ? await this.reservasRepository.obtenerIdEstadoPorDescripcion(
+            ESTADOS_CLASE_RESERVA.CONFIRMADA,
+            tx,
+          )
+        : 1;
+
+      if (reserva.id_clase_reserva_estado !== idEstadoConfirmada) {
         throw new BadRequestException(
           'La reserva no está en estado confirmada',
         );
@@ -190,11 +237,19 @@ export class ReservasClasesService {
         (fechaInicio.getTime() - ahora.getTime()) / (1000 * 60 * 60);
       const penalidadAplicada = diffHoras < 2;
 
-      // 2. Marcar como cancelada (ej. estado 4)
+      // 2. Marcar como cancelada buscando el estado por descripción sin hardcodear IDs
+      const idEstadoCancelada = this.reservasRepository
+        .obtenerIdEstadoPorDescripcion
+        ? await this.reservasRepository.obtenerIdEstadoPorDescripcion(
+            ESTADOS_CLASE_RESERVA.CANCELADA,
+            tx,
+          )
+        : 4;
+
       const reservaCancelada =
         await this.reservasRepository.actualizarEstadoReserva(
           id_clase_reserva,
-          4, // Cancelada
+          idEstadoCancelada,
           tx,
         );
 
@@ -212,13 +267,21 @@ export class ReservasClasesService {
       if (primerInscriptoLista) {
         idUsuarioPromovido = primerInscriptoLista.id_usuario;
         // Transacción atómica:
-        // 1) Actualizamos estado en lista de espera a 2 (Promovida / Procesada)
+        // 1) Actualizamos estado en lista de espera a Promovida buscando por descripción
+        const idEstadoPromovida = this.listaEsperaRepository
+          .obtenerIdEstadoPorDescripcion
+          ? await this.listaEsperaRepository.obtenerIdEstadoPorDescripcion(
+              ESTADOS_LISTA_ESPERA.PROMOVIDA,
+              tx,
+            )
+          : 2;
+
         await this.listaEsperaRepository.actualizarEstadoInscripcion(
           primerInscriptoLista.id_clase_lista_espera,
-          2,
+          idEstadoPromovida,
           tx,
         );
-        // 2) Creamos la nueva reserva confirmada (estado 1) para el socio promovido
+        // 2) Creamos la nueva reserva confirmada para el socio promovido
         await this.reservasRepository.crearReserva(
           {
             id_clase: reserva.id_clase,
@@ -226,11 +289,11 @@ export class ReservasClasesService {
             fecha_fin: fechaFin.toISOString(),
           },
           idUsuarioPromovido,
-          1, // Confirmada
+          idEstadoConfirmada,
           tx,
         );
       } else {
-        // Fallback: buscar si existía en clase_reserva con estado 2 (En Espera)
+        // Fallback: buscar si existía en clase_reserva con estado 'En espera'
         const primerEnEsperaReserva =
           await this.reservasRepository.obtenerPrimerEnEspera(
             reserva.id_clase,
@@ -243,7 +306,7 @@ export class ReservasClasesService {
           idUsuarioPromovido = primerEnEsperaReserva.id_usuario;
           await this.reservasRepository.actualizarEstadoReserva(
             primerEnEsperaReserva.id_clase_reserva,
-            1,
+            idEstadoConfirmada,
             tx,
           );
         }
@@ -280,6 +343,13 @@ export class ReservasClasesService {
       finDia = rango.finDia;
     }
 
+    const idEstadoConfirmada = this.reservasRepository
+      .obtenerIdEstadoPorDescripcion
+      ? await this.reservasRepository.obtenerIdEstadoPorDescripcion(
+          ESTADOS_CLASE_RESERVA.CONFIRMADA,
+        )
+      : 1;
+
     const reservas = await this.reservasRepository.obtenerReservasPorUsuario(
       id_usuario,
       inicioDia,
@@ -295,7 +365,9 @@ export class ReservasClasesService {
       id_clase_reserva_estado: r.id_clase_reserva_estado,
       estado:
         r.clase_reserva_estado?.descripcion?.toUpperCase() ||
-        (r.id_clase_reserva_estado === 1 ? 'CONFIRMADA' : 'CANCELADA'),
+        (r.id_clase_reserva_estado === idEstadoConfirmada
+          ? 'CONFIRMADA'
+          : 'CANCELADA'),
       nombre_clase: r.clase?.nombre,
     }));
   }

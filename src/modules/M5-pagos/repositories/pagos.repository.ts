@@ -1,7 +1,12 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
-import { Prisma, Pago, PagoEstado } from '@prisma/client';
+import { Prisma, Pago } from '@prisma/client';
 import { calcularFechaFin } from '../../M1-usuarios/utils/plan-duracion';
+import {
+  MEMBRESIA_ESTADO,
+  PAGO_ESTADO,
+  RESERVA_ESTADO,
+} from '../constants/estados.constants';
 
 export type PagoConRelaciones = Prisma.PagoGetPayload<{
   include: {
@@ -106,11 +111,12 @@ export class PagosRepository {
   async obtenerUltimoPagoPendienteCancha(
     id_cancha_reserva: number,
   ): Promise<PagoConRelaciones | null> {
-    const idPagoEstadoPendiente = await this.obtenerEstadoPendienteId();
     return this.prisma.pago.findFirst({
       where: {
         id_cancha_reserva,
-        id_pago_estado: idPagoEstadoPendiente,
+        pago_estado: {
+          descripcion: { equals: PAGO_ESTADO.PENDIENTE, mode: 'insensitive' },
+        },
       },
       orderBy: { id_pago: 'desc' },
       include: {
@@ -124,11 +130,12 @@ export class PagosRepository {
   async obtenerUltimoPagoPendienteMembresia(
     id_membresia: number,
   ): Promise<PagoConRelaciones | null> {
-    const idPagoEstadoPendiente = await this.obtenerEstadoPendienteId();
     return this.prisma.pago.findFirst({
       where: {
         id_membresia,
-        id_pago_estado: idPagoEstadoPendiente,
+        pago_estado: {
+          descripcion: { equals: PAGO_ESTADO.PENDIENTE, mode: 'insensitive' },
+        },
       },
       orderBy: { id_pago: 'desc' },
       include: {
@@ -147,124 +154,6 @@ export class PagosRepository {
       where: { id_pago },
       data: { id_pago_estado },
     });
-  }
-
-  async obtenerEstadoPorDescripcion(
-    descripcion: string,
-  ): Promise<PagoEstado | null> {
-    return this.prisma.pagoEstado.findFirst({
-      where: {
-        descripcion: {
-          equals: descripcion,
-          mode: 'insensitive',
-        },
-      },
-    });
-  }
-
-  async obtenerEstadoPendienteId(): Promise<number> {
-    const estado = await this.obtenerEstadoPorDescripcion('Pendiente');
-    if (estado) {
-      return estado.id_pago_estado;
-    }
-
-    const nuevoEstado = await this.prisma.pagoEstado.create({
-      data: {
-        descripcion: 'Pendiente',
-      },
-    });
-    return nuevoEstado.id_pago_estado;
-  }
-
-  async obtenerEstadoAprobadoId(): Promise<number> {
-    const estado = await this.obtenerEstadoPorDescripcion('Aprobado');
-    if (estado) {
-      return estado.id_pago_estado;
-    }
-
-    const nuevoEstado = await this.prisma.pagoEstado.create({
-      data: {
-        descripcion: 'Aprobado',
-      },
-    });
-    return nuevoEstado.id_pago_estado;
-  }
-
-  async obtenerEstadoRechazadoId(): Promise<number> {
-    const estado = await this.obtenerEstadoPorDescripcion('Rechazado');
-    if (estado) {
-      return estado.id_pago_estado;
-    }
-
-    const nuevoEstado = await this.prisma.pagoEstado.create({
-      data: {
-        descripcion: 'Rechazado',
-      },
-    });
-    return nuevoEstado.id_pago_estado;
-  }
-
-  async obtenerEstadoReservaConfirmadaId(): Promise<number> {
-    const estado = await this.prisma.canchaReservaEstado.findFirst({
-      where: {
-        descripcion: {
-          equals: 'Confirmada',
-          mode: 'insensitive',
-        },
-      },
-    });
-    if (estado) {
-      return estado.id_cancha_reserva_estado;
-    }
-
-    const nuevoEstado = await this.prisma.canchaReservaEstado.create({
-      data: {
-        descripcion: 'Confirmada',
-      },
-    });
-    return nuevoEstado.id_cancha_reserva_estado;
-  }
-
-  async obtenerEstadoMembresiaActivaId(): Promise<number> {
-    const estado = await this.prisma.membresiaEstado.findFirst({
-      where: {
-        descripcion: {
-          equals: 'Activa',
-          mode: 'insensitive',
-        },
-      },
-    });
-    if (estado) {
-      return estado.id_membresia_estado;
-    }
-
-    const nuevoEstado = await this.prisma.membresiaEstado.create({
-      data: {
-        descripcion: 'Activa',
-      },
-    });
-    return nuevoEstado.id_membresia_estado;
-  }
-
-  async obtenerEstadoMembresiaSuspendidaId(): Promise<number> {
-    const estado = await this.prisma.membresiaEstado.findFirst({
-      where: {
-        descripcion: {
-          equals: 'Suspendida',
-          mode: 'insensitive',
-        },
-      },
-    });
-    if (estado) {
-      return estado.id_membresia_estado;
-    }
-
-    const nuevoEstado = await this.prisma.membresiaEstado.create({
-      data: {
-        descripcion: 'Suspendida',
-      },
-    });
-    return nuevoEstado.id_membresia_estado;
   }
 
   async obtenerPlanPorId(id_membresia_plan: number) {
@@ -293,20 +182,26 @@ export class PagosRepository {
   }
 
   /**
-   * Busca una membresía en estado 'Suspendida' del usuario que nunca haya tenido
-   * un pago 'Aprobado' (intención de suscripción abierta sin abonar).
+   * Busca una membresÃ­a en estado 'Suspendida' del usuario que nunca haya tenido
+   * un pago 'Aprobado' (intenciÃ³n de suscripciÃ³n abierta sin abonar).
    */
   async obtenerMembresiaSuspendidaSinPagoAprobado(id_usuario: number) {
     return this.prisma.membresia.findFirst({
       where: {
         id_usuario,
         membresia_estado: {
-          descripcion: { equals: 'Suspendida', mode: 'insensitive' },
+          descripcion: {
+            equals: MEMBRESIA_ESTADO.SUSPENDIDA,
+            mode: 'insensitive',
+          },
         },
         pagos: {
           none: {
             pago_estado: {
-              descripcion: { equals: 'Aprobado', mode: 'insensitive' },
+              descripcion: {
+                equals: PAGO_ESTADO.APROBADO,
+                mode: 'insensitive',
+              },
             },
           },
         },
@@ -344,7 +239,7 @@ export class PagosRepository {
   }
 
   /**
-   * Ejecuta la confirmación transaccional atómica de un pago y su recurso asociado.
+   * Ejecuta la confirmaciÃ³n transaccional atÃ³mica de un pago y su recurso asociado.
    * Dentro de un $transaction:
    * 1. Actualiza el pago a 'Aprobado' y asigna comprobante_url
    * 2. Si tiene cancha_reserva: actualiza su estado a 'Confirmada'
@@ -359,6 +254,7 @@ export class PagosRepository {
     id_cancha_reserva_estado?: number;
     id_membresia?: number | null;
     id_membresia_estado?: number;
+    id_membresia_estado_suspendida?: number;
   }): Promise<PagoConRelaciones> {
     return this.prisma.$transaction(async (tx) => {
       // 1. Actualizar pago
@@ -388,7 +284,7 @@ export class PagosRepository {
         });
       }
 
-      // 3. Activar membresía si existe calculando fechas de vigencia
+      // 3. Activar membresÃ­a si existe calculando fechas de vigencia
       if (params.id_membresia && params.id_membresia_estado) {
         const memb = await tx.membresia.findUnique({
           where: { id_membresia: params.id_membresia },
@@ -396,17 +292,24 @@ export class PagosRepository {
         });
 
         if (memb) {
-          const idEstadoSuspendida =
-            await this.obtenerEstadoMembresiaSuspendidaId();
+          const idEstadoSuspendida = params.id_membresia_estado_suspendida;
+          if (!idEstadoSuspendida) {
+            throw new Error(
+              'Falta id_membresia_estado_suspendida para confirmar la membresÃ­a.',
+            );
+          }
           const ahora = new Date();
 
-          // Buscar última membresía activa vigente del usuario distinta a esta
+          // Buscar Ãºltima membresÃ­a activa vigente del usuario distinta a esta
           const ultimaActiva = await tx.membresia.findFirst({
             where: {
               id_usuario: memb.id_usuario,
               id_membresia: { not: memb.id_membresia },
               membresia_estado: {
-                descripcion: { equals: 'Activa', mode: 'insensitive' },
+                descripcion: {
+                  equals: MEMBRESIA_ESTADO.ACTIVA,
+                  mode: 'insensitive',
+                },
               },
               fecha_fin: { gte: ahora },
             },
@@ -422,13 +325,16 @@ export class PagosRepository {
           const fechaInicio = ahora;
           const fechaFin = calcularFechaFin(baseDate, dias);
 
-          // Desactivar membresías activas anteriores del usuario
+          // Desactivar membresÃ­as activas anteriores del usuario
           await tx.membresia.updateMany({
             where: {
               id_usuario: memb.id_usuario,
               id_membresia: { not: memb.id_membresia },
               membresia_estado: {
-                descripcion: { equals: 'Activa', mode: 'insensitive' },
+                descripcion: {
+                  equals: MEMBRESIA_ESTADO.ACTIVA,
+                  mode: 'insensitive',
+                },
               },
             },
             data: {
@@ -436,7 +342,7 @@ export class PagosRepository {
             },
           });
 
-          // Actualizar y activar membresía
+          // Actualizar y activar membresÃ­a
           await tx.membresia.update({
             where: { id_membresia: params.id_membresia },
             data: {
@@ -445,6 +351,53 @@ export class PagosRepository {
               fecha_fin: fechaFin,
             },
           });
+
+          // Promover permanentemente al usuario con rol 'externo' (o sin roles) al rol 'socio'
+          const rolesActuales = await tx.usuarioRol.findMany({
+            where: { id_usuario: memb.id_usuario },
+            include: { rol: true },
+          });
+
+          const tieneRolExterno = rolesActuales.some(
+            (ur) => ur.rol?.nombre?.trim().toLowerCase() === 'externo',
+          );
+          const sinRoles = rolesActuales.length === 0;
+
+          if (tieneRolExterno || sinRoles) {
+            if (tieneRolExterno) {
+              await tx.usuarioRol.deleteMany({
+                where: {
+                  id_usuario: memb.id_usuario,
+                  rol: {
+                    nombre: { equals: 'externo', mode: 'insensitive' },
+                  },
+                },
+              });
+            }
+
+            let rolSocio = await tx.rol.findFirst({
+              where: { nombre: { equals: 'socio', mode: 'insensitive' } },
+            });
+            if (!rolSocio) {
+              rolSocio = await tx.rol.create({
+                data: { nombre: 'socio' },
+              });
+            }
+
+            await tx.usuarioRol.upsert({
+              where: {
+                id_usuario_id_rol: {
+                  id_usuario: memb.id_usuario,
+                  id_rol: rolSocio.id_rol,
+                },
+              },
+              update: {},
+              create: {
+                id_usuario: memb.id_usuario,
+                id_rol: rolSocio.id_rol,
+              },
+            });
+          }
         }
       }
 
@@ -467,6 +420,12 @@ export class PagosRepository {
     });
   }
 
+  async obtenerCanchaReservaPorId(id_cancha_reserva: number) {
+    return this.prisma.canchaReserva.findUnique({
+      where: { id_cancha_reserva },
+    });
+  }
+
   async existeCanchaReserva(id_cancha_reserva: number): Promise<boolean> {
     const reserva = await this.prisma.canchaReserva.findUnique({
       where: { id_cancha_reserva },
@@ -483,7 +442,7 @@ export class PagosRepository {
 
   /**
    * Obtiene el detalle completo de un pago por su ID incluyendo relaciones
-   * de cancha, sede, plan de membresía y estado.
+   * de cancha, sede, plan de membresÃ­a y estado.
    */
   async obtenerDetallePorId(
     id_pago: number,
@@ -513,8 +472,8 @@ export class PagosRepository {
   }
 
   /**
-   * Obtiene la lista cronológica de pagos asociados a un usuario (identificado por id_usuario)
-   * a través de sus reservas de cancha o membresías adquiridas, excluyendo intenciones
+   * Obtiene la lista cronolÃ³gica de pagos asociados a un usuario (identificado por id_usuario)
+   * a travÃ©s de sus reservas de cancha o membresÃ­as adquiridas, excluyendo intenciones
    * de checkout abandonadas en estado 'Pendiente'.
    */
   async obtenerHistorialPorUsuario(
@@ -525,7 +484,7 @@ export class PagosRepository {
         OR: [{ cancha_reserva: { id_usuario } }, { membresia: { id_usuario } }],
         NOT: {
           pago_estado: {
-            descripcion: { equals: 'Pendiente', mode: 'insensitive' },
+            descripcion: { equals: PAGO_ESTADO.PENDIENTE, mode: 'insensitive' },
           },
         },
       },
@@ -554,7 +513,7 @@ export class PagosRepository {
 
   /**
    * Reservas futuras del usuario que no fueron canceladas ni confirmadas
-   * y que no tienen ningún pago aprobado asociado.
+   * y que no tienen ningÃºn pago aprobado asociado.
    */
   async obtenerReservasPendientesDePago(
     id_usuario: number,
@@ -566,19 +525,28 @@ export class PagosRepository {
         NOT: [
           {
             cancha_reserva_estado: {
-              descripcion: { equals: 'Cancelada', mode: 'insensitive' },
+              descripcion: {
+                equals: RESERVA_ESTADO.CANCELADA,
+                mode: 'insensitive',
+              },
             },
           },
           {
             cancha_reserva_estado: {
-              descripcion: { equals: 'Confirmada', mode: 'insensitive' },
+              descripcion: {
+                equals: RESERVA_ESTADO.CONFIRMADA,
+                mode: 'insensitive',
+              },
             },
           },
         ],
         pagos: {
           none: {
             pago_estado: {
-              descripcion: { equals: 'Aprobado', mode: 'insensitive' },
+              descripcion: {
+                equals: PAGO_ESTADO.APROBADO,
+                mode: 'insensitive',
+              },
             },
           },
         },
@@ -595,8 +563,8 @@ export class PagosRepository {
   }
 
   /**
-   * Última membresía del usuario (la de mayor fecha de fin), con plan y estado,
-   * considerando únicamente membresías en estado 'Activa' o 'Vencida'.
+   * Ãšltima membresÃ­a del usuario (la de mayor fecha de fin), con plan y estado,
+   * considerando Ãºnicamente membresÃ­as en estado 'Activa' o 'Vencida'.
    */
   async obtenerUltimaMembresiaDeUsuario(
     id_usuario: number,
@@ -604,9 +572,45 @@ export class PagosRepository {
     return this.prisma.membresia.findFirst({
       where: {
         id_usuario,
-        membresia_estado: {
-          descripcion: { in: ['Activa', 'Vencida'] },
-        },
+        OR: [
+          {
+            membresia_estado: {
+              OR: [
+                {
+                  descripcion: {
+                    equals: MEMBRESIA_ESTADO.ACTIVA,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  descripcion: {
+                    equals: MEMBRESIA_ESTADO.VENCIDA,
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            },
+          },
+          // Suspendida por el socio (con pago aprobado): no genera pendiente.
+          {
+            membresia_estado: {
+              descripcion: {
+                equals: MEMBRESIA_ESTADO.SUSPENDIDA,
+                mode: 'insensitive',
+              },
+            },
+            pagos: {
+              some: {
+                pago_estado: {
+                  descripcion: {
+                    equals: PAGO_ESTADO.APROBADO,
+                    mode: 'insensitive',
+                  },
+                },
+              },
+            },
+          },
+        ],
       },
       orderBy: { fecha_fin: 'desc' },
       include: {
@@ -617,7 +621,7 @@ export class PagosRepository {
   }
 
   /**
-   * Indica si la membresía tiene un pago aprobado realizado desde la fecha dada.
+   * Indica si la membresÃ­a tiene un pago aprobado realizado desde la fecha dada.
    */
   async existePagoAprobadoDeMembresiaDesde(
     id_membresia: number,
@@ -628,7 +632,7 @@ export class PagosRepository {
         id_membresia,
         fecha_pago: { gte: desde },
         pago_estado: {
-          descripcion: { equals: 'Aprobado', mode: 'insensitive' },
+          descripcion: { equals: PAGO_ESTADO.APROBADO, mode: 'insensitive' },
         },
       },
     });
@@ -648,6 +652,29 @@ export class PagosRepository {
     return this.prisma.pago.update({
       where: { id_pago },
       data: { comprobante_url },
+    });
+  }
+
+  /**
+   * Obtiene todos los pagos en estado 'Pendiente' pertenecientes a un usuario
+   * (tanto de membresÃ­a como de reserva de cancha).
+   */
+  async obtenerPagosPendientesPorUsuario(
+    id_usuario: number,
+  ): Promise<PagoConRelaciones[]> {
+    return this.prisma.pago.findMany({
+      where: {
+        pago_estado: {
+          descripcion: { equals: PAGO_ESTADO.PENDIENTE, mode: 'insensitive' },
+        },
+        OR: [{ membresia: { id_usuario } }, { cancha_reserva: { id_usuario } }],
+      },
+      orderBy: { id_pago: 'desc' },
+      include: {
+        pago_estado: true,
+        cancha_reserva: true,
+        membresia: true,
+      },
     });
   }
 }

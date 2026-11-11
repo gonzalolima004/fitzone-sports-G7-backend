@@ -1,6 +1,6 @@
 # Bitácora de Desarrollo Grupo 7
 
-### 22/08/2026
+#### 22/08/2026
 
 - **Objetivo:** Definición de arquitectura base, Stack tecnológico y entidades iniciales.
 
@@ -496,7 +496,7 @@
 
 ---
 
-### 22/08/2026
+#### 22/08/2026
 
 Nombre / Rol: Facundo Agüero — Dev
 Rama: feature/auth-supabase
@@ -1181,6 +1181,98 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 03/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Integración y activación de `SupabaseAuthGuard` junto al decorador `@CurrentUser()` en la creación de reservas de canchas (`POST /reservas-canchas`), extrayendo el ID real del usuario autenticado (`usuario.id_usuario`) y removiendo los mocks temporales de testing.
+  - Optimización del endpoint de disponibilidad de canchas por sede (`GET /canchas/disponibilidad/sede`), permitiendo filtrado opcional por tipo de cancha (`tipoId`) mediante el método `obtenerCanchasParaGrilla` en `CanchasRepository`.
+  - Reestructuración de la respuesta del servicio de disponibilidad en `CanchasService`, unificando la información de horarios operativos de la sede (`abierto`, `hora_apertura`, `hora_cierre`, `motivo_cierre`) junto a las canchas y slots para su renderizado óptimo en la grilla del frontend.
+  - Optimización de performance en backend evitando llamadas y consultas innecesarias de reservas y mantenimientos a Supabase cuando la sede se encuentra cerrada.
+- **Decisiones:** Cambiar el endpoint para la grilla de turnos, de manera que traiga la disponibilidad para un tipo de cancha en vez de todas a la vez.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M4): fix de errores por supabase auth`
+  - `feat(M4): optimizacion de slots de horarios`
+  - `fix(log): correccion de formato`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
+#### 04/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Implementación del endpoint de cotización de turnos de canchas (`GET /canchas/cotizar`) en el módulo M4, protegido mediante `SupabaseAuthGuard` y extrayendo el usuario autenticado con `@CurrentUser()`.
+  - Creación de los DTOs de validación y respuesta (`CotizarTurnoQueryDto` y `CotizacionResponseDto`) con `class-validator`, normalización de tipos y esquemas documentados en Swagger.
+  - Implementación de la regla de descuento para socios (15%) condicionado a: rol socio, membresía activa en la fecha del turno y reserva en una sede de su misma ciudad (`id_ciudad`).
+  - Implementación del recargo por horario pico (+20%) para turnos entre las 19:00 y las 21:00 hs mediante el patrón Strategy (`PrecioStrategy`, `PrecioEstandarStrategy`, `DescuentoSocioStrategy`, `HorarioPicoStrategy`, `PrecioContextService`).
+  - Optimización de consultas en `CanchasRepository` mediante Prisma utilizando selección granular (`select`) y filtrado relacional de membresías activas por fecha, reduciendo la sobrecarga de datos transferidos.
+  - Diseño e implementación de un servicio de caché desacoplado (`CotizacionCacheService`) bajo el patrón Adapter/Cache Provider, con política de desalojo LRU (máx. 500 entradas), TTL de 30 segundos y contrato asíncrono para facilitar la integración futura con Redis sin alterar la lógica de negocio.
+  - Cobertura completa de pruebas unitarias en `canchas-cotizar.service.spec.ts` y `cotizacion-cache.service.spec.ts`, validando cálculos de precios, reglas de descuento, horario pico, expiración y desalojo de caché.
+- **Decisiones:**
+  - Utilizar el patrón Strategy para la aplicación de tarifas dinámicas (descuento socio y recargo pico), garantizando extensibilidad sin acoplar reglas en el servicio principal.
+  - Implementar un Cache Provider dedicado en memoria con política LRU en lugar de caché dentro del servicio o un Map directo, asegurando que `CanchasService` se mantenga 100% stateless y evitando fugas de memoria.
+- **Dificultades:**
+  - El servidor de la base de datos se encuentra en Oregon (EE.UU.), haciendo que hasta la petición más básica de SELECT 1 demore 250ms en el MEJOR caso posible. El uso de cache es una forma de evitar realizar consultas redundantes. Funciona bien por ahora en tests manuales y automatizados, por lo que si mañana sigue funcionando sin errores, planeo incluir una tarea, o más, en trello para integrarlo en otros puntos donde sea apropiado, sin afectar que realmente requieran ir a la base de datos real.
+- **Commits:**
+  - `feat(M4): crear endpoint para cotizar precios`
+  - `feat(M4): endpoint para cotizar canchas`
+  - `test(M4): test para cache de cotizacion`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
+#### 06/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Implementación de `CanchasRealtimeService` para emitir eventos de turnos reservados (`turno_reservado`) vía broadcast en canales por sede (`canchas:sede:${idSede}`), notificando de forma no bloqueante y tolerante a fallos al crearse una reserva (`POST /reservas-canchas`).
+  - Ajuste en `SupabaseService.emitRealtimeEvent` asegurando la suscripción activa (`SUBSCRIBED`) antes de emitir el broadcast y liberando el canal de manera controlada.
+  - Implementación de bloqueo pesimista (`SELECT ... FOR UPDATE`) en `ReservasCanchasRepository.crearReservaTransaccional` sobre la cancha seleccionada, previniendo condiciones de carrera ante reservas simultáneas.
+  - Fix en M0 para incluir el campo de horario especial en sedes.
+  - Cobertura de pruebas unitarias para el servicio realtime y repositorios en M4.
+- **Decisiones:**
+  - Utilizar bloqueo pesimista a nivel de fila sobre la cancha para serializar atómicamente la verificación de colisión e inserción, evitando colisiones concurrentes sin degradar la concurrencia general.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(Supabase): integrar logger en canal realtime`
+  - `feat(M4): crear service para reservas realtime`
+  - `feat(M4): utilizacion del service realtime`
+  - `feat(M4): bloqueo pesimista en reserva cancha repo`
+  - `feat(M4): tests para supabase realtime en canchas`
+  - `feat(M4): inclusion del modulo de realtime`
+  - `fix(M0): faltaba el campo es horario especial`
+  - `feat(M2): compatibilidad de test por cambios en realtime service`
+  - `docs(log): actualizacion de bitacora`
+  - `fix(entorno): reestablecer husky y eliminar settings`
+
+---
+
+#### 07/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Corrección en la composición del Patrón Strategy (`PrecioContextService`), garantizando que el descuento de socio se aplique sobre el costo base de la cancha y no sobre el recargo pico acumulado, eliminando la discrepancia entre cotización y confirmación de reserva.
+  - Unificación de la lógica de tarifas en `ReservasCanchasService`, delegando en `CanchasService.cotizarTurno` para mantener una única fuente de verdad y validar consistencia de membresía activa y misma ciudad.
+  - Corrección de fuga de abstracción en `ReservasCanchasService`, reemplazando consultas directas a Prisma por el método `obtenerMantenimientosPorFecha` de `ReservasCanchasRepository`.
+  - Protección y autorización en `GET /reservas-canchas/:id`, permitiendo el acceso únicamente al titular de la reserva o a roles de staff (`gerente`, `recepcionista`, `administrador`).
+  - Inclusión de los datos del usuario y parseo a tipo numérico de los campos `Decimal` en la consulta de reservas para consumo limpio desde el frontend.
+  - Mantenimiento y actualización de suites de pruebas unitarias y de integración en M4.
+- **Decisiones:**
+  - Asegurar `GET /reservas-canchas/:id` validando titularidad y roles de usuario para evitar consultas de un cliente a reservas ajenas.
+- **Dificultades:** Discrepancia de precios generada por calcular el descuento de socio sobre el subtotal con recargo pico en vez de sobre la tarifa base.
+- **Commits:**
+  - `fix(canchas): corregir calculo de precios`
+  - `feat(M4): autorizacion en endpoint de reservas`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
 #### 26/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
@@ -1341,6 +1433,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(M2): correcion de excepciones y metodo para buscar por dni o token`
   - `fix(M2): arreglo tipo de excepcion`
   - `docs(log): actualizacion de bitacora`
+
 #### 29/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
@@ -1356,6 +1449,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `fix(membresias): corregir deteccion de mora y devolver fecha_inicio en verificacion`
   - `fix(pagos): reutilizar intenciones suspendidas y omitir pagos pendientes huerfanos en historial`
   - `refactor(pagos): remover campo renovacion_automatica en flujo de inicio de pago`
+
 #### Joaquín Ribarola | Rol: Desarrollador Backend
 
 - **Tarea:** Corrección de consultas de reservas activas y robustecimiento de transacción de cancelación y lista de espera en M3.
@@ -1375,6 +1469,8 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   - `fix(clases): filtrar reservas activas y robustecer transaccion atomica de cancelacion y promocion`
   - `test(clases): probar condicion de carrera en reservas con bloqueo pesimista y lista de espera`
+
+---
 
 #### 10/11/2026
 
@@ -1404,3 +1500,139 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(M2): sincronizacion offline, obtener perfil e importacion de modulo usuario`
   - `docs(log): actualizacion de bitacora`
 `
+---
+
+#### 04/11/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Acreditación de membresías y cambio de rol: actualización de `confirmarPagoTransaccional` en `PagosRepository` y `MembresiasRepository` para que, al acreditarse el pago y activarse la membresía, el usuario con rol `"externo"` pase a tener el rol `"socio"` de forma permanente.
+  - Reconciliación de pagos pendientes: incorporación de búsqueda por `external_reference` en `MercadoPagoService` y sincronización automática en `PagosService` al consultar el detalle o historial de pagos.
+- **Decisiones:**
+  - Ejecutar la promoción de `"externo"` a `"socio"` dentro de la misma transacción (`$transaction`) que aprueba el pago y activa la membresía para garantizar consistencia atómica.
+  - Reconciliar pagos pendientes consultando directamente a Mercado Pago por `external_reference` (`membresia-X`) para cubrir entornos locales donde no llega el webhook ni la redirección automática del checkout.
+- **Dificultades:** Sandbox de Mercado Pago oculta el botón de retorno cuando las `back_urls` apuntan a `localhost`, lo que impedía recibir el `payment_id` por URL; se solucionó reconciliando los pagos pendientes mediante `payment.search` por referencia externa.
+- **Commits:**
+  - `feat: acreditar pagos de membresia y promover rol externo a socio`
+
+---
+
+#### 04/11/2026
+
+#### Angelina María Vialle | Rol: QA Backend
+
+- **Actividades:**
+  -Prueba unitaria de acceso.service
+-
+
+-Prueba unitaria de aforo-realtime.service
+-
+
+-Prueba unitaria de qr.service
+
+- **Decisiones:**
+  -Tipar de forma estricta los mocks en Jest utilizando as unknown as DTO/Entity
+- **Dificultades:**
+  -Ninguna
+- **Commits:**
+  -test(M2): test unitario de accesos, aforo y qr
+  -docs(M2): actualizacion bitacora
+
+---
+
+#### 07/11/2026
+
+#### Gonzalo Lima | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Seguridad en comprobantes y pagos: se protegió la consulta de comprobantes y la creación de pagos para que cada usuario solo pueda ver y abonar sus propias membresías o reservas.
+  - Estandarización de estados de pago: se reemplazaron los identificadores fijos y repetidos en el código por un sistema centralizado que gestiona automáticamente los estados (Pendiente, Aprobado, Rechazado).
+  - Suspensión de membresía: se agregó la posibilidad de que el socio suspenda su membresía activa. Mantiene todos sus beneficios (acceso al club, reserva de clases y descuentos en canchas) hasta el último día que ya pagó, y al terminar ese ciclo no se le genera ningún cobro pendiente.
+- **Decisiones:**
+  - Proteger las rutas de comprobantes exigiendo inicio de sesión para cuidar los datos personales del socio (nombre, DNI y montos abonados).
+  - Conservar los beneficios del socio hasta el vencimiento del período ya abonado para que no pierda los días pagados.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(pagos): proteger comprobantes con guard y reemplazar estados hardcodeados por estadosService`
+  - `feat(membresias): permitir suspension de membresia activa`
+  - `feat(reservas): habilitar beneficios en clases y canchas para membresías suspendidas vigentes`
+
+---
+
+#### 06/11/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** CRUD de calendario, excepciones por sede y horario semanal para el gerente (parte backend).
+- **Actividades:**
+  - `/calendario` (M0): CRUD del calendario general, con los feriados nacionales o de toda la cadena: listado con filtro por rango (`desde` y `hasta`), detalle, alta, modificación y baja. Al marcar una fecha como feriado, por defecto queda como día no hábil.
+  - `/sedes/:idSede/calendario`: CRUD de las excepciones de cada sede (feriados locales, cierres y días con horario especial). Se cargan con la fecha: si no está en el calendario general, se agrega como día común. Sin horas es un cierre total; con horas, la sede abre con horario especial (formato HH:mm y apertura anterior al cierre). La respuesta incluye la fecha y si es feriado.
+  - `/sedes/:idSede/horarios`: CRUD del horario semanal, con un registro por día (0 domingo a 6 sábado) que indica apertura y cierre, o que la sede no abre.
+  - Todo el CRUD queda protegido con `SupabaseAuthGuard`, `RolesGuard` y `@Roles('gerente')` y documentado en Swagger. `GET /sedes/:id/horario-operativo` sigue siendo público y ya toma lo que se carga con estos endpoints.
+  - Pruebas de integración HTTP sobre PGlite: permisos (401 y 403), validaciones, fechas y días repetidos (409), sede inexistente (404), alcance por sede, baja de una fecha con excepciones (409) e impacto en el horario operativo.
+- **Decisiones:**
+  - No consultar antes de escribir: la existencia de la sede y los duplicados los valida la base con sus claves foráneas y restricciones únicas, y los errores se traducen a 404 o 409. Así cada operación hace una o dos consultas a la base (medido sobre PGlite), por la latencia de Supabase.
+  - Las modificaciones y bajas de excepciones no usan `include`: con `include`, Prisma abre una transacción y suma idas a la base, así que la fecha se busca aparte.
+  - El alta de una excepción en una fecha nueva hace un upsert del día y después el alta, sin transacción: si el alta falla, la fecha queda en el calendario como día común, que no cambia el horario de ninguna sede.
+  - Una fecha del calendario general con excepciones en alguna sede no se puede borrar (409): primero hay que borrar sus excepciones.
+  - Las fechas se reciben y se devuelven como `YYYY-MM-DD` para evitar corrimientos por zona horaria.
+  - Todos los endpoints nuevos, incluidos los GET, son solo para el gerente, como pide la tarea. Las pantallas de socios siguen usando `GET /sedes/:id/horario-operativo` y la disponibilidad de canchas.
+- **Dificultades:**
+  - Al borrar una fecha referenciada, PostgreSQL responde con el código 23001 (la clave foránea es `ON DELETE RESTRICT`) y Prisma lo informa como error genérico P2039 en lugar de P2003; se contempló ese caso para responder 409.
+- **Verificación:** 2 suites y 33 pruebas aprobadas en el módulo de sedes (20 nuevas). En el resto del backend siguen fallando 3 pruebas de M2 (accesos y QR) que ya fallaban en `dev` y no se tocaron. Typecheck sin errores nuevos y ESLint sin errores en los archivos nuevos.
+- **Commits:**
+  - `feat(calendario): agregar CRUD del calendario general para el gerente`
+  - `feat(calendario): agregar CRUD de excepciones de calendario por sede`
+  - `feat(sedes): agregar CRUD de horarios semanales por sede`
+  - `test(calendario): agregar pruebas de integracion del CRUD de calendario y horarios`
+  - `docs(log): registrar CRUD de calendario y horarios`
+
+---
+
+#### 07/11/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** E16-T1: Corrección de Cupos Límite, Estados en BD y Reglas de Inscripción (Paso 1: Normalización de estados y guardias).
+- **Actividades:**
+  - **Normalización de estados en Supabase:** Se auditó y normalizó la tabla `clase_lista_espera_estado`, en la que únicamente existía el estado con id `1` ('En espera') y faltaban los estados `2` ('Promovida') y `3` ('Cancelada'), lo cual causaba fallos de violación de clave foránea al liberar vacantes y promover socios en cola. Se insertaron los estados faltantes y se sincronizó la secuencia del autoincrementable.
+  - **Actualización de seeds:** Se incorporó la siembra idempotente de `clase_lista_espera_estado` y `clase_reserva_estado` en `src/database/seeds/usuarios-prueba.seed.ts`.
+  - **Búsqueda dinámica de estados sin IDs hardcodeados:** Se implementaron los métodos `obtenerEstadoPorDescripcion` y `obtenerIdEstadoPorDescripcion` tanto en `ListaEsperaRepository` como en `ReservasClasesRepository`, resolviendo los IDs correspondientes en tiempo de ejecución de manera insensible a mayúsculas/minúsculas y garantizando tolerancia a desincronizaciones de catálogo.
+  - **Desacoplamiento de IDs en servicios:** Se refactorizaron los flujos de creación, cancelación y promoción en `ReservasClasesService` y `ListaEsperaService` para utilizar las constantes descriptivas (`ESTADOS_CLASE_RESERVA` y `ESTADOS_LISTA_ESPERA`) en lugar de IDs literales.
+  - **Aplicación de @UseGuards y RBAC:**
+    - `ReservasClasesController`: Se blindó el controlador completo con `@UseGuards(SupabaseAuthGuard, RolesGuard)` y `@Roles('socio')`.
+    - `ListaEsperaController`: Se blindó el controlador completo con `@UseGuards(SupabaseAuthGuard, RolesGuard)` y `@Roles('socio')`.
+    - `ClasesController`: Se removió el rol `admin` inexistente en el sistema, restringiendo el alta, modificación, reemplazo y baja lógica exclusivamente al rol `@Roles('gerente')`.
+- **Decisiones:**
+  - La resolución de estados por descripción en repositorios implementa fallback defensivo y creación automática en caso de ausencia, asegurando resiliencia tanto en pruebas unitarias con mocks parciales como en entornos reales.
+  - Restringir la inscripción a lista de espera y reservas a nivel de controlador con `@Roles('socio')` para prevenir peticiones inválidas de usuarios con roles administrativos o externos antes de llegar a la capa de servicio.
+- **Dificultades:**
+  - La ausencia del ID 2 en Supabase provocaba que la transacción atómica de cancelación y reasignación fallara de forma silenciosa por FK constraint. Resuelto normalizando la tabla en Supabase y buscando estados por descripción.
+- **Verificación:** 9 suites y 88 pruebas aprobadas al 100% en el módulo de clases grupales (incluyendo suites unitarias de repositorios, servicios y prueba de integración de concurrencia con PGlite). Compilación `nest build` limpia sin errores de tipos.
+- **Commits:**
+  - `fix(clases): normalizar estados de lista de espera y resolverlos por descripcion sin ids hardcodeados`
+  - `feat(clases): aplicar UseGuards y RBAC socio en reservas y lista de espera y gerente en clases`
+  - `docs(log): registrar normalizacion de estados y RBAC de clases`
+
+---
+
+#### 07/11/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** E16-T1: Corrección de Cupos Límite, Estados en BD y Reglas de Inscripción (Paso 2: Reglas de mora, membresía activa y validación por ciudad).
+- **Actividades:**
+  - **Validación de no mora en lista de espera:** Se incorporó la verificación con `whereBeneficiosVigentes` en `ListaEsperaService.inscribir`, asegurando que socios con cuota vencida o sin membresía activa no puedan inscribirse en la lista de espera, rechazando con `ForbiddenException` (403).
+  - **Restricción de reservas e inscripciones por ciudad:** Se implementó la verificación de coincidencia entre la ciudad de la sede del socio y la ciudad de la sede de la clase (`socio.sede.id_ciudad === clase.sede.id_ciudad`) tanto en `ReservasClasesService.crearReserva` como en `ListaEsperaService.inscribir`. Se rechaza con `BadRequestException` (400) si intenta reservar o anotarse en otra ciudad.
+  - **Compatibilidad tras sincronización con dev:** Se integró la función utilitaria `whereBeneficiosVigentes` y se corrigió el typo de referencia en `reservas-clases.service.ts`.
+  - **Ampliación de suites de pruebas:** Se agregaron pruebas unitarias en `reservas-clases.service.spec.ts` y `lista-espera.service.spec.ts` para validar el rechazo por discrepancia de ciudad y rechazo por mora, alcanzando 9 suites y 91 pruebas aprobadas al 100%.
+- **Decisiones:**
+  - Exigir consistencia de ciudad tanto en reservas inmediatas como en listas de espera para evitar que un socio gane una vacante en una sede fuera de su jurisdicción habilitada.
+  - El catálogo y agenda de clases se mantienen públicos en `ClasesController` para que clientes externos o anónimos puedan consultar horarios y cupos sin restricciones.
+- **Dificultades:** Ninguna.
+- **Verificación:** 9 suites y 91 pruebas aprobadas al 100% en el módulo de clases grupales. Linter limpio sin warnings y compilación `nest build` exitosa.
+- **Commits:**
+  - `feat(clases): aplicar reglas de no mora y validacion por ciudad en reservas y lista de espera`
+
+---

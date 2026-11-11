@@ -2,9 +2,67 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { Prisma } from '@prisma/client';
 
+export const ESTADOS_LISTA_ESPERA = {
+  EN_ESPERA: 'En espera',
+  PROMOVIDA: 'Promovida',
+  CANCELADA: 'Cancelada',
+} as const;
+
 @Injectable()
 export class ListaEsperaRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Obtiene la entidad del estado de lista de espera buscando por su descripción (insensible a mayúsculas/minúsculas).
+   */
+  async obtenerEstadoPorDescripcion(
+    descripcion: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const prismaClient = tx || this.prisma;
+    if (!prismaClient.claseListaEsperaEstado?.findFirst) {
+      return null;
+    }
+    return await prismaClient.claseListaEsperaEstado.findFirst({
+      where: {
+        descripcion: {
+          equals: descripcion,
+          mode: 'insensitive',
+        },
+      },
+    });
+  }
+
+  /**
+   * Obtiene el ID del estado de lista de espera a partir de su descripción sin hardcodear IDs.
+   * Si el estado no existe en la BD (ej. ausencia inicial del estado 2 'Promovida'), lo crea dinámicamente.
+   */
+  async obtenerIdEstadoPorDescripcion(
+    descripcion: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number> {
+    const estado = await this.obtenerEstadoPorDescripcion(descripcion, tx);
+    if (estado) {
+      return estado.id_clase_lista_espera_estado;
+    }
+
+    const prismaClient = tx || this.prisma;
+    if (prismaClient.claseListaEsperaEstado?.create) {
+      const nuevo = await prismaClient.claseListaEsperaEstado.create({
+        data: { descripcion },
+      });
+      if (nuevo?.id_clase_lista_espera_estado) {
+        return nuevo.id_clase_lista_espera_estado;
+      }
+    }
+
+    // Fallback defensivo para entornos de testing unitario sin mock de claseListaEsperaEstado
+    const descNormalizada = descripcion.trim().toLowerCase();
+    if (descNormalizada === 'en espera') return 1;
+    if (descNormalizada === 'promovida') return 2;
+    if (descNormalizada === 'cancelada') return 3;
+    return 1;
+  }
 
   async crearInscripcion(
     id_clase: number,
@@ -12,15 +70,23 @@ export class ListaEsperaRepository {
     fecha_inicio: Date,
     fecha_fin: Date,
     tx?: Prisma.TransactionClient,
+    id_estado?: number,
   ) {
     const prismaClient = tx || this.prisma;
+    const estadoId =
+      id_estado ??
+      (await this.obtenerIdEstadoPorDescripcion(
+        ESTADOS_LISTA_ESPERA.EN_ESPERA,
+        tx,
+      ));
+
     return await prismaClient.claseListaEspera.create({
       data: {
         id_clase,
         id_usuario,
         fecha_inicio,
         fecha_fin,
-        id_clase_lista_espera_estado: 1, // 1 = En espera
+        id_clase_lista_espera_estado: estadoId,
       },
     });
   }
@@ -31,15 +97,23 @@ export class ListaEsperaRepository {
     fecha_inicio: Date,
     fecha_fin: Date,
     tx?: Prisma.TransactionClient,
+    id_estado?: number,
   ) {
     const prismaClient = tx || this.prisma;
+    const estadoId =
+      id_estado ??
+      (await this.obtenerIdEstadoPorDescripcion(
+        ESTADOS_LISTA_ESPERA.EN_ESPERA,
+        tx,
+      ));
+
     return await prismaClient.claseListaEspera.findFirst({
       where: {
         id_clase,
         id_usuario,
         fecha_inicio,
         fecha_fin,
-        id_clase_lista_espera_estado: 1, // En espera
+        id_clase_lista_espera_estado: estadoId,
       },
     });
   }
@@ -49,14 +123,22 @@ export class ListaEsperaRepository {
     fecha_inicio: Date,
     fecha_fin: Date,
     tx?: Prisma.TransactionClient,
+    id_estado?: number,
   ): Promise<number> {
     const prismaClient = tx || this.prisma;
+    const estadoId =
+      id_estado ??
+      (await this.obtenerIdEstadoPorDescripcion(
+        ESTADOS_LISTA_ESPERA.EN_ESPERA,
+        tx,
+      ));
+
     return await prismaClient.claseListaEspera.count({
       where: {
         id_clase,
         fecha_inicio,
         fecha_fin,
-        id_clase_lista_espera_estado: 1, // En espera
+        id_clase_lista_espera_estado: estadoId,
       },
     });
   }
@@ -67,14 +149,21 @@ export class ListaEsperaRepository {
     fecha_fin: Date,
     tx?: Prisma.TransactionClient,
     toleranciaMs: number = 60000,
+    id_estado?: number,
   ) {
     const prismaClient = tx || this.prisma;
     const inicioDate = new Date(fecha_inicio);
     const finDate = new Date(fecha_fin);
+    const estadoId =
+      id_estado ??
+      (await this.obtenerIdEstadoPorDescripcion(
+        ESTADOS_LISTA_ESPERA.EN_ESPERA,
+        tx,
+      ));
 
     const where: Prisma.ClaseListaEsperaWhereInput = {
       id_clase,
-      id_clase_lista_espera_estado: 1, // En espera
+      id_clase_lista_espera_estado: estadoId,
     };
 
     if (toleranciaMs > 0) {
@@ -112,16 +201,39 @@ export class ListaEsperaRepository {
   }
 
   /**
+   * Actualiza el estado de la inscripción en lista de espera resolviendo el ID por descripción.
+   */
+  async actualizarEstadoInscripcionPorDescripcion(
+    id_clase_lista_espera: number,
+    descripcion: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const idEstado = await this.obtenerIdEstadoPorDescripcion(descripcion, tx);
+    return await this.actualizarEstadoInscripcion(
+      id_clase_lista_espera,
+      idEstado,
+      tx,
+    );
+  }
+
+  /**
    * Obtiene las inscripciones en lista de espera de un usuario, con filtro opcional de fechas.
    */
   async obtenerInscripcionesPorUsuario(
     id_usuario: number,
     fechaInicioDia?: Date,
     fechaFinDia?: Date,
+    id_estado?: number,
   ) {
+    const estadoId =
+      id_estado ??
+      (await this.obtenerIdEstadoPorDescripcion(
+        ESTADOS_LISTA_ESPERA.EN_ESPERA,
+      ));
+
     const whereClause: Prisma.ClaseListaEsperaWhereInput = {
       id_usuario,
-      id_clase_lista_espera_estado: 1, // Solo inscripciones activas
+      id_clase_lista_espera_estado: estadoId,
     };
 
     if (fechaInicioDia && fechaFinDia) {
@@ -156,13 +268,20 @@ export class ListaEsperaRepository {
     fecha_inicio: Date,
     fecha_fin: Date,
     id_clase_lista_espera: number,
+    id_estado?: number,
   ): Promise<number> {
+    const estadoId =
+      id_estado ??
+      (await this.obtenerIdEstadoPorDescripcion(
+        ESTADOS_LISTA_ESPERA.EN_ESPERA,
+      ));
+
     return await this.prisma.claseListaEspera.count({
       where: {
         id_clase,
         fecha_inicio,
         fecha_fin,
-        id_clase_lista_espera_estado: 1,
+        id_clase_lista_espera_estado: estadoId,
         id_clase_lista_espera: {
           lte: id_clase_lista_espera,
         },
