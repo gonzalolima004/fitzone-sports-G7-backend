@@ -6,8 +6,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { ClasesRepository } from '../repositories/clases.repository';
-import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
-import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
+import {
+  ReservasClasesRepository,
+  ESTADOS_CLASE_RESERVA,
+} from '../repositories/reservas-clases.repository';
+import {
+  ListaEsperaRepository,
+  ESTADOS_LISTA_ESPERA,
+} from '../repositories/lista-espera.repository';
 import { ClasesRealtimeService } from './clases-realtime.service';
 import { CreateClaseDto } from '../dto/create-clase.dto';
 import { UpdateClaseDto } from '../dto/update-clase.dto';
@@ -237,6 +243,20 @@ export class ClasesService {
       claseAplicaEnFecha(clase, fecha),
     );
 
+    // Pre-cargar IDs de estado si los métodos del repositorio están disponibles (evita N consultas redundantes)
+    const [idEstadoConfirmada, idEstadoEspera] = await Promise.all([
+      this.reservasRepository.obtenerIdEstadoPorDescripcion
+        ? this.reservasRepository.obtenerIdEstadoPorDescripcion(
+            ESTADOS_CLASE_RESERVA.CONFIRMADA,
+          )
+        : Promise.resolve(undefined),
+      this.listaEsperaRepository.obtenerIdEstadoPorDescripcion
+        ? this.listaEsperaRepository.obtenerIdEstadoPorDescripcion(
+            ESTADOS_LISTA_ESPERA.EN_ESPERA,
+          )
+        : Promise.resolve(undefined),
+    ]);
+
     // Calculamos la agenda del día con ocupación real para las clases que aplican en esa fecha:
     const agenda: ClaseAgendaResponseDto[] = await Promise.all(
       clasesFiltradas.map(async (clase) => {
@@ -249,19 +269,23 @@ export class ClasesService {
         const fechaInicio = crearFechaArgentina(fecha, horaInicioStr);
         const fechaFin = crearFechaArgentina(fecha, horaFinStr);
 
-        const cuposOcupados =
-          await this.reservasRepository.contarReservasConfirmadas(
+        // Optimización de concurrencia: consultar cupos ocupados y lista de espera en paralelo
+        const [cuposOcupados, enEspera] = await Promise.all([
+          this.reservasRepository.contarReservasConfirmadas(
             clase.id_clase,
             fechaInicio,
             fechaFin,
-          );
-
-        const enEspera =
-          await this.listaEsperaRepository.contarInscriptosActivos(
+            undefined,
+            idEstadoConfirmada,
+          ),
+          this.listaEsperaRepository.contarInscriptosActivos(
             clase.id_clase,
             fechaInicio,
             fechaFin,
-          );
+            undefined,
+            idEstadoEspera,
+          ),
+        ]);
 
         const cuposDisponibles = Math.max(
           0,

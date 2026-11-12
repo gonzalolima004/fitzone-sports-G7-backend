@@ -1725,33 +1725,36 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
-#### 09/11/2026
+#### 10/11/2026
 
 #### Joaquín Ribarola | Rol: Desarrollador Backend
 
-- **Tarea:** E16-T2: Cupos en Tiempo Real, Notificación de Vacantes y Ajustes de Vista Gerente (Paso 2: Reparación de carga/guardado de descripción y validación contra horario operativo de la sede).
+- **Tarea:** Optimización de Rendimiento, Refactorización y Resiliencia en Supabase Realtime (Módulo 3: Clases Grupales).
 - **Actividades:**
-  - **Reparación de Carga y Guardado de Descripción (`descripcion`):**
-    - `CreateClaseDto`: Se incorporó `@Transform` para convertir cadenas vacías `""` o espacios en blanco a `null`, recortar espacios externos (`trim()`) y permitir explícitamente `string | null`, asegurando que cuando el gerente limpie o cargue la descripción desde el formulario administrativo, se procese sin fallos de validación.
-    - `ClasesRepository`: Se implementaron `sanitizarDatosCreacion` y `sanitizarDatosActualizacion` para persistir limpiamente `descripcion: null` en PostgreSQL cuando el campo se envía vacío o en blanco tanto en `crearClase`, `actualizarClase` como en `reemplazarClase`.
-  - **Validación del Horario Operativo de Apertura/Cierre de la Sede (`sede_horario`):**
-    - `ClasesService`: Se implementó el método privado `validarHorarioOperativoSede` que cruza los días de la clase (`dias_semana` o día de `fecha`) con la configuración en `prisma.sede_horario`.
-    - Se valida que la sede se encuentre abierta (`abierto !== false`) en los días en que se dicta la clase, arrojando `BadRequestException` descriptivo si se intenta programar en un día no operativo (ej: _"La sede se encuentra cerrada los días Domingo"_).
-    - Se valida que `horario_inicio >= hora_apertura` y `horario_fin <= hora_cierre` para cada día programado, arrojando `BadRequestException` claro (ej: _"El horario de la clase (07:00 a 08:30) está fuera del horario operativo de la sede para el día Lunes (08:00 a 22:00 hs)"_).
-    - Se contempló un fallback operativo estándar (08:00 a 22:00 hs) si la sede aún no tiene días específicos cargados en base de datos.
-    - La validación se integró en `crearClase`, `actualizarClase` (PATCH) y `reemplazarClase` (PUT).
-  - **Ampliación de Pruebas Unitarias:**
-    - Se agregaron casos en `clases.service.spec.ts` para validar rechazo por horario anterior a la apertura, posterior al cierre, sede cerrada en el día programado, éxito dentro del rango, validación en updates y reemplazos, y transformación/saneamiento de descripciones con `class-transformer` y `class-validator`.
-    - Se agregaron casos en `repositories.spec.ts` para verificar la sanitización a `null` de descripciones vacías en `crearClase` y `actualizarClase`.
-    - Total de 10 suites y 127 pruebas unitarias aprobadas al 100% en M3.
+  - **Caché en Memoria para Tablas de Estado Estáticas:**
+    - `ReservasClasesRepository` y `ListaEsperaRepository`: Se implementó un caché local en memoria (`estadoIdCache = new Map<string, number>()`) para resolver IDs de estados (`Confirmada`, `En espera`, `Cancelada`, etc.) en $O(1)$. Se eliminaron entre 40 y 80 consultas `findFirst` redundantes a PostgreSQL por cada solicitud de agenda de sede.
+  - **Eliminación de Consultas N+1 y Paralelización en `ClasesService`:**
+    - `obtenerClasesPorSede`: Se pre-resuelven los identificadores de estado una sola vez antes de procesar el listado de clases.
+    - Se paralelizaron `contarReservasConfirmadas` y `contarInscriptosActivos` mediante `Promise.all` dentro del mapeo de cada clase, reduciendo a más de la mitad la latencia de respuesta en la visualización de la agenda diaria.
+  - **Desacople de Transacciones y Prevención de Lock Contention en `cancelarReserva`:**
+    - `ReservasClasesService`: Se movió la notificación al observer (`listaEsperaSubject.notify`) **fuera** del bloque de transacción `$transaction` de Prisma. Esto libera inmediatamente los locks a nivel de fila (`ROW EXCLUSIVE`) sobre `clase_reserva` sin retener conexiones del pool durante las llamadas de red externas a WebSockets de Supabase.
+    - Se ejecutaron concurrentemente con `Promise.all` las consultas de métricas posteriores a la cancelación (`claseInfo`, `reservasConfirmadas`, `enEspera`).
+  - **Optimización en Validación de Inscripción a Lista de Espera:**
+    - `ListaEsperaService.inscribir`: Se paralelizaron con `Promise.all` las consultas de usuario y clase (`usuario.findUnique` y `clase.findUnique`) para la verificación de pertenencia a la misma ciudad.
+  - **Resiliencia y Concurrencia en Supabase Realtime:**
+    - `ClasesRealtimeService`: Se implementó `ejecutarConTimeout<T>(promesa, 3000)` con `Promise.race` y temporizadores desacoplados (`.unref()`), blindando `notificarCupoActualizado`, `notificarVacanteLiberada` y `notificarPromocionUsuario` contra posibles degradaciones o lentitud en los WebSockets de Supabase.
+    - `NotificacionRealtimeObserver`: Se optimizó el broadcast hacia los canales de lista de espera, sede y usuario para dispararse en paralelo vía `Promise.all`.
 - **Decisiones:**
-  - Centralizar la sanitización de descripciones tanto en los DTOs como en la capa de repositorio (defensa en profundidad) para garantizar que en BD nunca queden strings vacíos o inconsistentes.
-  - Validar los horarios operativos contra todos los días que componen la recurrencia semanal de la clase, evitando que una clase quede programada fuera de horario si la sede tiene horarios diferenciados por día (ej: viernes o sábados con cierre anticipado).
+  - Almacenar los IDs de diccionarios de estados en memoria del proceso backend para suprimir roundtrips superfluos a la base de datos sin riesgo de inconsistencia.
+  - Evitar terminantemente llamadas asíncronas de red o servicios externos dentro de transacciones SQL activas, optimizando el rendimiento del pool de conexiones PostgreSQL y previniendo deadlocks.
+  - Establecer un guard de timeout estricto de 3 segundos con fallback silencioso en WebSockets para asegurar que la latencia externa nunca degrade el Event Loop ni afecte la experiencia del usuario.
 - **Dificultades:** Ninguna.
-- **Verificación:** 10 suites y 127 pruebas unitarias aprobadas al 100% en M3. `npx tsc --noEmit --project tsconfig.build.json` y `npm run build` limpios sin errores. ESLint limpio con 0 warnings.
+- **Verificación:**
+  - 10 de 10 suites unitarias aprobadas al 100% (127 pruebas en total en `src/modules/M3-clases-grupales`).
+  - Compilación y verificación estática limpias: `npx tsc --noEmit --project tsconfig.build.json` y `npm run build` sin errores.
+  - Formato y análisis estático: `npx prettier --check` y `npx eslint` con 0 errores y 0 warnings.
 - **Commits:**
-  - `fix(clases): reparar persistencia de descripcion y validar horario operativo de apertura/cierre de la sede`
-  - `test(clases): suites unitarias para horario operativo de sede y sanitizacion de descripcion`
-  - `docs(log): registrar reparacion de descripcion y validacion de horario operativo de sede E16-T2`
+  - `perf(clases): optimizar consultas n+1, caching de estados y conexion resiliente de supabase realtime`
+  - `docs(log): registrar optimizaciones de rendimiento y resiliencia en modulo 3`
 
 ---

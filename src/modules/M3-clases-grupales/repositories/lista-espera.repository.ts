@@ -10,6 +10,8 @@ export const ESTADOS_LISTA_ESPERA = {
 
 @Injectable()
 export class ListaEsperaRepository {
+  private readonly estadoIdCache = new Map<string, number>();
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -36,13 +38,22 @@ export class ListaEsperaRepository {
   /**
    * Obtiene el ID del estado de lista de espera a partir de su descripción sin hardcodear IDs.
    * Si el estado no existe en la BD (ej. ausencia inicial del estado 2 'Promovida'), lo crea dinámicamente.
+   * Cuenta con caché en memoria O(1) para evitar round-trips repetitivos a la base de datos.
    */
   async obtenerIdEstadoPorDescripcion(
     descripcion: string,
     tx?: Prisma.TransactionClient,
   ): Promise<number> {
+    const key = descripcion.trim().toLowerCase();
+    if (!tx && this.estadoIdCache.has(key)) {
+      return this.estadoIdCache.get(key)!;
+    }
+
     const estado = await this.obtenerEstadoPorDescripcion(descripcion, tx);
     if (estado) {
+      if (!tx) {
+        this.estadoIdCache.set(key, estado.id_clase_lista_espera_estado);
+      }
       return estado.id_clase_lista_espera_estado;
     }
 
@@ -52,16 +63,23 @@ export class ListaEsperaRepository {
         data: { descripcion },
       });
       if (nuevo?.id_clase_lista_espera_estado) {
+        if (!tx) {
+          this.estadoIdCache.set(key, nuevo.id_clase_lista_espera_estado);
+        }
         return nuevo.id_clase_lista_espera_estado;
       }
     }
 
     // Fallback defensivo para entornos de testing unitario sin mock de claseListaEsperaEstado
-    const descNormalizada = descripcion.trim().toLowerCase();
-    if (descNormalizada === 'en espera') return 1;
-    if (descNormalizada === 'promovida') return 2;
-    if (descNormalizada === 'cancelada') return 3;
-    return 1;
+    let fallbackId = 1;
+    if (key === 'en espera') fallbackId = 1;
+    else if (key === 'promovida') fallbackId = 2;
+    else if (key === 'cancelada') fallbackId = 3;
+
+    if (!tx) {
+      this.estadoIdCache.set(key, fallbackId);
+    }
+    return fallbackId;
   }
 
   async crearInscripcion(

@@ -76,17 +76,18 @@ export class ListaEsperaService {
       }
     }
 
-    // 2. Verificación de misma ciudad entre socio y sede de la clase
+    // 2. Verificación de misma ciudad entre socio y sede de la clase (consultas en paralelo)
     if (this.prisma?.usuario?.findUnique && this.prisma?.clase?.findUnique) {
-      const socio = await this.prisma.usuario.findUnique({
-        where: { id_usuario },
-        include: { sede: true },
-      });
-
-      const claseConSede = await this.prisma.clase.findUnique({
-        where: { id_clase: data.id_clase },
-        include: { sede: true },
-      });
+      const [socio, claseConSede] = await Promise.all([
+        this.prisma.usuario.findUnique({
+          where: { id_usuario },
+          include: { sede: true },
+        }),
+        this.prisma.clase.findUnique({
+          where: { id_clase: data.id_clase },
+          include: { sede: true },
+        }),
+      ]);
 
       if (
         socio?.sede?.id_ciudad &&
