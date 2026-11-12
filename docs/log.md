@@ -1657,3 +1657,101 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `test(clases): suites unitarias para flujo de cupos en clases vacias, con un cupo y llenas`
 
 ---
+
+#### 09/11/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** E16-T2: Cupos en Tiempo Real, Notificación de Vacantes y Ajustes de Vista Gerente (Paso 1: Supabase Realtime, Notificación de Vacantes y Formularios de Clase).
+- **Actividades:**
+  - **Servicio Realtime Dedicado (`ClasesRealtimeService`):**
+    - Se implementó `ClasesRealtimeService` con emisión tolerante a fallos (`try/catch` sin interrumpir transacciones) y no bloqueante para eventos WebSocket de Supabase.
+    - Soporte para eventos de actualización de cupos (`cupo_actualizado`) en los canales `clases:sede:${idSede}` y `clases:${idClase}`, transmitiendo `cupos_ocupados`, `cupos_disponibles`, `capacidad_maxima`, `en_espera` y estado (`DISPONIBLE`/`COMPLETO`).
+    - Soporte para notificación de vacantes liberadas (`vacante_liberada`) en `clases:espera:${idClase}` y `clases:sede:${idSede}`.
+    - Soporte para notificación directa al socio promovido (`promocion_lista_espera`) en su canal individual `usuarios:${idUsuario}:notificaciones` con metadatos de la clase (nombre, sala, profesor, horarios).
+  - **Integración con Servicios y Patrón Observer:**
+    - `ReservasClasesService.crearReserva`: Al confirmar una reserva, emite de forma asíncrona y no bloqueante `notificarCupoActualizado` para refrescar la grilla de la sede en vivo.
+    - `ReservasClasesService.cancelarReserva`: Al cancelar una reserva, dispara la promoción y notificación en tiempo real a los observadores mediante `ListaEsperaSubject` y emite `notificarCupoActualizado` en canales por sede y clase, así como `vacante_liberada` cuando no hubo promoción directa.
+    - `ListaEsperaService.inscribir`: Emite `notificarCupoActualizado` para mantener en vivo el contador de `en_espera`.
+    - `NotificacionRealtimeObserver`: Mejorado para enriquecer la carga útil del evento con nombre de clase, sala, profesor y sede, emitiendo tanto al canal de espera como al canal de usuario y sede con tolerancia a fallos.
+  - **Ajustes y Correcciones en el Formulario Administrativo de Clases:**
+    - `CreateClaseDto`: Se añadieron transformadores numéricos (`@Type(() => Number)`), saneamiento de fechas vacías (`@Transform`) y validaciones de formato horario (`Matches`) para compatibilidad plena con formularios frontend.
+    - `ClasesService`: Validación de consistencia temporal en `crearClase`, `actualizarClase` y `reemplazarClase` rechazando con `400 BadRequestException` si `horario_fin <= horario_inicio`. Validación de existencia de sede en `this.prisma.sede`.
+    - `ClasesController`: Soporte para el parámetro opcional `incluir_inactivas` en `GET /clases?id_sede=:id` para que el gerente pueda consultar y gestionar clases dadas de baja o inactivas en su panel administrativo.
+  - **Cobertura de Pruebas Unitarias:**
+    - Creación de la suite `clases-realtime.service.spec.ts` validando emisiones, canales de sede/clase/usuario y tolerancia a fallos.
+    - Actualización y ampliación de `observer.spec.ts`, `clases.service.spec.ts`, `reservas-clases.service.spec.ts` y `lista-espera.service.spec.ts`, alcanzando 10 suites y 116 pruebas aprobadas al 100%.
+- **Decisiones:**
+  - Ejecutar las notificaciones Realtime de forma no bloqueante y fuera de la transacción de base de datos para garantizar que eventuales caídas o latencias en los WebSockets de Supabase no hagan rollback de reservas ni bloqueen las respuestas HTTP.
+  - Soportar el listado de clases inactivas mediante el query param `incluir_inactivas` para uso administrativo del gerente sin alterar la consulta pública por defecto de socios.
+- **Dificultades:** Ninguna.
+- **Verificación:** 10 suites y 116 pruebas aprobadas al 100% en M3. Compilación limpia (`nest build`) y 0 errores de ESLint en los archivos del módulo.
+- **Commits:**
+  - `feat(clases): implementar servicio realtime para cupos en vivo y notificacion de vacantes liberadas`
+  - `fix(clases): corregir validaciones de horario y soporte de clases inactivas en vista gerente`
+  - `test(clases): suites unitarias para clases realtime y ajustes administrativos`
+  - `docs(log): registrar implementacion realtime y ajustes de vista gerente E16-T2`
+
+---
+
+#### 09/11/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** E16-T2: Cupos en Tiempo Real, Notificación de Vacantes y Ajustes de Vista Gerente (Paso 2: Reparación de carga/guardado de descripción y validación contra horario operativo de la sede).
+- **Actividades:**
+  - **Reparación de Carga y Guardado de Descripción (`descripcion`):**
+    - `CreateClaseDto`: Se incorporó `@Transform` para convertir cadenas vacías `""` o espacios en blanco a `null`, recortar espacios externos (`trim()`) y permitir explícitamente `string | null`, asegurando que cuando el gerente limpie o cargue la descripción desde el formulario administrativo, se procese sin fallos de validación.
+    - `ClasesRepository`: Se implementaron `sanitizarDatosCreacion` y `sanitizarDatosActualizacion` para persistir limpiamente `descripcion: null` en PostgreSQL cuando el campo se envía vacío o en blanco tanto en `crearClase`, `actualizarClase` como en `reemplazarClase`.
+  - **Validación del Horario Operativo de Apertura/Cierre de la Sede (`sede_horario`):**
+    - `ClasesService`: Se implementó el método privado `validarHorarioOperativoSede` que cruza los días de la clase (`dias_semana` o día de `fecha`) con la configuración en `prisma.sede_horario`.
+    - Se valida que la sede se encuentre abierta (`abierto !== false`) en los días en que se dicta la clase, arrojando `BadRequestException` descriptivo si se intenta programar en un día no operativo (ej: _"La sede se encuentra cerrada los días Domingo"_).
+    - Se valida que `horario_inicio >= hora_apertura` y `horario_fin <= hora_cierre` para cada día programado, arrojando `BadRequestException` claro (ej: _"El horario de la clase (07:00 a 08:30) está fuera del horario operativo de la sede para el día Lunes (08:00 a 22:00 hs)"_).
+    - Se contempló un fallback operativo estándar (08:00 a 22:00 hs) si la sede aún no tiene días específicos cargados en base de datos.
+    - La validación se integró en `crearClase`, `actualizarClase` (PATCH) y `reemplazarClase` (PUT).
+  - **Ampliación de Pruebas Unitarias:**
+    - Se agregaron casos en `clases.service.spec.ts` para validar rechazo por horario anterior a la apertura, posterior al cierre, sede cerrada en el día programado, éxito dentro del rango, validación en updates y reemplazos, y transformación/saneamiento de descripciones con `class-transformer` y `class-validator`.
+    - Se agregaron casos en `repositories.spec.ts` para verificar la sanitización a `null` de descripciones vacías en `crearClase` y `actualizarClase`.
+    - Total de 10 suites y 127 pruebas unitarias aprobadas al 100% en M3.
+- **Decisiones:**
+  - Centralizar la sanitización de descripciones tanto en los DTOs como en la capa de repositorio (defensa en profundidad) para garantizar que en BD nunca queden strings vacíos o inconsistentes.
+  - Validar los horarios operativos contra todos los días que componen la recurrencia semanal de la clase, evitando que una clase quede programada fuera de horario si la sede tiene horarios diferenciados por día (ej: viernes o sábados con cierre anticipado).
+- **Dificultades:** Ninguna.
+- **Verificación:** 10 suites y 127 pruebas unitarias aprobadas al 100% en M3. `npx tsc --noEmit --project tsconfig.build.json` y `npm run build` limpios sin errores. ESLint limpio con 0 warnings.
+- **Commits:**
+  - `fix(clases): reparar persistencia de descripcion y validar horario operativo de apertura/cierre de la sede`
+  - `test(clases): suites unitarias para horario operativo de sede y sanitizacion de descripcion`
+  - `docs(log): registrar reparacion de descripcion y validacion de horario operativo de sede E16-T2`
+
+---
+
+#### 09/11/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** E16-T2: Cupos en Tiempo Real, Notificación de Vacantes y Ajustes de Vista Gerente (Paso 2: Reparación de carga/guardado de descripción y validación contra horario operativo de la sede).
+- **Actividades:**
+  - **Reparación de Carga y Guardado de Descripción (`descripcion`):**
+    - `CreateClaseDto`: Se incorporó `@Transform` para convertir cadenas vacías `""` o espacios en blanco a `null`, recortar espacios externos (`trim()`) y permitir explícitamente `string | null`, asegurando que cuando el gerente limpie o cargue la descripción desde el formulario administrativo, se procese sin fallos de validación.
+    - `ClasesRepository`: Se implementaron `sanitizarDatosCreacion` y `sanitizarDatosActualizacion` para persistir limpiamente `descripcion: null` en PostgreSQL cuando el campo se envía vacío o en blanco tanto en `crearClase`, `actualizarClase` como en `reemplazarClase`.
+  - **Validación del Horario Operativo de Apertura/Cierre de la Sede (`sede_horario`):**
+    - `ClasesService`: Se implementó el método privado `validarHorarioOperativoSede` que cruza los días de la clase (`dias_semana` o día de `fecha`) con la configuración en `prisma.sede_horario`.
+    - Se valida que la sede se encuentre abierta (`abierto !== false`) en los días en que se dicta la clase, arrojando `BadRequestException` descriptivo si se intenta programar en un día no operativo (ej: _"La sede se encuentra cerrada los días Domingo"_).
+    - Se valida que `horario_inicio >= hora_apertura` y `horario_fin <= hora_cierre` para cada día programado, arrojando `BadRequestException` claro (ej: _"El horario de la clase (07:00 a 08:30) está fuera del horario operativo de la sede para el día Lunes (08:00 a 22:00 hs)"_).
+    - Se contempló un fallback operativo estándar (08:00 a 22:00 hs) si la sede aún no tiene días específicos cargados en base de datos.
+    - La validación se integró en `crearClase`, `actualizarClase` (PATCH) y `reemplazarClase` (PUT).
+  - **Ampliación de Pruebas Unitarias:**
+    - Se agregaron casos en `clases.service.spec.ts` para validar rechazo por horario anterior a la apertura, posterior al cierre, sede cerrada en el día programado, éxito dentro del rango, validación en updates y reemplazos, y transformación/saneamiento de descripciones con `class-transformer` y `class-validator`.
+    - Se agregaron casos en `repositories.spec.ts` para verificar la sanitización a `null` de descripciones vacías en `crearClase` y `actualizarClase`.
+    - Total de 10 suites y 127 pruebas unitarias aprobadas al 100% en M3.
+- **Decisiones:**
+  - Centralizar la sanitización de descripciones tanto en los DTOs como en la capa de repositorio (defensa en profundidad) para garantizar que en BD nunca queden strings vacíos o inconsistentes.
+  - Validar los horarios operativos contra todos los días que componen la recurrencia semanal de la clase, evitando que una clase quede programada fuera de horario si la sede tiene horarios diferenciados por día (ej: viernes o sábados con cierre anticipado).
+- **Dificultades:** Ninguna.
+- **Verificación:** 10 suites y 127 pruebas unitarias aprobadas al 100% en M3. `npx tsc --noEmit --project tsconfig.build.json` y `npm run build` limpios sin errores. ESLint limpio con 0 warnings.
+- **Commits:**
+  - `fix(clases): reparar persistencia de descripcion y validar horario operativo de apertura/cierre de la sede`
+  - `test(clases): suites unitarias para horario operativo de sede y sanitizacion de descripcion`
+  - `docs(log): registrar reparacion de descripcion y validacion de horario operativo de sede E16-T2`
+
+---

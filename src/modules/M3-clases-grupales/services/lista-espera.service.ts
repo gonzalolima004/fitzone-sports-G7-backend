@@ -8,6 +8,7 @@ import {
 import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { ClasesRepository } from '../repositories/clases.repository';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
+import { ClasesRealtimeService } from './clases-realtime.service';
 import { InscribirListaEsperaDto } from '../dto/inscribir-lista-espera.dto';
 import {
   claseAplicaEnFecha,
@@ -23,6 +24,7 @@ export class ListaEsperaService {
     private readonly clasesRepository: ClasesRepository,
     private readonly reservasClasesRepository: ReservasClasesRepository,
     @Optional() private readonly prisma?: PrismaService,
+    @Optional() private readonly clasesRealtime?: ClasesRealtimeService,
   ) {}
 
   async inscribir(data: InscribirListaEsperaDto, id_usuario: number) {
@@ -138,6 +140,28 @@ export class ListaEsperaService {
         fechaInicio,
         fechaFin,
       );
+
+    if (this.clasesRealtime) {
+      const cuposDisponibles = Math.max(
+        0,
+        clase.capacidad_maxima - reservasConfirmadas,
+      );
+      const estado: 'DISPONIBLE' | 'COMPLETO' =
+        cuposDisponibles > 0 ? 'DISPONIBLE' : 'COMPLETO';
+
+      void this.clasesRealtime.notificarCupoActualizado({
+        id_clase: data.id_clase,
+        id_sede: clase.id_sede,
+        fecha: fechaInicio.toISOString().slice(0, 10),
+        fecha_inicio: fechaInicio.toISOString(),
+        fecha_fin: fechaFin.toISOString(),
+        cupos_ocupados: reservasConfirmadas,
+        cupos_disponibles: cuposDisponibles,
+        capacidad_maxima: clase.capacidad_maxima,
+        en_espera: ordenEnCola,
+        estado,
+      });
+    }
 
     return {
       message: 'Inscripto correctamente a la lista de espera',

@@ -1,4 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { ClasesService } from '../services/clases.service';
 import { ClasesRepository } from '../repositories/clases.repository';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
@@ -93,6 +95,200 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
       );
     });
+
+    it('debe lanzar BadRequestException si horario_fin es menor o igual a horario_inicio', async () => {
+      const dto: CreateClaseDto = {
+        id_sede: 1,
+        nombre: 'Horario Inválido',
+        capacidad_maxima: 10,
+        horario_inicio: '18:00',
+        horario_fin: '17:00',
+      };
+
+      await expect(service.crearClase(dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('debe lanzar NotFoundException si la sede especificada no existe', async () => {
+      const mockPrismaConSede = {
+        sede: {
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+      };
+      const serviceConSede = new ClasesService(
+        mockPrismaConSede as unknown as PrismaService,
+        mockClasesRepo as ClasesRepository,
+        mockReservasRepo as ReservasClasesRepository,
+        mockListaEsperaRepo as ListaEsperaRepository,
+      );
+
+      const dto: CreateClaseDto = {
+        id_sede: 999,
+        nombre: 'Clase en Sede Inexistente',
+        capacidad_maxima: 10,
+      };
+
+      await expect(serviceConSede.crearClase(dto)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('debe lanzar BadRequestException si el horario de inicio es anterior a la hora de apertura de la sede', async () => {
+      const mockPrismaConHorario = {
+        sede_horario: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              dia_semana: 1,
+              hora_apertura: '08:00',
+              hora_cierre: '22:00',
+              abierto: true,
+            },
+          ]),
+        },
+      };
+
+      const serviceConHorario = new ClasesService(
+        mockPrismaConHorario as unknown as PrismaService,
+        mockClasesRepo as ClasesRepository,
+        mockReservasRepo as ReservasClasesRepository,
+        mockListaEsperaRepo as ListaEsperaRepository,
+      );
+
+      const dto: CreateClaseDto = {
+        id_sede: 1,
+        nombre: 'Spinning Madrugador',
+        capacidad_maxima: 20,
+        horario_inicio: '07:00',
+        horario_fin: '08:30',
+        dias_semana: [1],
+      };
+
+      await expect(serviceConHorario.crearClase(dto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(serviceConHorario.crearClase(dto)).rejects.toThrow(
+        /está fuera del horario operativo de la sede para el día Lunes/i,
+      );
+    });
+
+    it('debe lanzar BadRequestException si el horario de fin es posterior a la hora de cierre de la sede', async () => {
+      const mockPrismaConHorario = {
+        sede_horario: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              dia_semana: 5,
+              hora_apertura: '08:00',
+              hora_cierre: '20:00',
+              abierto: true,
+            },
+          ]),
+        },
+      };
+
+      const serviceConHorario = new ClasesService(
+        mockPrismaConHorario as unknown as PrismaService,
+        mockClasesRepo as ClasesRepository,
+        mockReservasRepo as ReservasClasesRepository,
+        mockListaEsperaRepo as ListaEsperaRepository,
+      );
+
+      const dto: CreateClaseDto = {
+        id_sede: 1,
+        nombre: 'Yoga Nocturno',
+        capacidad_maxima: 20,
+        horario_inicio: '19:30',
+        horario_fin: '20:30',
+        dias_semana: [5],
+      };
+
+      await expect(serviceConHorario.crearClase(dto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(serviceConHorario.crearClase(dto)).rejects.toThrow(
+        /está fuera del horario operativo de la sede para el día Viernes/i,
+      );
+    });
+
+    it('debe lanzar BadRequestException si la sede se encuentra cerrada en los días configurados', async () => {
+      const mockPrismaConHorario = {
+        sede_horario: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              dia_semana: 0,
+              hora_apertura: '00:00',
+              hora_cierre: '00:00',
+              abierto: false,
+            },
+          ]),
+        },
+      };
+
+      const serviceConHorario = new ClasesService(
+        mockPrismaConHorario as unknown as PrismaService,
+        mockClasesRepo as ClasesRepository,
+        mockReservasRepo as ReservasClasesRepository,
+        mockListaEsperaRepo as ListaEsperaRepository,
+      );
+
+      const dto: CreateClaseDto = {
+        id_sede: 1,
+        nombre: 'Crossfit Domingo',
+        capacidad_maxima: 15,
+        horario_inicio: '10:00',
+        horario_fin: '11:00',
+        dias_semana: [0],
+      };
+
+      await expect(serviceConHorario.crearClase(dto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(serviceConHorario.crearClase(dto)).rejects.toThrow(
+        /La sede se encuentra cerrada los días Domingo/i,
+      );
+    });
+
+    it('debe permitir crear la clase si el horario está estrictamente dentro del rango operativo', async () => {
+      const mockPrismaConHorario = {
+        sede_horario: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              dia_semana: 1,
+              hora_apertura: '08:00',
+              hora_cierre: '22:00',
+              abierto: true,
+            },
+          ]),
+        },
+      };
+
+      const serviceConHorario = new ClasesService(
+        mockPrismaConHorario as unknown as PrismaService,
+        mockClasesRepo as ClasesRepository,
+        mockReservasRepo as ReservasClasesRepository,
+        mockListaEsperaRepo as ListaEsperaRepository,
+      );
+
+      const dto: CreateClaseDto = {
+        id_sede: 1,
+        nombre: 'Spinning Mediodía',
+        capacidad_maxima: 20,
+        horario_inicio: '12:00',
+        horario_fin: '13:00',
+        dias_semana: [1],
+      };
+
+      (mockClasesRepo.crearClase as jest.Mock).mockResolvedValue({
+        id_clase: 55,
+        ...dto,
+        activo: true,
+      });
+
+      const res = await serviceConHorario.crearClase(dto);
+      expect(res.id_clase).toBe(55);
+      expect(res.horario_inicio).toBe('12:00');
+      expect(res.horario_fin).toBe('13:00');
+    });
   });
 
   describe('obtenerClasePorId', () => {
@@ -144,6 +340,18 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
       expect(clases[0].fecha_fin).toMatch(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
       );
+    });
+
+    it('debe propagar incluirInactivas = true al repositorio para vista de gerente', async () => {
+      (mockClasesRepo.obtenerClasesPorSede as jest.Mock).mockResolvedValue([
+        mockClase,
+        { ...mockClase, id_clase: 2, activo: false },
+      ]);
+
+      const clases = await service.obtenerClasesPorSede(1, undefined, true);
+
+      expect(mockClasesRepo.obtenerClasesPorSede).toHaveBeenCalledWith(1, true);
+      expect(clases).toHaveLength(2);
     });
   });
 
@@ -342,6 +550,61 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
         service.actualizarClase(999, { nombre: 'Nuevo' }),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('debe lanzar BadRequestException si el horario actualizado es inconsistente', async () => {
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase,
+      );
+
+      await expect(
+        service.actualizarClase(1, { horario_fin: '17:00' }), // Inicio es 18:00
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('debe lanzar BadRequestException si el horario actualizado excede el horario operativo de la sede', async () => {
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase,
+      );
+
+      const mockPrismaConHorario = {
+        sede_horario: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              dia_semana: 1,
+              hora_apertura: '08:00',
+              hora_cierre: '20:00',
+              abierto: true,
+            },
+            {
+              dia_semana: 3,
+              hora_apertura: '08:00',
+              hora_cierre: '20:00',
+              abierto: true,
+            },
+            {
+              dia_semana: 5,
+              hora_apertura: '08:00',
+              hora_cierre: '20:00',
+              abierto: true,
+            },
+          ]),
+        },
+      };
+
+      const serviceConHorario = new ClasesService(
+        mockPrismaConHorario as unknown as PrismaService,
+        mockClasesRepo as ClasesRepository,
+        mockReservasRepo as ReservasClasesRepository,
+        mockListaEsperaRepo as ListaEsperaRepository,
+      );
+
+      await expect(
+        serviceConHorario.actualizarClase(1, {
+          horario_inicio: '19:30',
+          horario_fin: '20:30',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('reemplazarClase (PUT)', () => {
@@ -377,6 +640,45 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
       expect(resultado.fecha_fin).toMatch(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
       );
+    });
+
+    it('debe lanzar BadRequestException en reemplazarClase si el horario excede el horario operativo', async () => {
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase,
+      );
+
+      const mockPrismaConHorario = {
+        sede_horario: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              dia_semana: 1,
+              hora_apertura: '08:00',
+              hora_cierre: '20:00',
+              abierto: true,
+            },
+          ]),
+        },
+      };
+
+      const serviceConHorario = new ClasesService(
+        mockPrismaConHorario as unknown as PrismaService,
+        mockClasesRepo as ClasesRepository,
+        mockReservasRepo as ReservasClasesRepository,
+        mockListaEsperaRepo as ListaEsperaRepository,
+      );
+
+      const replaceDto: CreateClaseDto = {
+        id_sede: 1,
+        nombre: 'Spinning Tempranero Excesivo',
+        capacidad_maxima: 20,
+        horario_inicio: '06:00',
+        horario_fin: '07:00',
+        dias_semana: [1],
+      };
+
+      await expect(
+        serviceConHorario.reemplazarClase(1, replaceDto),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('debe lanzar NotFoundException si no existe la clase a reemplazar', async () => {
@@ -423,6 +725,79 @@ describe('ClasesService - CRUD y Lógica de Negocio', () => {
       await expect(service.eliminarClase(999)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('Carga y guardado de descripción de clase (DTO y Servicio)', () => {
+    it('debe transformar descripción con solo espacios en blanco o cadena vacía a null', async () => {
+      const payloadVacio = {
+        id_sede: 1,
+        nombre: 'Spinning',
+        capacidad_maxima: 20,
+        descripcion: '',
+      };
+      const dtoVacio = plainToInstance(CreateClaseDto, payloadVacio);
+      expect(dtoVacio.descripcion).toBeNull();
+      const erroresVacio = await validate(dtoVacio);
+      expect(erroresVacio).toHaveLength(0);
+
+      const payloadEspacios = {
+        id_sede: 1,
+        nombre: 'Spinning',
+        capacidad_maxima: 20,
+        descripcion: '     ',
+      };
+      const dtoEspacios = plainToInstance(CreateClaseDto, payloadEspacios);
+      expect(dtoEspacios.descripcion).toBeNull();
+      const erroresEspacios = await validate(dtoEspacios);
+      expect(erroresEspacios).toHaveLength(0);
+    });
+
+    it('debe recortar espacios externos de la descripción y admitir valores nulos', async () => {
+      const payloadTexto = {
+        id_sede: 1,
+        nombre: 'Spinning',
+        capacidad_maxima: 20,
+        descripcion: '   Entrenamiento cardio de alta intensidad   ',
+      };
+      const dtoTexto = plainToInstance(CreateClaseDto, payloadTexto);
+      expect(dtoTexto.descripcion).toBe(
+        'Entrenamiento cardio de alta intensidad',
+      );
+      const erroresTexto = await validate(dtoTexto);
+      expect(erroresTexto).toHaveLength(0);
+
+      const payloadNull = {
+        id_sede: 1,
+        nombre: 'Spinning',
+        capacidad_maxima: 20,
+        descripcion: null,
+      };
+      const dtoNull = plainToInstance(CreateClaseDto, payloadNull);
+      expect(dtoNull.descripcion).toBeNull();
+      const erroresNull = await validate(dtoNull);
+      expect(erroresNull).toHaveLength(0);
+    });
+
+    it('debe delegar la creación con descripción sanitizada al repositorio', async () => {
+      const dto: CreateClaseDto = {
+        id_sede: 1,
+        nombre: 'Yoga Relax',
+        capacidad_maxima: 15,
+        descripcion: 'Clase relajante de respiración y estiramiento',
+      };
+
+      (mockClasesRepo.crearClase as jest.Mock).mockResolvedValue({
+        id_clase: 88,
+        ...dto,
+        activo: true,
+      });
+
+      const resultado = await service.crearClase(dto);
+      expect(resultado.descripcion).toBe(
+        'Clase relajante de respiración y estiramiento',
+      );
+      expect(mockClasesRepo.crearClase).toHaveBeenCalledWith(dto);
     });
   });
 });

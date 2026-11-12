@@ -8,6 +8,7 @@ import { ReservasClasesService } from '../services/reservas-clases.service';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
 import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { ListaEsperaSubject } from '../patterns/observer/lista-espera.subject';
+import { ClasesRealtimeService } from '../services/clases-realtime.service';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { CrearReservaClaseDto } from '../dto/crear-reserva-clase.dto';
 
@@ -60,6 +61,7 @@ describe('ReservasClasesService', () => {
     };
 
     mockListaEsperaRepo = {
+      contarInscriptosActivos: jest.fn().mockResolvedValue(0),
       obtenerPrimerInscriptoActivo: jest.fn(),
       actualizarEstadoInscripcion: jest.fn(),
       obtenerEstadoPorDescripcion: jest.fn(),
@@ -742,6 +744,134 @@ describe('ReservasClasesService', () => {
         100,
         undefined,
         undefined,
+      );
+    });
+  });
+
+  describe('Integración Supabase Realtime en ReservasClasesService', () => {
+    let mockClasesRealtime: {
+      notificarCupoActualizado: jest.Mock;
+      notificarVacanteLiberada: jest.Mock;
+    };
+    let serviceConRealtime: ReservasClasesService;
+
+    beforeEach(() => {
+      mockClasesRealtime = {
+        notificarCupoActualizado: jest.fn().mockResolvedValue(undefined),
+        notificarVacanteLiberada: jest.fn().mockResolvedValue(undefined),
+      };
+
+      serviceConRealtime = new ReservasClasesService(
+        mockPrisma as unknown as PrismaService,
+        mockReservasRepo as unknown as ReservasClasesRepository,
+        mockListaEsperaSubject as unknown as ListaEsperaSubject,
+        mockListaEsperaRepo as unknown as ListaEsperaRepository,
+        mockClasesRealtime as unknown as ClasesRealtimeService,
+      );
+    });
+
+    it('crearReserva debe emitir notificarCupoActualizado si el servicio realtime está presente', async () => {
+      const fechaInicio = new Date(Date.now() + 24 * 3600000);
+      const fechaFin = new Date(fechaInicio.getTime() + 3600000);
+      const diaSemana = fechaInicio.getDay();
+
+      const dto: CrearReservaClaseDto = {
+        id_clase: 1,
+        fecha_inicio: fechaInicio.toISOString(),
+        fecha_fin: fechaFin.toISOString(),
+      };
+
+      mockPrisma.membresia.findFirst.mockResolvedValue({ id_membresia: 1 });
+      mockPrisma.claseReserva.findFirst.mockResolvedValue(null);
+      mockPrisma.clase.findUnique.mockResolvedValue({
+        id_clase: 1,
+        id_sede: 2,
+        capacidad_maxima: 10,
+        dias_semana: [diaSemana],
+        fecha: null,
+      });
+      (
+        mockReservasRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(5);
+      (mockReservasRepo.crearReserva as jest.Mock).mockResolvedValue({
+        id_clase_reserva: 101,
+      });
+      (
+        mockListaEsperaRepo.contarInscriptosActivos as jest.Mock
+      ).mockResolvedValue(0);
+
+      const res = await serviceConRealtime.crearReserva(dto, 50);
+
+      expect(res).toEqual({ id_clase_reserva: 101 });
+      expect(mockClasesRealtime.notificarCupoActualizado).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id_clase: 1,
+          id_sede: 2,
+          cupos_ocupados: 6,
+          cupos_disponibles: 4,
+          capacidad_maxima: 10,
+          estado: 'DISPONIBLE',
+        }),
+      );
+    });
+
+    it('cancelarReserva sin espera debe emitir notificarCupoActualizado y notificarVacanteLiberada', async () => {
+      const fechaInicio = new Date(Date.now() + 4 * 3600000);
+      const fechaFin = new Date(Date.now() + 5 * 3600000);
+
+      mockPrisma.claseReserva.findUnique.mockResolvedValue({
+        id_clase_reserva: 1,
+        id_clase: 10,
+        id_usuario: 100,
+        id_clase_reserva_estado: 1,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+      });
+
+      mockPrisma.clase.findUnique.mockResolvedValue({
+        id_clase: 10,
+        id_sede: 3,
+        nombre: 'Spinning',
+        capacidad_maxima: 20,
+      });
+
+      (mockReservasRepo.actualizarEstadoReserva as jest.Mock).mockResolvedValue(
+        {
+          id_clase_reserva: 1,
+          id_clase_reserva_estado: 4,
+        },
+      );
+      (
+        mockListaEsperaRepo.obtenerPrimerInscriptoActivo as jest.Mock
+      ).mockResolvedValue(null);
+      (mockReservasRepo.obtenerPrimerEnEspera as jest.Mock).mockResolvedValue(
+        null,
+      );
+      (
+        mockReservasRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(10);
+      (
+        mockListaEsperaRepo.contarInscriptosActivos as jest.Mock
+      ).mockResolvedValue(0);
+
+      await serviceConRealtime.cancelarReserva(1, 100);
+
+      expect(mockClasesRealtime.notificarCupoActualizado).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id_clase: 10,
+          id_sede: 3,
+          cupos_ocupados: 10,
+          cupos_disponibles: 10,
+          capacidad_maxima: 20,
+          estado: 'DISPONIBLE',
+        }),
+      );
+      expect(mockClasesRealtime.notificarVacanteLiberada).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id_clase: 10,
+          id_sede: 3,
+          nombre_clase: 'Spinning',
+        }),
       );
     });
   });

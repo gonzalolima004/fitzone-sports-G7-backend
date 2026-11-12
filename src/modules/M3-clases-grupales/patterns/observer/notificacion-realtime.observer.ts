@@ -1,10 +1,11 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import {
   ListaEsperaObserver,
   VacanteLiberadaEvento,
 } from './lista-espera-observer.interface';
 import { SupabaseService } from '../../../../common/supabase/supabase.service';
 import { ListaEsperaSubject } from './lista-espera.subject';
+import { ClasesRealtimeService } from '../../services/clases-realtime.service';
 
 @Injectable()
 export class NotificacionRealtimeObserver
@@ -15,6 +16,7 @@ export class NotificacionRealtimeObserver
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly subject: ListaEsperaSubject,
+    @Optional() private readonly clasesRealtime?: ClasesRealtimeService,
   ) {}
 
   onModuleInit() {
@@ -27,30 +29,72 @@ export class NotificacionRealtimeObserver
       `Procesando evento de vacante liberada para clase ${evento.id_clase}`,
     );
 
-    // Emitir evento al canal global de la clase indicando que hay una nueva vacante
-    // Cualquier usuario en la sala de espera de la app podría ver esto y actualizar su estado visual
-    await this.supabaseService.emitRealtimeEvent(
-      `clases:espera:${evento.id_clase}`,
-      'vacante_liberada',
-      {
-        id_clase: evento.id_clase,
-        fecha_inicio: evento.fecha_inicio,
-        fecha_fin: evento.fecha_fin,
-        mensaje: '¡Una vacante se ha liberado en esta clase!',
-      },
-    );
+    try {
+      // Si el servicio especializado de Realtime está disponible y el evento contiene metadatos completos, delegar
+      if (this.clasesRealtime) {
+        await this.clasesRealtime.notificarVacanteLiberada(evento);
+        return;
+      }
 
-    if (evento.id_usuario_promovido) {
-      this.logger.log(
-        `Notificando al usuario promovido ID: ${evento.id_usuario_promovido}`,
-      );
+      // Fallback directo a SupabaseService (mantiene compatibilidad 100% con suites unitarias del observer)
       await this.supabaseService.emitRealtimeEvent(
-        `usuarios:${evento.id_usuario_promovido}:notificaciones`,
-        'promocion_lista_espera',
+        `clases:espera:${evento.id_clase}`,
+        'vacante_liberada',
         {
-          mensaje: '¡Se ha liberado un cupo y se te ha asignado la vacante!',
-          clase: evento.id_clase,
+          id_clase: evento.id_clase,
+          fecha_inicio: evento.fecha_inicio,
+          fecha_fin: evento.fecha_fin,
+          mensaje:
+            evento.mensaje || '¡Una vacante se ha liberado en esta clase!',
+          ...(evento.id_sede ? { id_sede: evento.id_sede } : {}),
+          ...(evento.nombre_clase ? { nombre_clase: evento.nombre_clase } : {}),
         },
+      );
+
+      if (evento.id_sede) {
+        await this.supabaseService.emitRealtimeEvent(
+          `clases:sede:${evento.id_sede}`,
+          'vacante_liberada',
+          {
+            id_clase: evento.id_clase,
+            id_sede: evento.id_sede,
+            nombre_clase: evento.nombre_clase,
+            fecha_inicio: evento.fecha_inicio,
+            fecha_fin: evento.fecha_fin,
+            mensaje:
+              evento.mensaje || '¡Una vacante se ha liberado en esta clase!',
+          },
+        );
+      }
+
+      if (evento.id_usuario_promovido) {
+        this.logger.log(
+          `Notificando al usuario promovido ID: ${evento.id_usuario_promovido}`,
+        );
+        await this.supabaseService.emitRealtimeEvent(
+          `usuarios:${evento.id_usuario_promovido}:notificaciones`,
+          'promocion_lista_espera',
+          {
+            mensaje:
+              evento.mensaje ||
+              '¡Se ha liberado un cupo y se te ha asignado la vacante!',
+            clase: evento.id_clase,
+            id_clase: evento.id_clase,
+            ...(evento.nombre_clase
+              ? { nombre_clase: evento.nombre_clase }
+              : {}),
+            ...(evento.id_sede ? { id_sede: evento.id_sede } : {}),
+            ...(evento.profesor ? { profesor: evento.profesor } : {}),
+            ...(evento.sala ? { sala: evento.sala } : {}),
+            fecha_inicio: evento.fecha_inicio,
+            fecha_fin: evento.fecha_fin,
+          },
+        );
+      }
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Error al emitir evento de vacante liberada para clase ${evento.id_clase}: ${errorMsg}`,
       );
     }
   }

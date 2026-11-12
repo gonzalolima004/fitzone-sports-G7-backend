@@ -10,13 +10,16 @@ import {
   IsBoolean,
   IsArray,
   IsDateString,
+  Matches,
 } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 export class CreateClaseDto {
   @ApiProperty({
     description: 'ID de la sede donde se dictará la clase',
     example: 1,
   })
+  @Type(() => Number)
   @IsInt()
   @IsNotEmpty()
   id_sede: number;
@@ -26,6 +29,7 @@ export class CreateClaseDto {
     example: 20,
     minimum: 1,
   })
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @IsNotEmpty()
@@ -47,10 +51,17 @@ export class CreateClaseDto {
       'Clase de spinning de alta intensidad combinada con ejercicios funcionales.',
     maxLength: 255,
   })
+  @Transform(({ value }: { value: unknown }): string | null | undefined => {
+    if (value === undefined) return undefined;
+    if (value === null || (typeof value === 'string' && value.trim() === '')) {
+      return null;
+    }
+    return typeof value === 'string' ? value.trim() : (value as string);
+  })
   @IsString()
   @IsOptional()
   @MaxLength(255)
-  descripcion?: string;
+  descripcion?: string | null;
 
   @ApiPropertyOptional({
     description: 'Nombre del profesor o instructor a cargo',
@@ -79,7 +90,10 @@ export class CreateClaseDto {
   })
   @IsString()
   @IsOptional()
-  @MaxLength(10)
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, {
+    message:
+      'El horario de inicio debe tener formato válido HH:mm (ej: 09:00, 18:30)',
+  })
   horario_inicio?: string;
 
   @ApiPropertyOptional({
@@ -89,7 +103,10 @@ export class CreateClaseDto {
   })
   @IsString()
   @IsOptional()
-  @MaxLength(10)
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, {
+    message:
+      'El horario de fin debe tener formato válido HH:mm (ej: 10:00, 19:30)',
+  })
   horario_fin?: string;
 
   @ApiPropertyOptional({
@@ -99,6 +116,7 @@ export class CreateClaseDto {
     type: [Number],
   })
   @IsArray()
+  @Type(() => Number)
   @IsInt({ each: true })
   @Min(0, { each: true })
   @Max(6, { each: true })
@@ -110,6 +128,9 @@ export class CreateClaseDto {
       'Fecha puntual de la clase en formato YYYY-MM-DD (para clases de única edición o eventos especiales)',
     example: '2026-10-25',
   })
+  @Transform(({ value }: { value: unknown }): string | undefined =>
+    typeof value === 'string' && value.trim() !== '' ? value : undefined,
+  )
   @IsDateString()
   @IsOptional()
   fecha?: string;
