@@ -4,7 +4,7 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { QrService } from './qr.service';
 import { MembresiasService } from '../../M1-usuarios/services/membresias.service';
 import { VerificarMembresiaResponseDto } from '../../M1-usuarios/dto/verificar-membresia-response.dto';
-
+import { UsuariosService } from '../../M1-usuarios/services/usuarios.service';
 describe('QrService', () => {
   let service: QrService;
   let membresiasService: jest.Mocked<MembresiasService>;
@@ -28,6 +28,17 @@ describe('QrService', () => {
         {
           provide: MembresiasService,
           useValue: mockMembresiasService,
+        },
+        {
+          provide: UsuariosService,
+          useValue: {
+            findById: jest.fn().mockResolvedValue({
+              id_usuario: 42,
+              sede: {
+                id_ciudad: 1,
+              },
+            }),
+          },
         },
       ],
     }).compile();
@@ -58,7 +69,7 @@ describe('QrService', () => {
       expect(resultado.fechaGeneracion).toBeInstanceOf(Date);
 
       const partes = resultado.token.split('.');
-      expect(partes).toHaveLength(3);
+      expect(partes).toHaveLength(4);
       expect(partes[0]).toBe('42');
     });
 
