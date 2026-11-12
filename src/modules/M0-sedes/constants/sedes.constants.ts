@@ -3,6 +3,14 @@
  * de la base (sede_horario y calendario_sede): no hay horarios por defecto.
  */
 
+/** Roles con cuenta en FitZone: pueden ver el detalle y el horario de una sede. */
+export const ROLES_CON_CUENTA = [
+  'socio',
+  'externo',
+  'recepcionista',
+  'gerente',
+];
+
 /** Las columnas de hora no admiten nulos: un día sin atención guarda 00:00. */
 export const SIN_ATENCION = '00:00';
 
