@@ -40,7 +40,13 @@ describe('AuthService', () => {
       aforo_maximo: 100,
       activo: true,
       id_ciudad: 1,
+      ciudad: {
+        id_ciudad: 1,
+        nombre: 'Concordia',
+        activo: true,
+      },
     },
+    membresia: [],
     usuario_estado: {
       id_usuario_estado: 1,
       descripcion: 'activo',

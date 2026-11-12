@@ -1472,6 +1472,36 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 10/11/2026
+
+#### Angelina Vialle | Rol: Desarrolladora Backend
+
+- **Actividades:**
+  - **Ampliación de identidad en autenticación (`common`):** Extensión de la interfaz `AuthenticatedUser` y actualización de `SupabaseAuthGuard` para inyectar `dni` y `nombre` directamente en el objeto de usuario de la sesión (`req.user`), facilitando su consumo en controladores sin requerir consultas adicionales a la base de datos.
+  - **Inclusión de sedes, ciudades y estado de membresía en M1:** Actualización de `defaultIncludes` y `findAll` en `UsuariosRepository` para incluir las relaciones anidadas `sede.ciudad` y `membresia.membresia_estado`. Exposición de estos datos en `UsuarioResponseDto` y exportación de `UsuariosRepository` en `UsuariosModule` para su integración en otros módulos.
+  - **Soporte y DTO para accesos offline en M2:** Creación de `SincronizarAccesoOfflineDto` con validaciones estrictas (`id_usuario`, `id_sede`, `tipo: 'INGRESO' | 'EGRESO'` y marca de tiempo histórica `timestamp`) para permitir que terminales de torniquete registren eventos localmente ante cortes de conectividad.
+  - **Consulta de sede con ciudad en repositorio de accesos:** Implementación de `buscarSedePorId` en `AccesosRepository` con carga de relación de ciudad (`include: { ciudad: true }`), habilitando la validación cruzada geográfica en torniquete.
+  - **Robustecimiento y firma de QR dinámico:** Refactorización de `QrService.generarFirma` y `validarTokenEfimero` para incorporar la ciudad del socio dentro del token efímero (`id_usuario.timestamp.id_ciudad.firma`). Integración con `MembresiasService.verificarMembresia` para bloquear con `ForbiddenException` (403) la generación de credenciales a socios en mora o sin membresía activa.
+  - **Validación multi-sede y sincronización offline en servicio de accesos:** Adaptación de `validarYRegistrarIngreso` para verificar que la sede de destino pertenezca a la misma ciudad de registro del socio (`BadRequestException` 400 en caso contrario). Implementación de `sincronizarAccesoOffline` para procesar en lote eventos postergados respetando las reglas de estado de socio, mora, anti-doble ingreso y emisión de aforo en tiempo real.
+  - **Endpoint de perfil de socio para visualización en credencial:** Implementación del método `obtenerPerfilSocio` en `AccesosService` y publicación del endpoint `GET /accesos/perfil/:id` en `AccesosController`, retornando datos consolidados del socio (ID, nombre, DNI, foto de perfil y estado de membresía 'ACTIVO'/'INACTIVO') para el renderizado del pase digital en el frontend.
+  - **Publicación de endpoints y protección con Guards:** Activación de `@UseGuards(SupabaseAuthGuard)` en `QrController` y `AccesosController`, e incorporación del endpoint `POST /accesos/sincronizar-offline` con documentación OpenAPI/Swagger completa.
+- **Decisiones:**
+  - Incluir el `id_ciudad` dentro del token QR firmado con HMAC-SHA256 para permitir validaciones geográficas rápidas y locales tanto en línea como en contingencias offline.
+  - Diseñar el endpoint `GET /accesos/perfil/:id` unificando la información del usuario con el cálculo dinámico de su estado de membresía ('ACTIVO'/'INACTIVO'), evitando que el frontend tenga que realizar múltiples peticiones para renderizar la credencial con su foto y estado.
+  - Implementar la sincronización offline con validación idempotente (omisión de errores fatales si el socio ya registraba ingreso activo previo) para no interrumpir el volcado de la cola de eventos al restaurarse la conexión del torniquete.
+- **Dificultades:** para guaradr los qr que se hacen offline no se puede tener en cuenta el timepo de expiracion.
+- **Commits:**
+  - `feat(common): adicion atributos dni y nombre a guards de supabase e interface de user`
+  - `feat(M1): adicion membresias y sedes y exports usuariosRepository`
+  - `feat(M2): dto para acceso offline`
+  - `feat(2): buscarSedePorId que incluye ciudad`
+  - `feat(M2): cambio manera de generarse firma  y token qr`
+  - `feat(M2): cambio metodo extraer id usuario y ciudad de token, adicion de metodo para acceso offline`
+  - `feat(M2): sincronizacion offline, obtener perfil e importacion de modulo usuario`
+  - `docs(log): actualizacion de bitacora`
+`
+---
+
 #### 04/11/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend

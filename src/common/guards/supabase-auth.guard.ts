@@ -91,7 +91,6 @@ export class SupabaseAuthGuard implements CanActivate {
 
         throw error;
       });
-
     if (!usuarioFitZone) {
       throw new ForbiddenException(
         'Usuario autenticado sin cuenta asociada a FitZone',
@@ -108,6 +107,8 @@ export class SupabaseAuthGuard implements CanActivate {
       email: user.email,
       rol: userRoles[0] ?? 'socio',
       roles: userRoles.length > 0 ? userRoles : ['socio'],
+      dni: usuarioFitZone.dni,
+      nombre: usuarioFitZone.nombre,
     };
 
     return true;

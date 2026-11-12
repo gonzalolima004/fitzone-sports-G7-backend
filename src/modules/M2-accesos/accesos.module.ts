@@ -8,9 +8,9 @@ import { AforoRealtimeService } from './services/aforo-realtime.service';
 import { AccesosRepository } from './repositories/accesos.repository';
 import { PrismaModule } from '../../database/prisma-service/prisma.module';
 import { SupabaseModule } from '../../common/supabase/supabase.module';
-
+import { UsuariosModule } from '../M1-usuarios/usuarios.module';
 @Module({
-  imports: [ConfigModule, PrismaModule, SupabaseModule],
+  imports: [ConfigModule, PrismaModule, SupabaseModule, UsuariosModule],
   controllers: [QrController, AccesosController],
   providers: [
     QrService,
