@@ -193,6 +193,52 @@ describe('ListaEsperaService', () => {
       );
     });
 
+    it('debe rechazar inscripción en lista de espera si la clase está completamente vacía (0 reservas de 20)', async () => {
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase, // capacidad: 20
+      );
+      (
+        mockListaEsperaRepo.existeInscripcionActiva as jest.Mock
+      ).mockResolvedValue(null);
+      (
+        mockReservasClasesRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(0); // 0 ocupados -> Clase vacía
+
+      const ahora = Date.now();
+      const dto: InscribirListaEsperaDto = {
+        id_clase: 1,
+        fecha_inicio: new Date(ahora + 3600000).toISOString(),
+        fecha_fin: new Date(ahora + 7200000).toISOString(),
+      };
+
+      await expect(service.inscribir(dto, idUsuario)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('debe rechazar inscripción en lista de espera si la clase tiene un único cupo disponible (19 de 20)', async () => {
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase, // capacidad: 20
+      );
+      (
+        mockListaEsperaRepo.existeInscripcionActiva as jest.Mock
+      ).mockResolvedValue(null);
+      (
+        mockReservasClasesRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(19); // 19 de 20 -> 1 libre
+
+      const ahora = Date.now();
+      const dto: InscribirListaEsperaDto = {
+        id_clase: 1,
+        fecha_inicio: new Date(ahora + 3600000).toISOString(),
+        fecha_fin: new Date(ahora + 7200000).toISOString(),
+      };
+
+      await expect(service.inscribir(dto, idUsuario)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it('debe inscribir con éxito cuando la clase está llena y calcular orden en cola', async () => {
       (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
         mockClase, // capacidad: 20

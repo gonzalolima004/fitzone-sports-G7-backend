@@ -240,6 +240,26 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
       expect(count).toBe(7);
     });
 
+    it('contarReservasConfirmadas debe retornar 0 cuando la clase está vacía', async () => {
+      const d1 = new Date();
+      const d2 = new Date();
+      mockPrisma.claseReserva.count.mockResolvedValue(0);
+
+      const count = await repo.contarReservasConfirmadas(1, d1, d2);
+
+      expect(count).toBe(0);
+    });
+
+    it('contarReservasConfirmadas debe retornar total de cupos cuando la clase está llena', async () => {
+      const d1 = new Date();
+      const d2 = new Date();
+      mockPrisma.claseReserva.count.mockResolvedValue(20);
+
+      const count = await repo.contarReservasConfirmadas(1, d1, d2);
+
+      expect(count).toBe(20);
+    });
+
     it('crearReserva debe insertar la reserva en claseReserva', async () => {
       const dto = {
         id_clase: 1,

@@ -1636,3 +1636,24 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(clases): aplicar reglas de no mora y validacion por ciudad en reservas y lista de espera`
 
 ---
+
+#### 08/11/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** E16-T1: Cierre de Épica E16 - Verificación exhaustiva de cupos límite y cobertura de pruebas.
+- **Actividades:**
+  - **Validación del flujo de reservas por estado de ocupación:**
+    - _Clases vacías (0 reservas de N):_ Verificación de confirmación inmediata sin errores de ejecución y rechazo en lista de espera (`400 BadRequest`) indicando disponibilidad de vacantes normales.
+    - _Clases con un único cupo disponible (N-1 reservas de N):_ Verificación de reserva exitosa de la última vacante disponible, transición de la clase a estado `COMPLETO`, y rechazo inmediato de intentos posteriores.
+    - _Clases llenas (N reservas de N):_ Verificación de rechazo con `409 ConflictException` en reservas directas, e inscripción exitosa con cálculo incremental de orden en cola en lista de espera (`orden_en_cola`).
+  - **Cobertura unitaria completa de M3:** Cobertura al 100% de los 3 repositorios (`ClasesRepository`, `ReservasClasesRepository`, `ListaEsperaRepository`), 3 servicios (`ClasesService`, `ReservasClasesService`, `ListaEsperaService`), 3 controladores (`ClasesController`, `ReservasClasesController`, `ListaEsperaController`) y los observadores del patrón Observer.
+  - **Pipeline y estabilidad:** Total de 9 suites y 99 pruebas unitarias e integrales aprobadas al 100%, compilación limpia (`nest build`) y 0 advertencias de linter y formato.
+- **Decisiones:**
+  - Garantizar pruebas dedicadas para cada uno de los tres estados críticos de capacidad (vacía, último cupo y llena) tanto en repositorios, servicios de cálculo de agenda, reservas y lista de espera.
+- **Dificultades:** Ninguna.
+- **Verificación:** 9 suites y 99 pruebas aprobadas al 100%. Pipeline de build exitoso.
+- **Commits:**
+  - `test(clases): suites unitarias para flujo de cupos en clases vacias, con un cupo y llenas`
+
+---

@@ -383,6 +383,91 @@ describe('ReservasClasesService', () => {
         expect.anything(),
       );
     });
+
+    it('debe procesar exitosamente la reserva cuando la clase está completamente vacía (0 reservas de 20)', async () => {
+      const ahora = new Date();
+      const fechaInicio = new Date(ahora.getTime() + 5 * 3600000).toISOString();
+      const fechaFin = new Date(ahora.getTime() + 6 * 3600000).toISOString();
+
+      const dto: CrearReservaClaseDto = {
+        id_clase: 1,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+      };
+
+      const reservaCreada = {
+        id_clase_reserva: 101,
+        id_clase: 1,
+        id_usuario: idUsuario,
+        id_clase_reserva_estado: 1,
+        fecha_inicio: new Date(fechaInicio),
+        fecha_fin: new Date(fechaFin),
+      };
+
+      mockPrisma.membresia.findFirst.mockResolvedValue({ id_membresia: 1 });
+      mockPrisma.claseReserva.findFirst.mockResolvedValue(null);
+      mockPrisma.clase.findUnique.mockResolvedValue({
+        id_clase: 1,
+        capacidad_maxima: 20,
+      });
+      (
+        mockReservasRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(0); // 0 ocupados -> Clase vacía
+      (mockReservasRepo.crearReserva as jest.Mock).mockResolvedValue(
+        reservaCreada,
+      );
+
+      const resultado = await service.crearReserva(dto, idUsuario);
+
+      expect(resultado).toEqual(reservaCreada);
+      expect(mockReservasRepo.contarReservasConfirmadas).toHaveBeenCalled();
+      expect(mockReservasRepo.crearReserva).toHaveBeenCalledWith(
+        dto,
+        idUsuario,
+        1,
+        expect.anything(),
+      );
+    });
+
+    it('debe procesar exitosamente la reserva cuando la clase tiene un único cupo disponible (19 de 20 ocupados)', async () => {
+      const ahora = new Date();
+      const fechaInicio = new Date(ahora.getTime() + 5 * 3600000).toISOString();
+      const fechaFin = new Date(ahora.getTime() + 6 * 3600000).toISOString();
+
+      const dto: CrearReservaClaseDto = {
+        id_clase: 1,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+      };
+
+      const reservaCreada = {
+        id_clase_reserva: 102,
+        id_clase: 1,
+        id_usuario: idUsuario,
+        id_clase_reserva_estado: 1,
+        fecha_inicio: new Date(fechaInicio),
+        fecha_fin: new Date(fechaFin),
+      };
+
+      mockPrisma.membresia.findFirst.mockResolvedValue({ id_membresia: 1 });
+      mockPrisma.claseReserva.findFirst.mockResolvedValue(null);
+      mockPrisma.clase.findUnique.mockResolvedValue({
+        id_clase: 1,
+        capacidad_maxima: 20,
+      });
+      (
+        mockReservasRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(19); // 19 ocupados de 20 -> 1 cupo disponible
+      (mockReservasRepo.crearReserva as jest.Mock).mockResolvedValue(
+        reservaCreada,
+      );
+
+      const resultado = await service.crearReserva(dto, idUsuario);
+
+      expect(resultado).toEqual(reservaCreada);
+      expect(mockReservasRepo.contarReservasConfirmadas).toHaveBeenCalled();
+      expect(mockReservasRepo.crearReserva).toHaveBeenCalled();
+    });
   });
 
   describe('cancelarReserva', () => {
