@@ -1292,6 +1292,25 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 10/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Modularización y extracción del motor de cálculo y partición de slots en memoria a `CanchasDisponibilidadService`, manteniendo a `CanchasService` como Fachada para asegurar retrocompatibilidad.
+  - Eliminación de valores repetidos hardcodeados en M4 mediante constantes centralizadas en `canchas.constants.ts` y utilidades comunes de fechas.
+  - Unificación del flujo de cotización en `ReservasCanchasService` delegando en `CanchasService.cotizarTurno`.
+  - Implementación de la suite de tests unitarios para `CanchasDisponibilidadService` (generación de slots, aperturas fraccionadas, bloqueos) y `ReservasCanchasService` - **Decisiones:** 
+    - Remover los valores repetidos primitivos optando por un archivo que contiene los valores como constantes.
+    - Desligar lo relacionado a disponibilidad de canchas de cancha service en un archivo service dedicado a esa tarea.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `feat(M4) tests para disponibilidad de cancha y reservas`
+  - `refactor(M4): refactorizacion de modulo 4`
+  - `docs(log): actualizacion de bitacora`
+
+---
+
 #### 26/10/2026
 
 #### Gonzalo Lima | Rol: Desarrollador Backend
