@@ -119,6 +119,16 @@ export class CanchasRepository {
                 descripcion: true,
               },
             },
+            pagos: {
+              where: {
+                pago_estado: {
+                  descripcion: { equals: 'Aprobado', mode: 'insensitive' },
+                },
+              },
+              select: {
+                id_pago: true,
+              },
+            },
           },
         },
       },
@@ -158,7 +168,7 @@ export class CanchasRepository {
   }
 
   /**
-   * Registra un nuevo mantenimiento para la cancha sin afectar las reservas existentes (RF-12).
+   * Registra un nuevo mantenimiento para la cancha sin afectar las reservas existentes.
    */
   async crearMantenimiento(
     data: Prisma.CanchaMantenimientoUncheckedCreateInput,

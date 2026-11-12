@@ -23,6 +23,8 @@ import {
   CotizacionResponseDto,
 } from '../dto/cotizacion-turno.dto';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 import { CanchasService } from '../services/canchas.service';
@@ -39,8 +41,16 @@ export class CanchasController {
   constructor(private readonly canchasService: CanchasService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Dar de alta una nueva cancha' })
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Dar de alta una nueva cancha (Solo gerente)' })
   @ApiResponse({ status: 201, description: 'Cancha creada exitosamente.' })
+  @ApiResponse({ status: 401, description: 'No autorizado / Token inválido.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido / Requiere rol gerente.',
+  })
   crear(@Body() crearCanchaDto: CrearCanchaDto) {
     return this.canchasService.crearCancha(crearCanchaDto);
   }
@@ -82,22 +92,38 @@ export class CanchasController {
   }
 
   @Post('tipos')
-  @ApiOperation({ summary: 'Crear un nuevo tipo de cancha' })
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Crear un nuevo tipo de cancha (Solo gerente)' })
   @ApiResponse({
     status: 201,
     description: 'Tipo de cancha creado exitosamente.',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado / Token inválido.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido / Requiere rol gerente.',
   })
   crearTipo(@Body() dto: CrearTipoCanchaDto) {
     return this.canchasService.crearTipoCancha(dto.descripcion);
   }
 
   @Patch('tipos/:id')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente')
+  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Actualizar un tipo de cancha existente',
+    summary: 'Actualizar un tipo de cancha existente (Solo gerente)',
   })
   @ApiResponse({
     status: 200,
     description: 'Tipo de cancha actualizado correctamente.',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado / Token inválido.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido / Requiere rol gerente.',
   })
   actualizarTipo(
     @Param('id', ParseIntPipe) id: number,
@@ -107,13 +133,21 @@ export class CanchasController {
   }
 
   @Delete('tipos/:id')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente')
+  @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Realizar un borrado lógico del tipo de cancha verificando que no posea canchas activas',
+      'Realizar un borrado lógico del tipo de cancha verificando que no posea canchas activas (Solo gerente)',
   })
   @ApiResponse({
     status: 200,
     description: 'Tipo de cancha dado de baja correctamente.',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado / Token inválido.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido / Requiere rol gerente.',
   })
   eliminarTipo(@Param('id', ParseIntPipe) id: number) {
     return this.canchasService.eliminarTipoCancha(id);
@@ -121,8 +155,7 @@ export class CanchasController {
 
   @Get('disponibilidad')
   @ApiOperation({
-    summary:
-      'Consultar grilla horaria de todas las canchas de una sede (Opción A)',
+    summary: 'Consultar grilla horaria de todas las canchas de una sede',
   })
   obtenerDisponibilidadPorSede(
     @Query('sedeId', ParseIntPipe) sedeId: number,
@@ -176,7 +209,21 @@ export class CanchasController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Actualizar datos parciales de una cancha' })
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Actualizar datos parciales de una cancha (Solo gerente)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Cancha actualizada correctamente.',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado / Token inválido.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido / Requiere rol gerente.',
+  })
   actualizar(
     @Param('id', ParseIntPipe) id: number,
     @Body() actualizarCanchaDto: ActualizarCanchaDto,
@@ -185,7 +232,21 @@ export class CanchasController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Realizar un borrado lógico de la cancha' })
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('gerente')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Realizar un borrado lógico de la cancha (Solo gerente)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Cancha dada de baja correctamente.',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado / Token inválido.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido / Requiere rol gerente.',
+  })
   eliminar(@Param('id', ParseIntPipe) id: number) {
     return this.canchasService.eliminarCancha(id);
   }

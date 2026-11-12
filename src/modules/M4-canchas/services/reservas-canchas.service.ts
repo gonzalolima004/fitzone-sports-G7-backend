@@ -5,13 +5,15 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { ReservasCanchasRepository } from '../repositories/reservas-canchas.repository';
+import {
+  ESTADOS_CANCHA_RESERVA,
+  ReservasCanchasRepository,
+} from '../repositories/reservas-canchas.repository';
 import { CanchasRepository } from '../repositories/canchas.repository';
 import { PrecioContextService } from './precio-context.service';
 import { CrearReservaCanchaDto } from '../dto/crear-reserva-cancha.dto';
 import { CotizacionContext } from '../dto/cotizacion-turno.dto';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
-import { whereBeneficiosVigentes } from '../../M1-usuarios/utils/membresia-beneficios';
 import { SedeService } from '../../M0-sedes/services/sede.service';
 import { CanchasRealtimeService } from './canchas-realtime.service';
 import { CanchasService } from './canchas.service';
@@ -139,10 +141,13 @@ export class ReservasCanchasService {
       let esSocioActivo = false;
       if (esSocio && usuario) {
         const tieneMembresiaActiva = (usuario.membresia ?? []).some((m) => {
+          const desc = m.membresia_estado?.descripcion?.trim().toLowerCase();
           const esEstadoActivo =
-            m.id_membresia_estado === 1 ||
-            m.membresia_estado?.descripcion?.trim().toLowerCase() === 'activa';
-          if (!esEstadoActivo) return false;
+            m.id_membresia_estado === 1 || desc === 'activa';
+          const esSuspendidaConPago =
+            desc === 'suspendida' && (m.pagos?.length ?? 0) > 0;
+
+          if (!esEstadoActivo && !esSuspendidaConPago) return false;
 
           const fInicio = m.fecha_inicio.toISOString().slice(0, 10);
           const fFin = m.fecha_fin.toISOString().slice(0, 10);
@@ -177,11 +182,19 @@ export class ReservasCanchasService {
       precioCongelado = calculo.precio_congelado;
     }
 
-    // 6. Ejecutar transacción atómica anti-colisiones (RN-02)
+    // 6. Resolver ID del estado canónico 'Pendiente de Pago' en BD sin IDs hardcodeados
+    const idEstadoPendiente = this.reservasRepository
+      .obtenerIdEstadoPorDescripcion
+      ? await this.reservasRepository.obtenerIdEstadoPorDescripcion(
+          ESTADOS_CANCHA_RESERVA.PENDIENTE_PAGO,
+        )
+      : 1;
+
+    // 7. Ejecutar transacción atómica anti-colisiones
     const reserva = await this.reservasRepository.crearReservaTransaccional({
       id_cancha: dto.id_cancha,
       id_usuario: idUsuario,
-      id_cancha_reserva_estado: 1, // 1 = Confirmada/Pendiente Pago
+      id_cancha_reserva_estado: idEstadoPendiente,
       fecha_inicio: inicio,
       fecha_fin: fin,
       descuento_porcentaje: descuentoPorcentaje,
