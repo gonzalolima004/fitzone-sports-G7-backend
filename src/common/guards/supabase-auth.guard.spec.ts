@@ -102,7 +102,9 @@ describe('SupabaseAuthGuard', () => {
       error: null,
     });
 
-    (mockUsuariosRepository.findAuthProfileByEmail as jest.Mock).mockResolvedValue({
+    (
+      mockUsuariosRepository.findAuthProfileByEmail as jest.Mock
+    ).mockResolvedValue({
       id_usuario: 25,
       dni: '12345678',
       email: 'socio@fitzone.com',

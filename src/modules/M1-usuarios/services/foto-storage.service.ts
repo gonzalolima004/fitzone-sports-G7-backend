@@ -10,11 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 export class FotoStorageService {
   private supabase: ReturnType<typeof createClient>;
   private readonly bucketName = 'fitzonepublic';
-  private readonly allowedMimeTypes = [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-  ];
+  private readonly allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
   private readonly maxFileSizeBytes = 2 * 1024 * 1024; // 2 MB
 
   constructor() {

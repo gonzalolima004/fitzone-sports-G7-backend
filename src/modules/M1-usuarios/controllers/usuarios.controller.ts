@@ -88,7 +88,9 @@ export class UsuariosController {
   @Patch(':id')
   @UseGuards(SupabaseAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Actualizar datos permitidos del perfil de usuario' })
+  @ApiOperation({
+    summary: 'Actualizar datos permitidos del perfil de usuario',
+  })
   @ApiResponse({
     status: 200,
     description: 'Usuario actualizado correctamente.',

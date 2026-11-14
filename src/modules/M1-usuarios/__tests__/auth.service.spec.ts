@@ -131,7 +131,9 @@ describe('AuthService', () => {
 
     it('debería asignar el rol "externo" por defecto si el usuario no tiene roles cargados', async () => {
       const usuarioSinRoles = { ...mockUsuario, usuario_rol: [] };
-      usuariosRepository.findAuthProfileByEmail.mockResolvedValue(usuarioSinRoles);
+      usuariosRepository.findAuthProfileByEmail.mockResolvedValue(
+        usuarioSinRoles,
+      );
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await authService.login(loginDto);
