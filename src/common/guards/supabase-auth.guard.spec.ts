@@ -2,20 +2,20 @@ import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { SupabaseAuthGuard } from './supabase-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { SupabaseService } from '../supabase/supabase.service';
-import { UsuariosService } from '../../modules/M1-usuarios/services/usuarios.service';
+import { UsuariosRepository } from '../../modules/M1-usuarios/repositories/usuarios.repository';
 
 describe('SupabaseAuthGuard', () => {
   let guard: SupabaseAuthGuard;
   let mockSupabaseService: Partial<SupabaseService>;
-  let mockUsuariosService: Partial<UsuariosService>;
+  let mockUsuariosRepository: Partial<UsuariosRepository>;
   let mockJwtService: Partial<JwtService>;
 
   beforeEach(() => {
     mockSupabaseService = {
       getUser: jest.fn(),
     };
-    mockUsuariosService = {
-      findEntityByEmail: jest.fn(),
+    mockUsuariosRepository = {
+      findAuthProfileByEmail: jest.fn(),
     };
     mockJwtService = {
       verify: jest.fn(),
@@ -23,7 +23,7 @@ describe('SupabaseAuthGuard', () => {
 
     guard = new SupabaseAuthGuard(
       mockSupabaseService as SupabaseService,
-      mockUsuariosService as UsuariosService,
+      mockUsuariosRepository as UsuariosRepository,
       mockJwtService as JwtService,
     );
   });
@@ -102,12 +102,26 @@ describe('SupabaseAuthGuard', () => {
       error: null,
     });
 
-    (mockUsuariosService.findEntityByEmail as jest.Mock).mockResolvedValue({
+    (mockUsuariosRepository.findAuthProfileByEmail as jest.Mock).mockResolvedValue({
       id_usuario: 25,
+      dni: '12345678',
       email: 'socio@fitzone.com',
+      password: 'hash',
+      nombre: 'Juan',
+      apellido: 'Perez',
+      telefono: '+54911223344',
+      foto_url: null,
+      id_sede: 1,
+      id_usuario_estado: 1,
+      sede: {
+        id_sede: 1,
+        nombre: 'Sede Central',
+        id_ciudad: 1,
+      },
       usuario_rol: [
         {
           rol: {
+            id_rol: 1,
             nombre: 'socio',
           },
         },
@@ -123,6 +137,17 @@ describe('SupabaseAuthGuard', () => {
       email: 'socio@fitzone.com',
       rol: 'socio',
       roles: ['socio'],
+      dni: '12345678',
+      nombre: 'Juan',
+      apellido: 'Perez',
+      telefono: '+54911223344',
+      foto_url: null,
+      id_sede: 1,
+      sede: {
+        id_sede: 1,
+        nombre: 'Sede Central',
+        id_ciudad: 1,
+      },
     });
   });
 
