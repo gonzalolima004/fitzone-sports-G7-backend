@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Usuario } from '@prisma/client';
+import { Prisma, Rol, Usuario } from '@prisma/client';
+import { PrismaService } from '../../../database/prisma-service/prisma.service';
 
 export type UsuarioConRoles = Prisma.UsuarioGetPayload<{
   include: typeof UsuariosRepository.prototype.defaultIncludes;
 }>;
-import { PrismaService } from '../../../database/prisma-service/prisma.service';
+
+export type UsuarioAuthPerfil = Prisma.UsuarioGetPayload<{
+  select: typeof UsuariosRepository.prototype.authProfileSelect;
+}>;
 
 @Injectable()
 export class UsuariosRepository {
@@ -29,6 +33,36 @@ export class UsuariosRepository {
     },
   } satisfies Prisma.UsuarioInclude;
 
+  public readonly authProfileSelect = {
+    id_usuario: true,
+    dni: true,
+    email: true,
+    password: true,
+    nombre: true,
+    apellido: true,
+    telefono: true,
+    foto_url: true,
+    id_sede: true,
+    id_usuario_estado: true,
+    sede: {
+      select: {
+        id_sede: true,
+        nombre: true,
+        id_ciudad: true,
+      },
+    },
+    usuario_rol: {
+      select: {
+        rol: {
+          select: {
+            id_rol: true,
+            nombre: true,
+          },
+        },
+      },
+    },
+  } satisfies Prisma.UsuarioSelect;
+
   async create(data: Prisma.UsuarioCreateInput): Promise<UsuarioConRoles> {
     return this.prisma.usuario.create({
       data,
@@ -36,8 +70,42 @@ export class UsuariosRepository {
     });
   }
 
-  //NOTA: Podemos incluir búsquedas por dni, correo y/o nombre.
-  // Es decir buscar por término.
+  async findExistingByDniOrEmail(
+    dni: string,
+    email: string,
+  ): Promise<{ id_usuario: number; dni: string; email: string } | null> {
+    return this.prisma.usuario.findFirst({
+      where: {
+        OR: [{ dni }, { email }],
+      },
+      select: {
+        id_usuario: true,
+        dni: true,
+        email: true,
+      },
+    });
+  }
+
+  async findRolByNombre(nombre: string): Promise<Rol | null> {
+    return this.prisma.rol.findFirst({
+      where: {
+        nombre: {
+          equals: nombre,
+          mode: 'insensitive',
+        },
+      },
+    });
+  }
+
+  async findAuthProfileByEmail(
+    email: string,
+  ): Promise<UsuarioAuthPerfil | null> {
+    return this.prisma.usuario.findUnique({
+      where: { email },
+      select: this.authProfileSelect,
+    });
+  }
+
   async findByDni(dni: string): Promise<Usuario | null> {
     return this.prisma.usuario.findUnique({
       where: { dni },
@@ -59,7 +127,6 @@ export class UsuariosRepository {
     });
   }
 
-  //NOTA Deberían ser todos uuid que es string
   async findAll(id_sede?: number): Promise<UsuarioConRoles[]> {
     return this.prisma.usuario.findMany({
       where: id_sede ? { id_sede } : {},
@@ -89,8 +156,6 @@ export class UsuariosRepository {
     });
   }
 
-  //NOTA debe corresponder con el id del estado desactivado.
-  // Podría incluir que busque el estado como paso anterior por si lo cambian en el futuro.
   async softDelete(id: number): Promise<UsuarioConRoles> {
     return this.prisma.usuario.update({
       where: { id_usuario: id },
