@@ -1,16 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { JwtService } from '@nestjs/jwt';
 import { UsuariosRepository } from '../src/modules/M1-usuarios/repositories/usuarios.repository';
 import { SupabaseService } from '../src/common/supabase/supabase.service';
 
 describe('Auth & Profile (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let jwtService: JwtService;
-  let mockUsuariosRepository: any;
-  let mockSupabaseService: any;
+  let mockUsuariosRepository: Record<string, jest.Mock>;
+  let mockSupabaseService: Record<string, jest.Mock>;
 
   beforeAll(async () => {
     mockUsuariosRepository = {
@@ -134,14 +135,91 @@ describe('Auth & Profile (e2e)', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.user).toEqual(
+      const body = response.body as Record<string, any>;
+      expect(body.success).toBe(true);
+      expect(body.user).toEqual(
         expect.objectContaining({
           id_usuario: 10,
           email: 'user10@fitzone.com',
           rol: 'externo',
         }),
       );
+    });
+
+    it('debería retornar avatar_url de Google como fallback cuando foto_url es null en BD', async () => {
+      const GOOGLE_AVATAR =
+        'https://lh3.googleusercontent.com/a/foto-google-123';
+
+      mockSupabaseService.getUser.mockResolvedValue({
+        user: {
+          id: 'supabase-uuid-google',
+          email: 'google@fitzone.com',
+          user_metadata: { avatar_url: GOOGLE_AVATAR },
+        },
+        error: null,
+      });
+
+      mockUsuariosRepository.findAuthProfileByEmail.mockResolvedValue({
+        id_usuario: 20,
+        dni: '11223344',
+        email: 'google@fitzone.com',
+        password: 'SUPABASE_MANAGED_AUTH',
+        nombre: 'Google',
+        apellido: 'User',
+        telefono: null,
+        foto_url: null, // sin foto personalizada en BD
+        id_sede: 1,
+        id_usuario_estado: 1,
+        sede: { id_sede: 1, nombre: 'Central', id_ciudad: 1 },
+        usuario_rol: [{ rol: { id_rol: 1, nombre: 'externo' } }],
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/auth/me')
+        .set('Authorization', 'Bearer supabase-token-google')
+        .expect(200);
+
+      const body = response.body as Record<string, any>;
+      expect((body.user as Record<string, any>).foto_url).toBe(GOOGLE_AVATAR);
+    });
+
+    it('debería priorizar foto_url local sobre avatar de Google cuando el usuario tiene foto personalizada', async () => {
+      const FOTO_LOCAL =
+        'https://supabase.storage.example.com/avatars/usuario-20-123.jpg';
+      const GOOGLE_AVATAR =
+        'https://lh3.googleusercontent.com/a/foto-google-123';
+
+      mockSupabaseService.getUser.mockResolvedValue({
+        user: {
+          id: 'supabase-uuid-google2',
+          email: 'google2@fitzone.com',
+          user_metadata: { avatar_url: GOOGLE_AVATAR },
+        },
+        error: null,
+      });
+
+      mockUsuariosRepository.findAuthProfileByEmail.mockResolvedValue({
+        id_usuario: 21,
+        dni: '55667788',
+        email: 'google2@fitzone.com',
+        password: 'SUPABASE_MANAGED_AUTH',
+        nombre: 'Google',
+        apellido: 'Custom',
+        telefono: null,
+        foto_url: FOTO_LOCAL, // tiene foto personalizada en BD
+        id_sede: 1,
+        id_usuario_estado: 1,
+        sede: { id_sede: 1, nombre: 'Central', id_ciudad: 1 },
+        usuario_rol: [{ rol: { id_rol: 1, nombre: 'externo' } }],
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/auth/me')
+        .set('Authorization', 'Bearer supabase-token-google2')
+        .expect(200);
+
+      const body = response.body as Record<string, any>;
+      expect((body.user as Record<string, any>).foto_url).toBe(FOTO_LOCAL);
     });
   });
 
@@ -238,9 +316,10 @@ describe('Auth & Profile (e2e)', () => {
         apellido: 'Nuevo Apellido',
         telefono: '+54911888888',
       });
-      expect(response.body.nombre).toBe('Nuevo Nombre');
-      expect(response.body.apellido).toBe('Nuevo Apellido');
-      expect(response.body.telefono).toBe('+54911888888');
+      const body = response.body as Record<string, any>;
+      expect(body.nombre).toBe('Nuevo Nombre');
+      expect(body.apellido).toBe('Nuevo Apellido');
+      expect(body.telefono).toBe('+54911888888');
     });
   });
 });

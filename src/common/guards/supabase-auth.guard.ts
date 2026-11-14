@@ -91,6 +91,14 @@ export class SupabaseAuthGuard implements CanActivate {
       usuarioFitZone.usuario_rol?.map((ur) => ur.rol?.nombre).filter(Boolean) ??
       [];
 
+    const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+    const googleAvatarUrl =
+      typeof metadata.avatar_url === 'string' && metadata.avatar_url.trim()
+        ? metadata.avatar_url.trim()
+        : typeof metadata.picture === 'string' && metadata.picture.trim()
+          ? metadata.picture.trim()
+          : null;
+
     request.user = {
       id_usuario: usuarioFitZone.id_usuario,
       supabase_user_id: user.id,
@@ -101,7 +109,7 @@ export class SupabaseAuthGuard implements CanActivate {
       nombre: usuarioFitZone.nombre,
       apellido: usuarioFitZone.apellido,
       telefono: usuarioFitZone.telefono,
-      foto_url: usuarioFitZone.foto_url,
+      foto_url: usuarioFitZone.foto_url ?? googleAvatarUrl,
       id_sede: usuarioFitZone.id_sede,
       sede: usuarioFitZone.sede,
     };
