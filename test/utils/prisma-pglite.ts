@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import {

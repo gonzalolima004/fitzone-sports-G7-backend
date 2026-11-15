@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   ConflictException,
@@ -6,7 +7,8 @@ import {
 import { UsuariosService } from './usuarios.service';
 import { UsuariosRepository } from '../repositories/usuarios.repository';
 import { CreateUsuarioDto } from '../dto/crear-usuario.dto';
-import * as bcrypt from 'bcryptjs';
+
+// import * as bcrypt from 'bcryptjs';
 
 jest.mock('bcryptjs', () => ({
   hash: jest.fn().mockResolvedValue('hashed_password'),
@@ -60,7 +62,7 @@ describe('UsuariosService', () => {
       repository.findRolByNombre.mockResolvedValue({
         id_rol: 99,
         nombre: 'externo',
-      } as any);
+      });
 
       repository.create.mockResolvedValue({
         id_usuario: 1,
@@ -95,7 +97,7 @@ describe('UsuariosService', () => {
         },
         usuario_estado: { id_usuario_estado: 1, descripcion: 'activo' },
         membresia: [],
-      } as any);
+      });
 
       const result = await service.create(mockCreateDto);
 
