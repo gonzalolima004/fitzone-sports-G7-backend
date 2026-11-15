@@ -522,7 +522,7 @@ describe('ReservasClasesService', () => {
       );
     });
 
-    it('debe cancelar sin penalidad si faltan 2 horas o más para el inicio', async () => {
+    it('debe cancelar exitosamente si faltan más de 2 horas para el inicio', async () => {
       const fechaInicio = new Date(Date.now() + 4 * 3600000);
       const fechaFin = new Date(Date.now() + 5 * 3600000);
 
@@ -550,13 +550,12 @@ describe('ReservasClasesService', () => {
 
       const resultado = await service.cancelarReserva(1, idUsuario);
 
-      expect(resultado.penalidadAplicada).toBe(false);
       expect(resultado.cupo_reasignado).toBe(false);
-      expect(resultado.mensaje).toContain('sin penalidad');
+      expect(resultado.mensaje).toBe('Reserva cancelada exitosamente.');
     });
 
-    it('debe cancelar con penalidad si faltan menos de 2 horas para el inicio', async () => {
-      const fechaInicio = new Date(Date.now() + 1 * 3600000); // Faltan 60 min (< 2h)
+    it('debe lanzar BadRequestException si faltan 2 horas o menos para el inicio (RF-07)', async () => {
+      const fechaInicio = new Date(Date.now() + 1 * 3600000); // Faltan 60 min (<= 2h)
       const fechaFin = new Date(Date.now() + 2 * 3600000);
 
       mockPrisma.claseReserva.findUnique.mockResolvedValue({
@@ -568,23 +567,27 @@ describe('ReservasClasesService', () => {
         fecha_fin: fechaFin,
       });
 
-      (mockReservasRepo.actualizarEstadoReserva as jest.Mock).mockResolvedValue(
-        {
-          id_clase_reserva: 1,
-          id_clase_reserva_estado: 4,
-        },
+      await expect(service.cancelarReserva(1, idUsuario)).rejects.toThrow(
+        BadRequestException,
       );
-      (
-        mockListaEsperaRepo.obtenerPrimerInscriptoActivo as jest.Mock
-      ).mockResolvedValue(null);
-      (mockReservasRepo.obtenerPrimerEnEspera as jest.Mock).mockResolvedValue(
-        null,
+    });
+
+    it('debe rechazar la cancelación en el límite exacto de 2 horas de anticipación (RF-07)', async () => {
+      const fechaInicio = new Date(Date.now() + 2 * 3600000); // Exactamente 2 horas
+      const fechaFin = new Date(Date.now() + 3 * 3600000);
+
+      mockPrisma.claseReserva.findUnique.mockResolvedValue({
+        id_clase_reserva: 1,
+        id_clase: 10,
+        id_usuario: idUsuario,
+        id_clase_reserva_estado: 1,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+      });
+
+      await expect(service.cancelarReserva(1, idUsuario)).rejects.toThrow(
+        BadRequestException,
       );
-
-      const resultado = await service.cancelarReserva(1, idUsuario);
-
-      expect(resultado.penalidadAplicada).toBe(true);
-      expect(resultado.mensaje).toContain('con penalidad');
     });
 
     it('debe reasignar vacante promoviendo al primer socio de clase_lista_espera y notificar', async () => {
