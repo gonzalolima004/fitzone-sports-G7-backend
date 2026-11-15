@@ -1800,7 +1800,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 #### 14/11/2026
 
-#### Matías Sillén Ríos | Rol: Arquitecto de Software - Desarrollador Full Stack
+#### Matías Sillén Ríos | Rol: Desarrollador Backend
 
 - **Actividades:**
   - Corrección de la inicialización del adaptador PostgreSQL en `PrismaService` (`src/database/prisma-service/prisma.service.ts`), pasando `{ connectionString }` directamente a `PrismaPg` conforme a la API oficial de `@prisma/adapter-pg` v7 y eliminando la advertencia de deprecación de `client.query()` en `pg`.
@@ -1825,5 +1825,25 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `fix(auth): resolver avatar de Google desde user_metadata como fallback`
   - `fix(auth): formateo y ajustes adicionales de tests y DTOs`
   - `fix(test): ignorar chequeo de tipos en adaptador temporal prisma-pglite`
+
+---
+
+#### 14/11/2026
+
+#### Matías Sillén Ríos | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación de las consultas y endpoints protegidos para el Dashboard exclusivo del Socio e Historial de Reservas (`E15-T2`), restringiendo el acceso exclusivamente a usuarios autenticados con rol `socio` validado desde la base de datos mediante `SupabaseAuthGuard` y validación de roles en el backend.
+  - Creación de DTOs de consulta y respuesta tipados (`class-validator` y Swagger) para recuperar de forma paginada y ordenada (de más reciente a más antigua) las reservas de canchas y las inscripciones a clases grupales pertenecientes únicamente al identificador del usuario autenticado (`req.user.id_usuario`).
+  - Optimización de consultas en Prisma mediante selección granular (`select`/`include`) de fechas, horarios, canchas, clases grupales, sedes y estados reales persistidos en PostgreSQL, evitando consultas N+1 y exposición de registros de otros usuarios.
+  - Incorporación de pruebas unitarias y de integración HTTP (Jest + Supertest) verificando el aislamiento de datos por usuario, el ordenamiento cronológico descendente, el bloqueo `403 Forbidden` para usuarios con rol `externo` y la respuesta `401 Unauthorized` ante peticiones sin token válido.
+- **Decisiones:**
+  - Obtener el `id_usuario` y la verificación del rol `socio` exclusivamente desde el contexto de autenticación del token validado en el servidor (`request.user`), rechazando cualquier identificador enviado por parámetros o query desde el cliente para evitar filtraciones de historial entre socios.
+  - Implementar paginación y filtrado opcional por tipo de actividad (`todas`, `canchas`, `clases`) directamente en la capa de consulta de Prisma para permitir recorrer el historial completo sin transferir cargas innecesarias.
+- **Dificultades:**
+  - Unificar en una respuesta consistente las reservas de canchas y las inscripciones a clases grupales manteniendo los estados reales de cada entidad sin inferir estados por fecha; se resolvió normalizando ambos orígenes en DTOs tipados que preservan el estado persistido y la sede asociada de cada registro.
+- **Commits:**
+  - `feat(socio): implementar dashboard e historial de reservas para socio`
+  - `corregir reglas de lint y mock en tests unitarios y adaptadores`
 
 ---
