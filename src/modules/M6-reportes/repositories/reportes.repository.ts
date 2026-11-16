@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
+import { ESTADOS_QUE_CUENTAN } from '../constants/reportes.constants';
+import { ConceptoIngreso } from '../dto/consulta-ingresos.dto';
 
 export type IngresoAgrupadoPorSede = {
   id_sede: number;
@@ -22,9 +24,6 @@ type ConteosDeOcupacion = Omit<
   MetricaOcupacionAgrupadaPorSede,
   'id_sede' | 'nombre_sede'
 >;
-
-/** Estado de reserva que cuenta para la ocupación (se compara sin mayúsculas). */
-const ESTADO_RESERVA_CONFIRMADA = 'confirmada';
 
 const sinConteos = (): ConteosDeOcupacion => ({
   total_asistencias: 0,
@@ -51,10 +50,10 @@ export class ReportesRepository {
     fechaHastaExclusiva: Date,
     estadoPagoValido: string,
     idSede?: number,
-    concepto?: 'cancha' | 'membresia',
+    concepto?: ConceptoIngreso,
   ): Promise<IngresoAgrupadoPorSede[]> {
-    const incluirMembresias = concepto !== 'cancha';
-    const incluirCanchas = concepto !== 'membresia';
+    const incluirMembresias = concepto !== ConceptoIngreso.CANCHA;
+    const incluirCanchas = concepto !== ConceptoIngreso.MEMBRESIA;
 
     const caminos: Prisma.PagoWhereInput[] = [];
     if (incluirMembresias) {
@@ -149,7 +148,7 @@ export class ReportesRepository {
     const rango = { gte: fechaDesde, lt: fechaHastaExclusiva };
     const estadoConfirmada = {
       descripcion: {
-        equals: ESTADO_RESERVA_CONFIRMADA,
+        equals: ESTADOS_QUE_CUENTAN.RESERVA,
         mode: Prisma.QueryMode.insensitive,
       },
     };
