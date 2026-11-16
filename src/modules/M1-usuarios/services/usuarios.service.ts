@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import {
   UsuariosRepository,
@@ -18,15 +19,12 @@ import { UsuarioResponseDto } from '../dto/usuario-response.dto';
 export class UsuariosService {
   private readonly SALT_ROUNDS = 10;
   private readonly SUPABASE_PLACEHOLDER = 'SUPABASE_MANAGED_AUTH';
+  private readonly ROL_EXTERNO_NOMBRE = 'externo';
   private readonly ID_ESTADO_ACTIVO = 1;
   private readonly ID_ESTADO_DESACTIVADO = 3;
 
   constructor(private readonly repository: UsuariosRepository) {}
 
-  /**
-   * Abstrae la responsabilidad de gestionar si es auth delegada (Supabase)
-   * o si se requiere hashear una contraseña local.
-   */
   private async generatePasswordHash(rawPassword?: string): Promise<string> {
     if (rawPassword) {
       return await bcrypt.hash(rawPassword, this.SALT_ROUNDS);
@@ -35,17 +33,29 @@ export class UsuariosService {
   }
 
   async create(dto: CreateUsuarioDto): Promise<UsuarioResponseDto> {
-    const existeDni = await this.repository.findByDni(dto.dni);
-    if (existeDni) {
+    const usuarioExistente = await this.repository.findExistingByDniOrEmail(
+      dto.dni,
+      dto.email,
+    );
+
+    if (usuarioExistente) {
+      if (usuarioExistente.dni === dto.dni) {
+        throw new ConflictException(
+          `El DNI '${dto.dni}' ya se encuentra registrado.`,
+        );
+      }
       throw new ConflictException(
-        `El DNI '${dto.dni}' ya se encuentra registrado.`,
+        `El correo electronico '${dto.email}' ya se encuentra registrado.`,
       );
     }
 
-    const existeEmail = await this.repository.findByEmail(dto.email);
-    if (existeEmail) {
-      throw new ConflictException(
-        `El correo electronico '${dto.email}' ya se encuentra registrado.`,
+    const rolExterno = await this.repository.findRolByNombre(
+      this.ROL_EXTERNO_NOMBRE,
+    );
+
+    if (!rolExterno) {
+      throw new InternalServerErrorException(
+        'El rol por defecto "externo" no se encuentra configurado en la base de datos.',
       );
     }
 
@@ -62,15 +72,13 @@ export class UsuariosService {
       foto_url: dto.foto_url || null,
       sede: { connect: { id_sede: Number(dto.id_sede) } },
       qr_url: null,
-      ...(dto.roles && dto.roles.length > 0
-        ? {
-            usuario_rol: {
-              create: dto.roles.map((id_rol) => ({
-                rol: { connect: { id_rol } },
-              })),
-            },
-          }
-        : {}),
+      usuario_rol: {
+        create: [
+          {
+            rol: { connect: { id_rol: rolExterno.id_rol } },
+          },
+        ],
+      },
       usuario_estado: { connect: { id_usuario_estado: ID_ESTADO_ACTIVO } },
     };
 
@@ -138,44 +146,43 @@ export class UsuariosService {
     id: number,
     dto: ActualizarUsuarioDto,
   ): Promise<UsuarioResponseDto> {
-    await this.findById(id); // Verifica que exista
+    await this.findById(id);
 
-    const { contrasenia, id_sede, id_usuario_estado, roles, ...restoDatos } =
-      dto;
+    const datosAActualizar: Prisma.UsuarioUpdateInput = {};
 
-    const datosAActualizar: Prisma.UsuarioUpdateInput = {
-      ...restoDatos,
-    };
-
-    if (contrasenia) {
-      datosAActualizar.password = await this.generatePasswordHash(contrasenia);
+    if (dto.nombre !== undefined) {
+      datosAActualizar.nombre = dto.nombre;
     }
-
-    // Transformar el ID plano a un objeto de conexión de Prisma
-    if (id_sede !== undefined) {
+    if (dto.apellido !== undefined) {
+      datosAActualizar.apellido = dto.apellido;
+    }
+    if (dto.telefono !== undefined) {
+      datosAActualizar.telefono = dto.telefono;
+    }
+    if (dto.foto_url !== undefined) {
+      datosAActualizar.foto_url = dto.foto_url;
+    }
+    if (dto.id_sede !== undefined) {
       datosAActualizar.sede = {
-        connect: { id_sede: Number(id_sede) },
+        connect: { id_sede: Number(dto.id_sede) },
       };
     }
-
-    // Conexión relacional para el estado del usuario
-    if (id_usuario_estado !== undefined) {
+    if (dto.id_usuario_estado !== undefined) {
       datosAActualizar.usuario_estado = {
-        connect: { id_usuario_estado: Number(id_usuario_estado) },
-      };
-    }
-
-    // Actualización de roles si se envían
-    if (roles && roles.length > 0) {
-      datosAActualizar.usuario_rol = {
-        deleteMany: {},
-        create: roles.map((id_rol) => ({
-          rol: { connect: { id_rol } },
-        })),
+        connect: { id_usuario_estado: Number(dto.id_usuario_estado) },
       };
     }
 
     const usuario = await this.repository.update(id, datosAActualizar);
+    return plainToInstance(UsuarioResponseDto, usuario);
+  }
+
+  async updateFotoUrl(
+    id: number,
+    fotoUrl: string,
+  ): Promise<UsuarioResponseDto> {
+    await this.findById(id);
+    const usuario = await this.repository.update(id, { foto_url: fotoUrl });
     return plainToInstance(UsuarioResponseDto, usuario);
   }
 

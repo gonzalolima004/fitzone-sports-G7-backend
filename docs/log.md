@@ -1283,7 +1283,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Blindaje de endpoints administrativos y transaccionales en controladores de M4 mediante `@UseGuards(SupabaseAuthGuard, RolesGuard)` y RBAC.
   - Saneamiento y limpieza de referencias y anotaciones de requisitos en controladores, DTOs y repositorios.
 - **Decisiones:** Ninguna
-- **Dificultades:** 
+- **Dificultades:**
   - Integrar compatibilidades con merges anteriores sobre beneficios de membresias desactivadas
   - Asegurar la correcta asignación del estado inicial `Pendiente de Pago` antes del impacto del webhook de cobro.
 - **Commits:**
@@ -1300,7 +1300,7 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - Modularización y extracción del motor de cálculo y partición de slots en memoria a `CanchasDisponibilidadService`, manteniendo a `CanchasService` como Fachada para asegurar retrocompatibilidad.
   - Eliminación de valores repetidos hardcodeados en M4 mediante constantes centralizadas en `canchas.constants.ts` y utilidades comunes de fechas.
   - Unificación del flujo de cotización en `ReservasCanchasService` delegando en `CanchasService.cotizarTurno`.
-  - Implementación de la suite de tests unitarios para `CanchasDisponibilidadService` (generación de slots, aperturas fraccionadas, bloqueos) y `ReservasCanchasService` - **Decisiones:** 
+  - Implementación de la suite de tests unitarios para `CanchasDisponibilidadService` (generación de slots, aperturas fraccionadas, bloqueos) y `ReservasCanchasService` - **Decisiones:**
     - Remover los valores repetidos primitivos optando por un archivo que contiene los valores como constantes.
     - Desligar lo relacionado a disponibilidad de canchas de cancha service en un archivo service dedicado a esa tarea.
 - **Dificultades:** Ninguna.
@@ -1537,7 +1537,8 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `feat(M2): cambio metodo extraer id usuario y ciudad de token, adicion de metodo para acceso offline`
   - `feat(M2): sincronizacion offline, obtener perfil e importacion de modulo usuario`
   - `docs(log): actualizacion de bitacora`
-`
+    `
+
 ---
 
 #### 04/11/2026
@@ -1848,3 +1849,33 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   -`docs(log): actualizar bitacora`
   
   ---
+  
+#### 14/11/2026
+
+#### Matías Sillén Ríos | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Corrección de la inicialización del adaptador PostgreSQL en `PrismaService` (`src/database/prisma-service/prisma.service.ts`), pasando `{ connectionString }` directamente a `PrismaPg` conforme a la API oficial de `@prisma/adapter-pg` v7 y eliminando la advertencia de deprecación de `client.query()` en `pg`.
+  - Optimización de las consultas de autenticación y perfil de sesión mediante la incorporación de `authProfileSelect` y `findAuthProfileByEmail` en `UsuariosRepository`, evitando joins innecesarios sobre membresías, estados y ciudades en `SupabaseAuthGuard` y `AuthService`.
+  - Unificación de la validación de unicidad de DNI y correo electrónico en `findExistingByDniOrEmail` (una sola consulta indexada `OR`) y resolución de fallback para avatares de cuentas de Google OAuth (`user_metadata.avatar_url` / `picture`) en `SupabaseAuthGuard` y `AuthenticatedUser`.
+  - Implementación de asignación dinámica del rol `externo` en `UsuariosService.create` mediante `findRolByNombre('externo')` en PostgreSQL, eliminando IDs hardcodeados e ignorando roles privilegiados enviados desde el cliente.
+  - Blindaje del endpoint `PATCH /usuarios/:id` y de `ActualizarUsuarioDto` (`OmitType`) con `SupabaseAuthGuard`, validando propiedad del perfil e impidiendo modificaciones sobre `dni`, `email`, `roles`, `contrasenia` o `password`.
+  - Fortalecimiento de `FotoStorageService` y `UploadFotoController` (`POST /usuarios/:id/foto`) con validación de tipos MIME permitidos (`image/jpeg`, `image/png`, `image/webp`), límite de 2 MB, nombres únicos con marca de tiempo para evitar caché obsoleta y eliminación segura del avatar anterior del usuario en Supabase Storage (`fitzonepublic`).
+  - Cobertura de pruebas unitarias y de integración HTTP en `src/modules/M1-usuarios/services/usuarios.service.spec.ts` y `test/auth-profile.e2e-spec.ts` (Jest + Supertest).
+- **Decisiones:**
+  - Separar `authProfileSelect` de `defaultIncludes` en `UsuariosRepository` para que la verificación de sesión en `GET /auth/me` y endpoints protegidos transfiera únicamente los campos de identidad y roles necesarios.
+  - Resolver el rol `externo` dinámicamente por nombre en la base de datos en lugar de confiar en el arreglo `roles` enviado en el payload de registro, cerrando cualquier vector de escalada de privilegios y desacoplando el código del orden autoincremental de `id_rol`.
+  - Validar la propiedad del recurso directamente en los controladores de actualización de perfil y subida de avatar antes de ejecutar operaciones sobre Prisma o Supabase Storage.
+- **Dificultades:**
+  - La carga repetida de relaciones completas (`defaultIncludes`) durante la validación de tokens en el guard incrementaba la latencia de respuesta en cada petición autenticada debido a la distancia con la base de datos remota, lo cual se mitigó reduciendo la selección granular en el repositorio.
+- **Commits:**
+  - `fix(router): corregir advertencia deprecada de consultas de cliente`
+  - `perf(auth): optimizar consultas de autenticacion y perfil de sesion`
+  - `fix(auth): asignar rol externo dinamicamente en el registro`
+  - `feat(profile): blindar actualizacion de perfil y almacenamiento de avatar`
+  - `test(auth): agregar pruebas unitarias y de integracion de auth y perfil`
+  - `fix(auth): resolver avatar de Google desde user_metadata como fallback`
+  - `fix(auth): formateo y ajustes adicionales de tests y DTOs`
+  - `fix(test): ignorar chequeo de tipos en adaptador temporal prisma-pglite`
+
+---
