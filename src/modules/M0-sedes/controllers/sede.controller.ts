@@ -23,20 +23,32 @@ import {
 } from '@nestjs/swagger';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
+import { LimiteConsultasPublicasGuard } from '../../../common/guards/limite-consultas-publicas.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { ROLES_CON_CUENTA } from '../constants/sedes.constants';
 
-// Los GET siguen siendo públicos: el registro de usuarios, la landing y el
-// selector de sede del encabezado consultan las sedes sin token.
+// Todos los endpoints tienen guards. El listado es el único sin sesión,
+// porque la landing y el registro de usuarios lo consultan sin token: tiene
+// límite de consultas por IP. El resto pide una cuenta de FitZone y el alta,
+// la modificación y la baja, el rol gerente.
 @ApiTags('Sedes')
 @Controller('sedes')
 export class SedeController {
   constructor(private readonly sedeService: SedeService) {}
 
-  @ApiOperation({ summary: 'Obtener todas las sedes activas' })
+  @ApiOperation({
+    summary:
+      'Obtener todas las sedes activas (público, con límite de consultas)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lista de sedes obtenida correctamente',
   })
+  @ApiResponse({
+    status: 429,
+    description: 'Demasiadas consultas seguidas desde la misma IP.',
+  })
+  @UseGuards(LimiteConsultasPublicasGuard)
   @Get()
   async findAll() {
     return this.sedeService.findAll();
@@ -57,9 +69,16 @@ export class SedeController {
     description: 'El ID proporcionado no es válido',
   })
   @ApiResponse({
+    status: 401,
+    description: 'No autorizado. Token no proporcionado o inválido.',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Sede no encontrada',
   })
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles(...ROLES_CON_CUENTA)
+  @ApiBearerAuth()
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id_sede: number) {
     return this.sedeService.findById(id_sede);
@@ -185,8 +204,24 @@ export class SedeController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Horario operativo obtenido correctamente',
+    description:
+      'Horario operativo obtenido correctamente. Si la sede no tiene horario cargado para ese día, figura cerrada.',
   })
+  @ApiResponse({
+    status: 400,
+    description: 'La fecha no tiene formato YYYY-MM-DD o no existe',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado. Token no proporcionado o inválido.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Sede no encontrada',
+  })
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles(...ROLES_CON_CUENTA)
+  @ApiBearerAuth()
   @Get(':id/horario-operativo')
   async getHorarioOperativo(
     @Param('id', ParseIntPipe) id_sede: number,
