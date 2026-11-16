@@ -83,16 +83,17 @@ export class ReservasClasesController {
   @ApiOperation({
     summary: 'Cancelar una reserva de clase',
     description:
-      'Cancela la reserva. Si se hace con menos de 2 horas de anticipación, se aplica penalidad.',
+      'Cancela una reserva confirmada. Se permite cancelación hasta 2 horas antes de la clase; con 2 horas o menos no se permite la cancelación (RF-07).',
   })
   @ApiResponse({
     status: 200,
-    description: 'Reserva cancelada (indica si hubo penalidad).',
+    description: 'Reserva cancelada exitosamente.',
     type: CancelarReservaResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'La clase ya comenzó/finalizó o ya estaba cancelada.',
+    description:
+      'No se puede cancelar con 2 horas o menos de anticipación (RF-07), o si la clase ya comenzó o no está confirmada.',
   })
   @ApiResponse({
     status: 403,

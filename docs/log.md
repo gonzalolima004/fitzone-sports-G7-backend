@@ -1899,3 +1899,29 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `corregir reglas de lint y mock en tests unitarios y adaptadores`
 
 ---
+
+#### 15/11/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend
+
+- **Tarea:** Garantizar requisito funcional RF-07 (Restricción de cancelación 2 hs) y eliminación del esquema de penalidades en M3.
+- **Actividades:**
+  - **Cumplimiento del Requisito Funcional RF-07 (Cancelación de clases):**
+    - `ReservasClasesService.cancelarReserva`: Se implementó la restricción temporal en el backend para impedir la cancelación de reservas cuando falten 2 horas o menos para el inicio de la clase (`diffHoras <= 2`), arrojando `BadRequestException('No se puede cancelar la reserva con 2 horas o menos de anticipación (RF-07).')`. Con esto se asegura a nivel de API el bloqueo de turnos en dicho intervalo, complementando la protección de la interfaz de usuario en el frontend.
+  - **Eliminación del Esquema de Penalidades en Módulo 3:**
+    - `CancelarReservaResponseDto`: Se eliminó la propiedad `penalidadAplicada` y se estandarizó el mensaje de respuesta a `'Reserva cancelada exitosamente.'`.
+    - `ReservasClasesService`: Se removieron las variables, bifurcaciones de mensajes y lógica de penalizaciones. Si la cancelación se realiza con más de 2 horas de antelación, se procesa exitosamente sin penalidades.
+    - `ReservasClasesController`: Se actualizaron las anotaciones Swagger (`@ApiOperation` y `@ApiResponse`) en `DELETE /reservas-clases/:id`, removiendo menciones a penalidades y documentando el rechazo con código HTTP 400 por incumplimiento del tiempo mínimo de anticipación.
+  - **Actualización y Ampliación de Pruebas Unitarias:**
+    - `reservas-clases.service.spec.ts`: Se añadieron pruebas para verificar el rechazo con `BadRequestException` cuando faltan menos de 2 horas (ej. 60 min) y en el límite exacto de 2 horas. Se adaptaron las pruebas de cancelación exitosa (> 2 hs) para verificar la respuesta limpia sin penalidad.
+    - `reservas-clases.controller.spec.ts` y `reservas-clases.concurrency.integration.spec.ts`: Se ajustaron los mocks y tipos de respuesta eliminando `penalidadAplicada`.
+    - Total de 10 suites y 128 pruebas unitarias aprobadas al 100% en M3.
+- **Decisiones:**
+  - Desestimar la lógica de penalidades en el módulo de clases por falta de tiempo para implementar un flujo completo de sanciones a nivel de socio/sistema, adoptando como solución canónica el rechazo estricto de la cancelación en el intervalo crítico (2 hs) conforme a RF-07.
+- **Dificultades:** Ninguna.
+- **Verificación:** 10 suites y 128 pruebas unitarias aprobadas al 100% en M3. `npx tsc --noEmit --project tsconfig.build.json` y `npm run build` limpios sin errores. ESLint y Prettier con 0 errores y 0 warnings.
+- **Commits:**
+  - `fix(clases): restringir cancelacion a mas de 2 horas segun RF-07 y remover esquema de penalidades`
+  - `docs(log): registrar restriccion de cancelacion RF-07 y remocion de penalidades en modulo 3`
+
+---

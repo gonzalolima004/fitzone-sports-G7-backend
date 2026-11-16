@@ -33,7 +33,6 @@ type ListaEsperaRespuesta = {
 };
 
 type CancelarReservaRespuesta = {
-  penalidadAplicada: boolean;
   mensaje: string;
   cupo_reasignado: boolean;
 };

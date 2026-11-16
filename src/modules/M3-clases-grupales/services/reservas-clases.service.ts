@@ -273,10 +273,16 @@ export class ReservasClasesService {
         );
       }
 
-      // Calcular diferencia en horas: penalidad si faltan menos de 2 horas
+      // RF-07: Cancelación permitida hasta 2 hs antes del inicio.
+      // Si faltan 2 horas o menos, el backend no permite cancelar el turno.
       const diffHoras =
         (fechaInicio.getTime() - ahora.getTime()) / (1000 * 60 * 60);
-      const penalidadAplicada = diffHoras < 2;
+
+      if (diffHoras <= 2) {
+        throw new BadRequestException(
+          'No se puede cancelar la reserva con 2 horas o menos de anticipación (RF-07).',
+        );
+      }
 
       // 2. Marcar como cancelada buscando el estado por descripción sin hardcodear IDs
       const idEstadoCancelada = this.reservasRepository
@@ -354,10 +360,7 @@ export class ReservasClasesService {
       }
 
       return {
-        penalidadAplicada,
-        mensaje: penalidadAplicada
-          ? 'Reserva cancelada con penalidad (fuera de término, menos de 2 horas de anticipación).'
-          : 'Reserva cancelada exitosamente sin penalidad.',
+        mensaje: 'Reserva cancelada exitosamente.',
         reserva: reservaCancelada,
         cupo_reasignado: idUsuarioPromovido !== null,
         idUsuarioPromovido,
@@ -435,7 +438,6 @@ export class ReservasClasesService {
     }
 
     return {
-      penalidadAplicada: resultadoCancelacion.penalidadAplicada,
       mensaje: resultadoCancelacion.mensaje,
       reserva: resultadoCancelacion.reserva,
       cupo_reasignado: resultadoCancelacion.cupo_reasignado,
