@@ -1823,3 +1823,28 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `docs(log): registrar guards y limpieza de sedes y reportes`
 
 ---
+
+#### 14/11/2026
+
+#### Angelina Vialle | Rol: Desarrolladora Backend
+
+- **Actividades:**
+  - **Paginación y filtros avanzados en gestión de usuarios (M1):** Actualización de `UsuariosController.findAll` y `UsuariosService.findAll` para incorporar paginación configurable (`page` por defecto en 1 y `limit` en 10) con respuesta estructurada que incluye datos (`data: UsuarioResponseDto[]`) y metadatos de control (`meta: { total, page, lastPage }`). Se añadieron filtros opcionales por sede (`id_sede`), estado puntual (`id_usuario_estado`) e inclusión de usuarios dados de baja (`includeDeactivated`), filtrando por defecto solo usuarios activos (`ID_ESTADO_ACTIVO = 1`).
+  - **Consultas optimizadas y conteo en repositorio:** Implementación de `findAllPaginated` en `UsuariosRepository` aplicando `skip`, `take`, ordenamiento descendente (`orderBy: { id_usuario: 'desc' }`) e inclusión de relaciones (`sede`, `usuario_estado`, `usuario_rol.rol`), junto con la adición de `count(where)` para el cálculo dinámico del total de páginas.
+  - **Refactorización de baja lógica y restauración de usuarios:** Modificación de `softDelete` en `UsuariosRepository` para recibir parametrizado el estado desactivado (`ID_ESTADO_DESACTIVADO = 3`) desde el servicio. Creación de `updateStatus` en el repositorio e implementación de `restore(id)` en `UsuariosService` para reactivar usuarios eliminados lógicamente devolviéndolos a estado activo.
+  - **Seguridad y documentación Swagger en usuarios:** Protección de las rutas de `UsuariosController` incorporando `@UseGuards(SupabaseAuthGuard, RolesGuard)` y `@ApiBearerAuth()`, documentando los nuevos parámetros de paginación y filtrado con decoradores `@ApiQuery`.
+  - **Corrección y saneamiento de pruebas unitarias en M2:**
+    - `acceso.service.spec.ts`: Eliminación de directivas de escape de linter, inyección de `UsuariosRepository` en el módulo de pruebas para espiar `findByDni` (alineado a la arquitectura de resolución de socios), y adaptación de los mocks al formato de token QR dinámico de 4 segmentos (`id_usuario.id_ciudad.timestamp.firma`).
+    - `qr.service.spec.ts`: Inyección de `UsuariosService` para la resolución de ciudad de origen y verificación de la estructura del token QR de 4 partes.
+    - Limpieza de espías de Jest mediante `afterEach(() => jest.restoreAllMocks())`.
+- **Decisiones:**
+  - Devolver un objeto con `data` y `meta` en `findAll` para facilitar la renderización de tablas paginadas en el frontend y evitar sobrecarga en la transferencia de datos.
+  - Excluir por defecto a los socios dados de baja a menos que se indique explícitamente `includeDeactivated=true`, manteniendo las vistas administrativas limpias y enfocadas en socios operativos.
+  - Parametrizar los identificadores de estado activo y desactivado como constantes a nivel de servicio (`ID_ESTADO_ACTIVO = 1`, `ID_ESTADO_DESACTIVADO = 3`) en lugar de dejarlos hardcodeados en las consultas del repositorio.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `fix(tM2): correcion de test`
+  - `feature(M1): findAll con paginacion  y actualizacion de la manera del softDelete`
+  -`docs(log): actualizar bitacora`
+  
+  ---

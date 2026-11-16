@@ -18,6 +18,8 @@ import { UsuarioResponseDto } from '../dto/usuario-response.dto';
 export class UsuariosService {
   private readonly SALT_ROUNDS = 10;
   private readonly SUPABASE_PLACEHOLDER = 'SUPABASE_MANAGED_AUTH';
+  private readonly ID_ESTADO_ACTIVO = 1;
+  private readonly ID_ESTADO_DESACTIVADO = 3;
 
   constructor(private readonly repository: UsuariosRepository) {}
 
@@ -76,9 +78,40 @@ export class UsuariosService {
     return plainToInstance(UsuarioResponseDto, usuario);
   }
 
-  async findAll(id_sede?: number): Promise<UsuarioResponseDto[]> {
-    const usuarios = await this.repository.findAll(id_sede);
-    return plainToInstance(UsuarioResponseDto, usuarios);
+  async findAll(
+    id_sede?: number,
+    page: number = 1,
+    limit: number = 10,
+    includeDeactivated: boolean = false,
+    id_usuario_estado?: number,
+  ): Promise<{
+    data: UsuarioResponseDto[];
+    meta: { total: number; page: number; lastPage: number };
+  }> {
+    const skip = (page - 1) * limit;
+    const where: Prisma.UsuarioWhereInput = {};
+
+    if (id_sede) {
+      where.id_sede = Number(id_sede);
+    }
+
+    if (id_usuario_estado) {
+      where.id_usuario_estado = Number(id_usuario_estado);
+    } else if (!includeDeactivated) {
+      where.id_usuario_estado = this.ID_ESTADO_ACTIVO;
+    }
+
+    const usuarios = await this.repository.findAllPaginated(where, skip, limit);
+    const total = await this.repository.count(where);
+
+    return {
+      data: plainToInstance(UsuarioResponseDto, usuarios),
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit) || 1,
+      },
+    };
   }
 
   async findById(id: number): Promise<UsuarioResponseDto> {
@@ -148,6 +181,11 @@ export class UsuariosService {
 
   async remove(id: number): Promise<Usuario> {
     await this.findById(id); // Verifica que exista
-    return this.repository.softDelete(id);
+    return this.repository.softDelete(id, this.ID_ESTADO_DESACTIVADO);
+  }
+
+  async restore(id: number): Promise<Usuario> {
+    await this.findById(id);
+    return this.repository.updateStatus(id, this.ID_ESTADO_ACTIVO);
   }
 }

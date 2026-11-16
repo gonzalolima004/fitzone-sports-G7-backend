@@ -1,6 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
-// PARCHE TEMPORAL: Quitar las 2 líneas de arriba para restaurar los errores de lint y types en M2
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccesosService } from './accesos.service';
 import {
@@ -11,6 +8,7 @@ import { QrService } from './qr.service';
 import { AforoRealtimeService } from './aforo-realtime.service';
 import { MembresiasService } from '../../M1-usuarios/services/membresias.service';
 import { UsuariosService } from '../../M1-usuarios/services/usuarios.service';
+import { UsuariosRepository } from '../../M1-usuarios/repositories/usuarios.repository';
 import {
   BadRequestException,
   ForbiddenException,
@@ -19,12 +17,11 @@ import {
 } from '@nestjs/common';
 import { VerificarMembresiaResponseDto } from '../../M1-usuarios/dto/verificar-membresia-response.dto';
 import { UsuarioResponseDto } from '../../M1-usuarios/dto/usuario-response.dto';
-import { Prisma, Usuario } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 describe('AccesosService', () => {
   let service: AccesosService;
   let mockAccesosRepository: {
-    buscarUsuarioPorDni: jest.Mock;
     ejecutarTransaccionIngreso: jest.Mock;
     buscarAccesoActivoPorUsuario: jest.Mock;
     crearIngreso: jest.Mock;
@@ -33,6 +30,7 @@ describe('AccesosService', () => {
     contarAforoActual: jest.Mock;
     buscarSedePorId: jest.Mock;
   };
+  let usuarioRepository: jest.Mocked<UsuariosRepository>;
   let accesosRepository: jest.Mocked<AccesosRepository>;
   let qrService: jest.Mocked<QrService>;
   let membresiasService: jest.Mocked<MembresiasService>;
@@ -43,7 +41,6 @@ describe('AccesosService', () => {
     emitirAforoMock = jest.fn();
 
     mockAccesosRepository = {
-      buscarUsuarioPorDni: jest.fn(),
       ejecutarTransaccionIngreso: jest.fn(),
       buscarAccesoActivoPorUsuario: jest.fn(),
       crearIngreso: jest.fn(),
@@ -69,6 +66,10 @@ describe('AccesosService', () => {
       findById: jest.fn(),
     };
 
+    const mockUsuarioRepository = {
+      findByDni: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccesosService,
@@ -77,6 +78,7 @@ describe('AccesosService', () => {
         { provide: AforoRealtimeService, useValue: mockAforoRealtimeService },
         { provide: MembresiasService, useValue: mockMembresiasService },
         { provide: UsuariosService, useValue: mockUsuariosService },
+        { provide: UsuariosRepository, useValue: mockUsuarioRepository },
       ],
     }).compile();
 
@@ -85,6 +87,11 @@ describe('AccesosService', () => {
     qrService = module.get(QrService);
     membresiasService = module.get(MembresiasService);
     usuariosService = module.get(UsuariosService);
+    usuarioRepository = module.get(UsuariosRepository);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('debe estar definido', () => {
@@ -94,7 +101,7 @@ describe('AccesosService', () => {
   describe('validarYRegistrarIngreso', () => {
     it('debe registrar el ingreso exitosamente usando un token QR válido y membresía al día', async () => {
       // Arrange
-      const dto = { qrToken: '1.12345678.sig', id_sede: 1 };
+      const dto = { qrToken: '1.1.12345678.sig', id_sede: 1 };
 
       qrService.validarTokenEfimero.mockReturnValue(true);
 
@@ -122,7 +129,15 @@ describe('AccesosService', () => {
           accesosRepository.buscarSedePorId.mockResolvedValue({
             id_sede: 1,
             nombre: 'Sede Central',
+            direccion: 'Mitre 123',
+            aforo_maximo: 100,
+            activo: true,
             id_ciudad: 1,
+            ciudad: {
+              id_ciudad: 1,
+              nombre: 'Concordia',
+              activo: true,
+            },
           });
           return callback({} as unknown as Prisma.TransactionClient);
         },
@@ -152,11 +167,23 @@ describe('AccesosService', () => {
     it('debe registrar el ingreso exitosamente usando el número de DNI ingresado manualmente y membresía al día', async () => {
       // Arrange
       const dto = { dni: '30111222', id_sede: 1 };
+      const findByDniSpy = jest.spyOn(usuarioRepository, 'findByDni');
 
-      accesosRepository.buscarUsuarioPorDni.mockResolvedValue({
+      findByDniSpy.mockResolvedValue({
         id_usuario: 1,
+        id_sede: 1,
+        nombre: 'María',
+        apellido: 'Gómez',
         dni: '30111222',
-      } as unknown as Usuario);
+        email: 'maria@test.com',
+        password: 'hashed_password',
+        telefono: null,
+        foto_url: null,
+        modificado: new Date(),
+        creacion: new Date(),
+        qr_url: null,
+        id_usuario_estado: 1,
+      });
 
       membresiasService.verificarMembresia.mockResolvedValue({
         esSocioActivo: true,
@@ -182,7 +209,15 @@ describe('AccesosService', () => {
           accesosRepository.buscarSedePorId.mockResolvedValue({
             id_sede: 1,
             nombre: 'Sede Central',
+            direccion: 'Mitre 123',
+            aforo_maximo: 100,
+            activo: true,
             id_ciudad: 1,
+            ciudad: {
+              id_ciudad: 1,
+              nombre: 'Concordia',
+              activo: true,
+            },
           });
           return callback({} as unknown as Prisma.TransactionClient);
         },
@@ -206,20 +241,28 @@ describe('AccesosService', () => {
       expect(resultado).toBeDefined();
       expect(resultado.accesoPermitido).toBe(true);
       expect(resultado.nombreUsuario).toBe('María Gómez');
-      expect(mockAccesosRepository.buscarUsuarioPorDni).toHaveBeenCalledWith(
-        '30111222',
-      );
-      expect(emitirAforoMock).toHaveBeenCalledWith(1, expect.any(Object));
+      expect(findByDniSpy).toHaveBeenCalledWith('30111222');
     });
 
     it('debe denegar el acceso (ForbiddenException) si la membresía está inactiva o en mora', async () => {
       // Arrange
       const dto = { dni: '30111222', id_sede: 1 };
 
-      accesosRepository.buscarUsuarioPorDni.mockResolvedValue({
+      usuarioRepository.findByDni.mockResolvedValue({
         id_usuario: 1,
+        id_sede: 1,
+        nombre: 'Usuario',
+        apellido: 'Test',
         dni: '30111222',
-      } as unknown as Usuario);
+        email: 'test@test.com',
+        password: 'hashed_password',
+        telefono: null,
+        foto_url: null,
+        modificado: new Date(),
+        creacion: new Date(),
+        qr_url: null,
+        id_usuario_estado: 1,
+      });
 
       membresiasService.verificarMembresia.mockResolvedValue({
         esSocioActivo: false,
@@ -236,10 +279,21 @@ describe('AccesosService', () => {
       // Arrange
       const dto = { dni: '30111222', id_sede: 1 };
 
-      accesosRepository.buscarUsuarioPorDni.mockResolvedValue({
+      usuarioRepository.findByDni.mockResolvedValue({
         id_usuario: 1,
+        id_sede: 1,
+        nombre: 'Ana',
+        apellido: 'Gómez',
         dni: '30111222',
-      } as unknown as Usuario);
+        email: 'ana@test.com',
+        password: 'hashed_password',
+        telefono: null,
+        foto_url: null,
+        modificado: new Date(),
+        creacion: new Date(),
+        qr_url: null,
+        id_usuario_estado: 1,
+      });
 
       membresiasService.verificarMembresia.mockResolvedValue({
         esSocioActivo: true,
@@ -270,7 +324,15 @@ describe('AccesosService', () => {
           accesosRepository.buscarSedePorId.mockResolvedValue({
             id_sede: 1,
             nombre: 'Sede Central',
+            direccion: 'Mitre 123',
+            aforo_maximo: 100,
+            activo: true,
             id_ciudad: 1,
+            ciudad: {
+              id_ciudad: 1,
+              nombre: 'Concordia',
+              activo: true,
+            },
           });
 
           return callback({} as unknown as Prisma.TransactionClient);
@@ -287,10 +349,21 @@ describe('AccesosService', () => {
       // Arrange
       const dto = { dni: '30111222', id_sede: 99 };
 
-      accesosRepository.buscarUsuarioPorDni.mockResolvedValue({
+      usuarioRepository.findByDni.mockResolvedValue({
         id_usuario: 1,
+        id_sede: 1,
+        nombre: 'Carlos',
+        apellido: 'López',
         dni: '30111222',
-      } as unknown as Usuario);
+        email: 'carlos@test.com',
+        password: 'hashed_password',
+        telefono: null,
+        foto_url: null,
+        modificado: new Date(),
+        creacion: new Date(),
+        qr_url: null,
+        id_usuario_estado: 1,
+      });
 
       membresiasService.verificarMembresia.mockResolvedValue({
         esSocioActivo: true,
@@ -313,11 +386,18 @@ describe('AccesosService', () => {
           accesosRepository.buscarAccesoActivoPorUsuario.mockResolvedValue(
             null,
           );
-          // Sede destino en otra ciudad (id_ciudad: 2)
           accesosRepository.buscarSedePorId.mockResolvedValue({
             id_sede: 99,
             nombre: 'Sede Paraná',
+            direccion: 'Urquiza 456',
+            aforo_maximo: 100,
+            activo: true,
             id_ciudad: 2,
+            ciudad: {
+              id_ciudad: 2,
+              nombre: 'Paraná',
+              activo: true,
+            },
           });
 
           return callback({} as unknown as Prisma.TransactionClient);
@@ -334,10 +414,21 @@ describe('AccesosService', () => {
       // Arrange
       const dto = { dni: '30111222', id_sede: 999 };
 
-      accesosRepository.buscarUsuarioPorDni.mockResolvedValue({
+      usuarioRepository.findByDni.mockResolvedValue({
         id_usuario: 1,
+        id_sede: 1,
+        nombre: 'Carlos',
+        apellido: 'López',
         dni: '30111222',
-      } as unknown as Usuario);
+        email: 'carlos@test.com',
+        password: 'hashed_password',
+        telefono: null,
+        foto_url: null,
+        modificado: new Date(),
+        creacion: new Date(),
+        qr_url: null,
+        id_usuario_estado: 1,
+      });
 
       membresiasService.verificarMembresia.mockResolvedValue({
         esSocioActivo: true,
@@ -376,7 +467,7 @@ describe('AccesosService', () => {
   describe('registrarEgreso', () => {
     it('debe registrar el egreso exitosamente utilizando un token QR válido', async () => {
       // Arrange
-      const dto = { qrToken: '1.12345678.sig', id_sede: 1 };
+      const dto = { qrToken: '1.1.12345678.sig', id_sede: 1 };
       qrService.validarTokenEfimero.mockReturnValue(true);
 
       const fechaIngresoMock = new Date(Date.now() - 3600000);
@@ -415,11 +506,23 @@ describe('AccesosService', () => {
     it('debe registrar el egreso exitosamente utilizando el número de DNI ingresado manualmente', async () => {
       // Arrange
       const dto = { dni: '30111222', id_sede: 1 };
+      const findByDniSpy = jest.spyOn(usuarioRepository, 'findByDni');
 
-      accesosRepository.buscarUsuarioPorDni.mockResolvedValue({
+      findByDniSpy.mockResolvedValue({
         id_usuario: 1,
+        id_sede: 1,
+        nombre: 'Usuario',
+        apellido: 'Test',
         dni: '30111222',
-      } as unknown as Usuario);
+        email: 'test@test.com',
+        password: 'hashed_password',
+        telefono: null,
+        foto_url: null,
+        modificado: new Date(),
+        creacion: new Date(),
+        qr_url: null,
+        id_usuario_estado: 1,
+      });
 
       const fechaIngresoMock = new Date(Date.now() - 3600000);
       const fechaEgresoMock = new Date();
@@ -450,9 +553,8 @@ describe('AccesosService', () => {
       // Assert
       expect(resultado).toBeDefined();
       expect(resultado.id_registro_acceso).toBe(12);
-      expect(mockAccesosRepository.buscarUsuarioPorDni).toHaveBeenCalledWith(
-        '30111222',
-      );
+      expect(findByDniSpy).toHaveBeenCalledWith('30111222');
+
       expect(emitirAforoMock).toHaveBeenCalledWith(1, expect.any(Object));
     });
 
@@ -460,10 +562,21 @@ describe('AccesosService', () => {
       // Arrange
       const dto = { dni: '30111222', id_sede: 1 };
 
-      accesosRepository.buscarUsuarioPorDni.mockResolvedValue({
+      usuarioRepository.findByDni.mockResolvedValue({
         id_usuario: 1,
+        id_sede: 1,
+        nombre: 'Usuario',
+        apellido: 'Test',
         dni: '30111222',
-      } as unknown as Usuario);
+        email: 'test@test.com',
+        password: 'hashed_password',
+        telefono: null,
+        foto_url: null,
+        modificado: new Date(),
+        creacion: new Date(),
+        qr_url: null,
+        id_usuario_estado: 1,
+      });
 
       accesosRepository.buscarAccesoActivoPorUsuario.mockResolvedValue(null);
 
@@ -475,17 +588,28 @@ describe('AccesosService', () => {
 
     it('debe lanzar BadRequestException si el usuario intenta egresar de una sede diferente a la que ingresó', async () => {
       // Arrange
-      const dto = { dni: '30111222', id_sede: 2 }; // Sede distinta
+      const dto = { dni: '30111222', id_sede: 2 };
 
-      accesosRepository.buscarUsuarioPorDni.mockResolvedValue({
+      usuarioRepository.findByDni.mockResolvedValue({
         id_usuario: 1,
+        id_sede: 1,
+        nombre: 'Usuario',
+        apellido: 'Test',
         dni: '30111222',
-      } as unknown as Usuario);
+        email: 'test@test.com',
+        password: 'hashed_password',
+        telefono: null,
+        foto_url: null,
+        modificado: new Date(),
+        creacion: new Date(),
+        qr_url: null,
+        id_usuario_estado: 1,
+      });
 
       accesosRepository.buscarAccesoActivoPorUsuario.mockResolvedValue({
         id_registro_acceso: 10,
         id_usuario: 1,
-        id_sede: 1, // Ingresó en Sede 1
+        id_sede: 1,
         fecha_ingreso: new Date(),
         fecha_egreso: null,
         sede: { id_sede: 1, nombre: 'Sede Central', id_ciudad: 1 },
