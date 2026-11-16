@@ -1796,6 +1796,34 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `docs(log): registrar optimizaciones de rendimiento y resiliencia en modulo 3`
 
 ---
+
+#### 12/11/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Guards en todos los endpoints de sedes y reportes y limpieza de valores fijos (parte backend).
+- **Actividades:**
+  - `GET /sedes/:id/horario-operativo` deja de inventar horarios: antes, una sede sin horario cargado para ese día figuraba abierta de 08:00 a 22:00 y una excepción abierta sin horas, de 08:00 a 20:00. Ahora todo sale de la base: un día sin horario cargado figura cerrado con su motivo, una excepción abierta sin horas usa el horario semanal y una sede que no existe responde 404.
+  - Constantes de M0 en `constants/sedes.constants.ts` (hora de un día sin atención, motivos de cierre y roles con cuenta), usadas por el horario operativo y el CRUD de horarios. Se quitó del servicio y del repositorio de sedes el código viejo comentado.
+  - Guards en todos los endpoints de M0 y M6. El detalle de sedes y ciudades y el horario operativo piden sesión con cualquier rol. Los listados `GET /sedes` y `GET /ciudades` siguen sin sesión, porque la landing y el registro los consultan sin token, y quedan protegidos por un guard nuevo, `LimiteConsultasPublicasGuard`, que limita las consultas por IP y por minuto (responde 429; se configura con `LIMITE_CONSULTAS_PUBLICAS`, 120 por defecto).
+  - Reportes: los estados que cuentan (pago "Aprobado" y reserva "Confirmada") pasan a `constants/reportes.constants.ts`, como en M4 y M5, y el concepto del reporte de ingresos usa el enum del DTO en lugar de textos sueltos.
+  - Pruebas: unitarias del horario operativo y del guard; integración HTTP de permisos (401 en los endpoints con sesión), horario operativo (semanal, día cerrado, sin horario, excepciones, 404 y 400) y límite de consultas (429). Las pruebas del calendario que pedían el horario operativo ahora mandan token.
+- **Decisiones:**
+  - Sin horario cargado la sede figura cerrada en lugar de recibir un horario inventado; el gerente lo carga desde la pantalla de horarios semanales. La existencia de la sede se consulta solo en ese caso, para no sumar una consulta a los casos habituales.
+  - Los listados públicos no pueden exigir sesión sin romper la landing y el registro, así que su protección es el límite de consultas. El conteo vive en la memoria del proceso: detrás de un proxy hay que habilitar `trust proxy` para que cada cliente tenga su IP.
+  - El guard nuevo va en `common/guards` porque no depende de sedes y lo puede usar otro endpoint público.
+- **Dificultades:**
+  - M3 valida el horario de las clases con su propio horario por defecto (08:00 a 22:00) cuando la sede no tiene horario semanal cargado. Con el horario de todas las sedes cargado no hay diferencia; queda para su responsable si lo alinea.
+- **Verificación:** 18 suites y 157 pruebas aprobadas en sedes, reportes, canchas y `common` (20 nuevas). En el resto del backend siguen fallando 19 pruebas de M2 (accesos y QR) que ya fallaban en `dev` y no se tocaron. Typecheck y ESLint sin errores; cada commit compila y pasa sus pruebas.
+- **Commits:**
+  - `refactor(sedes): quitar horarios fijos del horario operativo`
+  - `feat(common): agregar guard de limite de consultas publicas`
+  - `feat(sedes): proteger con guards todos los endpoints de sedes y ciudades`
+  - `refactor(reportes): quitar valores fijos de estados y conceptos`
+  - `docs(log): registrar guards y limpieza de sedes y reportes`
+
+---
+
 #### 14/11/2026
 
 #### Angelina Vialle | Rol: Desarrolladora Backend
@@ -1818,4 +1846,5 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
   - `fix(tM2): correcion de test`
   - `feature(M1): findAll con paginacion  y actualizacion de la manera del softDelete`
   -`docs(log): actualizar bitacora`
-```
+  
+  ---

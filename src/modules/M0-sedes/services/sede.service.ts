@@ -7,6 +7,23 @@ import { SedeRepository } from '../repositories/sede.repository';
 import { CiudadRepository } from '../repositories/ciudad.repository';
 import { CreateSedeDto } from '../dto/create-sede.dto';
 import { UpdateSedeDto } from '../dto/update-sede.dto';
+import { MOTIVOS_DE_CIERRE, SIN_ATENCION } from '../constants/sedes.constants';
+
+/** Horario de una sede en una fecha, según su calendario y su horario semanal. */
+export interface HorarioOperativo {
+  abierto: boolean;
+  hora_apertura: string;
+  hora_cierre: string;
+  motivo_cierre?: string;
+  es_horario_especial?: boolean;
+}
+
+const cerrada = (motivo_cierre: string): HorarioOperativo => ({
+  abierto: false,
+  hora_apertura: SIN_ATENCION,
+  hora_cierre: SIN_ATENCION,
+  motivo_cierre,
+});
 
 @Injectable()
 export class SedeService {
@@ -59,9 +76,15 @@ export class SedeService {
   }
 
   /**
-   * Determina el horario operativo de la sede cruzando Calendario y SedeHorario
+   * Horario operativo de la sede en una fecha. Primero manda la excepción del
+   * calendario para ese día (cierre u horario especial) y después el horario
+   * semanal. No hay horarios por defecto: si la sede no tiene horario cargado
+   * para ese día, figura cerrada.
    */
-  async getHorarioOperativo(id_sede: number, fechaStr: string) {
+  async getHorarioOperativo(
+    id_sede: number,
+    fechaStr: string,
+  ): Promise<HorarioOperativo> {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaStr ?? '')) {
       throw new BadRequestException('La fecha debe tener formato YYYY-MM-DD.');
     }
@@ -73,56 +96,37 @@ export class SedeService {
       throw new BadRequestException('La fecha no existe en el calendario.');
     }
 
-    const diaSemana = fechaValidada.getUTCDay();
-    /*
-    // Validar que la sede exista
-    await this.findById(id_sede);
-
-    // Parsear fecha en formato UTC para evitar saltos de día por zona horaria
-    const [year, month, day] = fechaStr.split('-').map(Number);
-    const fechaDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-    const diaSemana = fechaDate.getUTCDay(); // 0: Domingo, 1: Lunes, ..., 6: Sábado
-  */
     const { excepcion, horarioBase } =
       await this.sedeRepository.findHorarioOperativo(
         id_sede,
-        diaSemana,
+        fechaValidada.getUTCDay(),
         fechaValidada,
       );
 
-    // Caso 1: Excepción en el Calendario (Feriado o Cierre extraordinario)
-    if (excepcion) {
-      if (excepcion.cerrado) {
-        return {
-          abierto: false,
-          hora_apertura: '00:00',
-          hora_cierre: '00:00',
-          motivo_cierre:
-            excepcion.motivo ||
-            excepcion.calendario?.descripcion ||
-            'Sede cerrada por feriado / calendario oficial',
-        };
-      }
-
+    // 1. Excepción del calendario: cierre u horario especial de ese día.
+    if (excepcion?.cerrado) {
+      return cerrada(
+        excepcion.motivo ||
+          excepcion.calendario?.descripcion ||
+          MOTIVOS_DE_CIERRE.CALENDARIO,
+      );
+    }
+    // Una excepción abierta sin horas (cargada fuera de la API) no inventa
+    // un horario: se usa el semanal de ese día.
+    if (excepcion?.hora_apertura && excepcion.hora_cierre) {
       return {
         abierto: true,
-        hora_apertura: excepcion.hora_apertura || '08:00',
-        hora_cierre: excepcion.hora_cierre || '20:00',
+        hora_apertura: excepcion.hora_apertura,
+        hora_cierre: excepcion.hora_cierre,
         es_horario_especial: true,
       };
     }
 
-    // Caso 2: Horario semanal regular de la sede (sede_horario)
+    // 2. Horario semanal de la sede para ese día.
     if (horarioBase) {
       if (!horarioBase.abierto) {
-        return {
-          abierto: false,
-          hora_apertura: '00:00',
-          hora_cierre: '00:00',
-          motivo_cierre: 'La sede no abre este día',
-        };
+        return cerrada(MOTIVOS_DE_CIERRE.DIA_SIN_ATENCION);
       }
-
       return {
         abierto: true,
         hora_apertura: horarioBase.hora_apertura,
@@ -131,11 +135,9 @@ export class SedeService {
       };
     }
 
-    // Caso 3: Fallback por defecto si aún no se configuraron horarios en BD
-    return {
-      abierto: true,
-      hora_apertura: '08:00',
-      hora_cierre: '22:00',
-    };
+    // 3. Sin datos para ese día. La existencia de la sede se consulta solo
+    // en este caso, para no sumar una consulta a los casos habituales.
+    await this.findById(id_sede);
+    return cerrada(MOTIVOS_DE_CIERRE.SIN_HORARIO);
   }
 }
