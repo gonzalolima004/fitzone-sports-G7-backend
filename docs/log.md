@@ -1798,6 +1798,108 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 
 ---
 
+#### 12/11/2026
+
+#### Facundo Agüero | Rol: Desarrollador Backend
+
+- **Tarea:** Guards en todos los endpoints de sedes y reportes y limpieza de valores fijos (parte backend).
+- **Actividades:**
+  - `GET /sedes/:id/horario-operativo` deja de inventar horarios: antes, una sede sin horario cargado para ese día figuraba abierta de 08:00 a 22:00 y una excepción abierta sin horas, de 08:00 a 20:00. Ahora todo sale de la base: un día sin horario cargado figura cerrado con su motivo, una excepción abierta sin horas usa el horario semanal y una sede que no existe responde 404.
+  - Constantes de M0 en `constants/sedes.constants.ts` (hora de un día sin atención, motivos de cierre y roles con cuenta), usadas por el horario operativo y el CRUD de horarios. Se quitó del servicio y del repositorio de sedes el código viejo comentado.
+  - Guards en todos los endpoints de M0 y M6. El detalle de sedes y ciudades y el horario operativo piden sesión con cualquier rol. Los listados `GET /sedes` y `GET /ciudades` siguen sin sesión, porque la landing y el registro los consultan sin token, y quedan protegidos por un guard nuevo, `LimiteConsultasPublicasGuard`, que limita las consultas por IP y por minuto (responde 429; se configura con `LIMITE_CONSULTAS_PUBLICAS`, 120 por defecto).
+  - Reportes: los estados que cuentan (pago "Aprobado" y reserva "Confirmada") pasan a `constants/reportes.constants.ts`, como en M4 y M5, y el concepto del reporte de ingresos usa el enum del DTO en lugar de textos sueltos.
+  - Pruebas: unitarias del horario operativo y del guard; integración HTTP de permisos (401 en los endpoints con sesión), horario operativo (semanal, día cerrado, sin horario, excepciones, 404 y 400) y límite de consultas (429). Las pruebas del calendario que pedían el horario operativo ahora mandan token.
+- **Decisiones:**
+  - Sin horario cargado la sede figura cerrada en lugar de recibir un horario inventado; el gerente lo carga desde la pantalla de horarios semanales. La existencia de la sede se consulta solo en ese caso, para no sumar una consulta a los casos habituales.
+  - Los listados públicos no pueden exigir sesión sin romper la landing y el registro, así que su protección es el límite de consultas. El conteo vive en la memoria del proceso: detrás de un proxy hay que habilitar `trust proxy` para que cada cliente tenga su IP.
+  - El guard nuevo va en `common/guards` porque no depende de sedes y lo puede usar otro endpoint público.
+- **Dificultades:**
+  - M3 valida el horario de las clases con su propio horario por defecto (08:00 a 22:00) cuando la sede no tiene horario semanal cargado. Con el horario de todas las sedes cargado no hay diferencia; queda para su responsable si lo alinea.
+- **Verificación:** 18 suites y 157 pruebas aprobadas en sedes, reportes, canchas y `common` (20 nuevas). En el resto del backend siguen fallando 19 pruebas de M2 (accesos y QR) que ya fallaban en `dev` y no se tocaron. Typecheck y ESLint sin errores; cada commit compila y pasa sus pruebas.
+- **Commits:**
+  - `refactor(sedes): quitar horarios fijos del horario operativo`
+  - `feat(common): agregar guard de limite de consultas publicas`
+  - `feat(sedes): proteger con guards todos los endpoints de sedes y ciudades`
+  - `refactor(reportes): quitar valores fijos de estados y conceptos`
+  - `docs(log): registrar guards y limpieza de sedes y reportes`
+
+---
+
+#### 14/11/2026
+
+#### Angelina Vialle | Rol: Desarrolladora Backend
+
+- **Actividades:**
+  - **Paginación y filtros avanzados en gestión de usuarios (M1):** Actualización de `UsuariosController.findAll` y `UsuariosService.findAll` para incorporar paginación configurable (`page` por defecto en 1 y `limit` en 10) con respuesta estructurada que incluye datos (`data: UsuarioResponseDto[]`) y metadatos de control (`meta: { total, page, lastPage }`). Se añadieron filtros opcionales por sede (`id_sede`), estado puntual (`id_usuario_estado`) e inclusión de usuarios dados de baja (`includeDeactivated`), filtrando por defecto solo usuarios activos (`ID_ESTADO_ACTIVO = 1`).
+  - **Consultas optimizadas y conteo en repositorio:** Implementación de `findAllPaginated` en `UsuariosRepository` aplicando `skip`, `take`, ordenamiento descendente (`orderBy: { id_usuario: 'desc' }`) e inclusión de relaciones (`sede`, `usuario_estado`, `usuario_rol.rol`), junto con la adición de `count(where)` para el cálculo dinámico del total de páginas.
+  - **Refactorización de baja lógica y restauración de usuarios:** Modificación de `softDelete` en `UsuariosRepository` para recibir parametrizado el estado desactivado (`ID_ESTADO_DESACTIVADO = 3`) desde el servicio. Creación de `updateStatus` en el repositorio e implementación de `restore(id)` en `UsuariosService` para reactivar usuarios eliminados lógicamente devolviéndolos a estado activo.
+  - **Seguridad y documentación Swagger en usuarios:** Protección de las rutas de `UsuariosController` incorporando `@UseGuards(SupabaseAuthGuard, RolesGuard)` y `@ApiBearerAuth()`, documentando los nuevos parámetros de paginación y filtrado con decoradores `@ApiQuery`.
+  - **Corrección y saneamiento de pruebas unitarias en M2:**
+    - `acceso.service.spec.ts`: Eliminación de directivas de escape de linter, inyección de `UsuariosRepository` en el módulo de pruebas para espiar `findByDni` (alineado a la arquitectura de resolución de socios), y adaptación de los mocks al formato de token QR dinámico de 4 segmentos (`id_usuario.id_ciudad.timestamp.firma`).
+    - `qr.service.spec.ts`: Inyección de `UsuariosService` para la resolución de ciudad de origen y verificación de la estructura del token QR de 4 partes.
+    - Limpieza de espías de Jest mediante `afterEach(() => jest.restoreAllMocks())`.
+- **Decisiones:**
+  - Devolver un objeto con `data` y `meta` en `findAll` para facilitar la renderización de tablas paginadas en el frontend y evitar sobrecarga en la transferencia de datos.
+  - Excluir por defecto a los socios dados de baja a menos que se indique explícitamente `includeDeactivated=true`, manteniendo las vistas administrativas limpias y enfocadas en socios operativos.
+  - Parametrizar los identificadores de estado activo y desactivado como constantes a nivel de servicio (`ID_ESTADO_ACTIVO = 1`, `ID_ESTADO_DESACTIVADO = 3`) en lugar de dejarlos hardcodeados en las consultas del repositorio.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `fix(tM2): correcion de test`
+  - `feature(M1): findAll con paginacion  y actualizacion de la manera del softDelete`
+  -`docs(log): actualizar bitacora`
+  
+  ---
+  
+#### 14/11/2026
+
+#### Matías Sillén Ríos | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Corrección de la inicialización del adaptador PostgreSQL en `PrismaService` (`src/database/prisma-service/prisma.service.ts`), pasando `{ connectionString }` directamente a `PrismaPg` conforme a la API oficial de `@prisma/adapter-pg` v7 y eliminando la advertencia de deprecación de `client.query()` en `pg`.
+  - Optimización de las consultas de autenticación y perfil de sesión mediante la incorporación de `authProfileSelect` y `findAuthProfileByEmail` en `UsuariosRepository`, evitando joins innecesarios sobre membresías, estados y ciudades en `SupabaseAuthGuard` y `AuthService`.
+  - Unificación de la validación de unicidad de DNI y correo electrónico en `findExistingByDniOrEmail` (una sola consulta indexada `OR`) y resolución de fallback para avatares de cuentas de Google OAuth (`user_metadata.avatar_url` / `picture`) en `SupabaseAuthGuard` y `AuthenticatedUser`.
+  - Implementación de asignación dinámica del rol `externo` en `UsuariosService.create` mediante `findRolByNombre('externo')` en PostgreSQL, eliminando IDs hardcodeados e ignorando roles privilegiados enviados desde el cliente.
+  - Blindaje del endpoint `PATCH /usuarios/:id` y de `ActualizarUsuarioDto` (`OmitType`) con `SupabaseAuthGuard`, validando propiedad del perfil e impidiendo modificaciones sobre `dni`, `email`, `roles`, `contrasenia` o `password`.
+  - Fortalecimiento de `FotoStorageService` y `UploadFotoController` (`POST /usuarios/:id/foto`) con validación de tipos MIME permitidos (`image/jpeg`, `image/png`, `image/webp`), límite de 2 MB, nombres únicos con marca de tiempo para evitar caché obsoleta y eliminación segura del avatar anterior del usuario en Supabase Storage (`fitzonepublic`).
+  - Cobertura de pruebas unitarias y de integración HTTP en `src/modules/M1-usuarios/services/usuarios.service.spec.ts` y `test/auth-profile.e2e-spec.ts` (Jest + Supertest).
+- **Decisiones:**
+  - Separar `authProfileSelect` de `defaultIncludes` en `UsuariosRepository` para que la verificación de sesión en `GET /auth/me` y endpoints protegidos transfiera únicamente los campos de identidad y roles necesarios.
+  - Resolver el rol `externo` dinámicamente por nombre en la base de datos en lugar de confiar en el arreglo `roles` enviado en el payload de registro, cerrando cualquier vector de escalada de privilegios y desacoplando el código del orden autoincremental de `id_rol`.
+  - Validar la propiedad del recurso directamente en los controladores de actualización de perfil y subida de avatar antes de ejecutar operaciones sobre Prisma o Supabase Storage.
+- **Dificultades:**
+  - La carga repetida de relaciones completas (`defaultIncludes`) durante la validación de tokens en el guard incrementaba la latencia de respuesta en cada petición autenticada debido a la distancia con la base de datos remota, lo cual se mitigó reduciendo la selección granular en el repositorio.
+- **Commits:**
+  - `fix(router): corregir advertencia deprecada de consultas de cliente`
+  - `perf(auth): optimizar consultas de autenticacion y perfil de sesion`
+  - `fix(auth): asignar rol externo dinamicamente en el registro`
+  - `feat(profile): blindar actualizacion de perfil y almacenamiento de avatar`
+  - `test(auth): agregar pruebas unitarias y de integracion de auth y perfil`
+  - `fix(auth): resolver avatar de Google desde user_metadata como fallback`
+  - `fix(auth): formateo y ajustes adicionales de tests y DTOs`
+  - `fix(test): ignorar chequeo de tipos en adaptador temporal prisma-pglite`
+
+---
+
+#### 14/11/2026
+
+#### Matías Sillén Ríos | Rol: Desarrollador Backend
+
+- **Actividades:**
+  - Implementación de las consultas y endpoints protegidos para el Dashboard exclusivo del Socio e Historial de Reservas (`E15-T2`), restringiendo el acceso exclusivamente a usuarios autenticados con rol `socio` validado desde la base de datos mediante `SupabaseAuthGuard` y validación de roles en el backend.
+  - Creación de DTOs de consulta y respuesta tipados (`class-validator` y Swagger) para recuperar de forma paginada y ordenada (de más reciente a más antigua) las reservas de canchas y las inscripciones a clases grupales pertenecientes únicamente al identificador del usuario autenticado (`req.user.id_usuario`).
+  - Optimización de consultas en Prisma mediante selección granular (`select`/`include`) de fechas, horarios, canchas, clases grupales, sedes y estados reales persistidos en PostgreSQL, evitando consultas N+1 y exposición de registros de otros usuarios.
+  - Incorporación de pruebas unitarias y de integración HTTP (Jest + Supertest) verificando el aislamiento de datos por usuario, el ordenamiento cronológico descendente, el bloqueo `403 Forbidden` para usuarios con rol `externo` y la respuesta `401 Unauthorized` ante peticiones sin token válido.
+- **Decisiones:**
+  - Obtener el `id_usuario` y la verificación del rol `socio` exclusivamente desde el contexto de autenticación del token validado en el servidor (`request.user`), rechazando cualquier identificador enviado por parámetros o query desde el cliente para evitar filtraciones de historial entre socios.
+  - Implementar paginación y filtrado opcional por tipo de actividad (`todas`, `canchas`, `clases`) directamente en la capa de consulta de Prisma para permitir recorrer el historial completo sin transferir cargas innecesarias.
+- **Dificultades:**
+  - Unificar en una respuesta consistente las reservas de canchas y las inscripciones a clases grupales manteniendo los estados reales de cada entidad sin inferir estados por fecha; se resolvió normalizando ambos orígenes en DTOs tipados que preservan el estado persistido y la sede asociada de cada registro.
+- **Commits:**
+  - `feat(socio): implementar dashboard e historial de reservas para socio`
+  - `corregir reglas de lint y mock en tests unitarios y adaptadores`
+
+---
+
 #### 15/11/2026
 
 #### Joaquín Ribarola | Rol: Desarrollador Backend
