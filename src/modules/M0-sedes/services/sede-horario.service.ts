@@ -10,11 +10,9 @@ import { UpdateSedeHorarioDto } from '../dto/update-sede-horario.dto';
 import { SedeHorarioResponseDto } from '../dto/sede-horario-response.dto';
 import { sinCambios, validarRangoHorario } from '../utils/calendario.utils';
 import { traducirErrorPrisma } from '../utils/errores-prisma';
+import { SIN_ATENCION } from '../constants/sedes.constants';
 
 const NO_ENCONTRADO = 'Horario no encontrado en esta sede';
-
-/** Las columnas de hora no admiten nulos: un día sin atención guarda 00:00. */
-const SIN_ATENCION = '00:00';
 
 const DIAS = [
   'domingo',

@@ -156,11 +156,49 @@ export class UsuariosRepository {
     });
   }
 
-  async softDelete(id: number): Promise<UsuarioConRoles> {
+  //NOTA debe corresponder con el id del estado desactivado.
+  // Podría incluir que busque el estado como paso anterior por si lo cambian en el futuro.
+  async softDelete(
+    id: number,
+    ID_ESTADO_DESACTIVADO: number,
+  ): Promise<UsuarioConRoles> {
     return this.prisma.usuario.update({
       where: { id_usuario: id },
-      data: { id_usuario_estado: 3 },
+      data: { id_usuario_estado: ID_ESTADO_DESACTIVADO },
       include: this.defaultIncludes,
+    });
+  }
+
+  async findAllPaginated(
+    where: Prisma.UsuarioWhereInput,
+    skip: number,
+    take: number,
+  ) {
+    return this.prisma.usuario.findMany({
+      where,
+      skip,
+      take,
+      include: {
+        sede: true,
+        usuario_estado: true,
+        usuario_rol: { include: { rol: true } },
+      },
+      orderBy: { id_usuario: 'desc' },
+    });
+  }
+
+  async count(where: Prisma.UsuarioWhereInput): Promise<number> {
+    return this.prisma.usuario.count({ where });
+  }
+
+  async updateStatus(id: number, id_usuario_estado: number): Promise<Usuario> {
+    return this.prisma.usuario.update({
+      where: { id_usuario: id },
+      data: {
+        usuario_estado: {
+          connect: { id_usuario_estado },
+        },
+      },
     });
   }
 }

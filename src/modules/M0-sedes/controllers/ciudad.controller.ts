@@ -21,19 +21,32 @@ import {
 } from '@nestjs/swagger';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
+import { LimiteConsultasPublicasGuard } from '../../../common/guards/limite-consultas-publicas.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { ROLES_CON_CUENTA } from '../constants/sedes.constants';
 
-// Los GET siguen siendo públicos (landing y formularios de sedes).
+// Todos los endpoints tienen guards. El listado es el único sin sesión,
+// porque la landing lo consulta sin token: tiene límite de consultas por IP.
+// El detalle pide una cuenta de FitZone y el alta, la modificación y la baja,
+// el rol gerente.
 @ApiTags('Ciudades')
 @Controller('ciudades')
 export class CiudadController {
   constructor(private readonly ciudadService: CiudadService) {}
 
-  @ApiOperation({ summary: 'Obtener todas las ciudades activas' })
+  @ApiOperation({
+    summary:
+      'Obtener todas las ciudades activas (público, con límite de consultas)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lista de ciudades obtenida correctamente',
   })
+  @ApiResponse({
+    status: 429,
+    description: 'Demasiadas consultas seguidas desde la misma IP.',
+  })
+  @UseGuards(LimiteConsultasPublicasGuard)
   @Get()
   async findAll() {
     return this.ciudadService.findAll();
@@ -54,9 +67,16 @@ export class CiudadController {
     description: 'El ID proporcionado no es válido',
   })
   @ApiResponse({
+    status: 401,
+    description: 'No autorizado. Token no proporcionado o inválido.',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Ciudad no encontrada',
   })
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles(...ROLES_CON_CUENTA)
+  @ApiBearerAuth()
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id_ciudad: number) {
     return this.ciudadService.findById(id_ciudad);

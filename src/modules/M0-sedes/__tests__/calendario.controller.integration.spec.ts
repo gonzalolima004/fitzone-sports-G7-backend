@@ -480,6 +480,7 @@ describe('Calendario, excepciones por sede y horario semanal (integración)', ()
       const cerrado = await request(servidor())
         .get(`/sedes/${ids.centro}/horario-operativo`)
         .query({ fecha: '2026-11-20' })
+        .set('Authorization', bearer('socio'))
         .expect(200);
       expect(cerrado.body).toMatchObject({
         abierto: false,
@@ -489,6 +490,7 @@ describe('Calendario, excepciones por sede y horario semanal (integración)', ()
       const especial = await request(servidor())
         .get(`/sedes/${ids.centro}/horario-operativo`)
         .query({ fecha: '2026-12-25' })
+        .set('Authorization', bearer('socio'))
         .expect(200);
       expect(especial.body).toMatchObject({
         abierto: true,
@@ -627,6 +629,7 @@ describe('Calendario, excepciones por sede y horario semanal (integración)', ()
       const lunes = await request(servidor())
         .get(`/sedes/${ids.centro}/horario-operativo`)
         .query({ fecha: '2026-11-16' })
+        .set('Authorization', bearer('socio'))
         .expect(200);
       expect(lunes.body).toMatchObject({
         abierto: true,
@@ -637,6 +640,7 @@ describe('Calendario, excepciones por sede y horario semanal (integración)', ()
       const domingo = await request(servidor())
         .get(`/sedes/${ids.centro}/horario-operativo`)
         .query({ fecha: '2026-11-15' })
+        .set('Authorization', bearer('socio'))
         .expect(200);
       expect(domingo.body).toMatchObject({ abierto: false });
     });

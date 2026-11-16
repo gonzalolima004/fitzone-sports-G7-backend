@@ -46,10 +46,10 @@ export class SedeRepository {
   }
 
   /**
-   * Consulta la excepción de calendario y el horario semanal de la sede
+   * Excepción del calendario de la sede para la fecha y su horario semanal
+   * para ese día (0 domingo … 6 sábado). Las dos consultas van en paralelo.
    */
   async findHorarioOperativo(id_sede: number, dia_semana: number, fecha: Date) {
-    //Refactorización para hacer ambas consultas a la vez para que funcione mas rapido
     const [excepcion, horarioBase] = await Promise.all([
       this.prisma.calendario_sede.findFirst({
         where: {
@@ -69,27 +69,6 @@ export class SedeRepository {
         },
       }),
     ]);
-
-    // 1. Verificar si hay excepción para esa fecha específica (feriado o cierre)
-    /*const excepcion = await this.prisma.calendario_sede.findFirst({
-      where: {
-        id_sede,
-        calendario: {
-          fecha,
-        },
-      },
-      include: {
-        calendario: true,
-      },
-    });
-
-    // 2. Obtener el horario base semanal de la sede para el día (0 = Domingo, ..., 6 = Sábado)
-    const horarioBase = await this.prisma.sede_horario.findFirst({
-      where: {
-        id_sede,
-        dia_semana,
-      },
-    });*/
 
     return { excepcion, horarioBase };
   }
