@@ -1846,10 +1846,10 @@ git commit -am "chore(env): configurar service_role key de supabase para saltar 
 - **Commits:**
   - `fix(tM2): correcion de test`
   - `feature(M1): findAll con paginacion  y actualizacion de la manera del softDelete`
-  -`docs(log): actualizar bitacora`
-  
-  ---
-  
+    \-`docs(log): actualizar bitacora`
+
+  ***
+
 #### 14/11/2026
 
 #### Matías Sillén Ríos | Rol: Desarrollador Backend
