@@ -162,6 +162,7 @@ describe('CanchasDisponibilidadService', () => {
         precio_congelado: new Prisma.Decimal('10000'),
         descuento_porcentaje: new Prisma.Decimal('0'),
         es_horario_pico: false,
+        fecha_creacion: null,
       };
 
       const mockMantenimiento: CanchaMantenimiento = {
@@ -245,6 +246,7 @@ describe('CanchasDisponibilidadService', () => {
         precio_congelado: new Prisma.Decimal('10000'),
         descuento_porcentaje: new Prisma.Decimal('0'),
         es_horario_pico: false,
+        fecha_creacion: null,
       };
 
       const mantenimientoCancha2: CanchaMantenimiento = {
