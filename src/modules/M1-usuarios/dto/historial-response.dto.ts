@@ -53,6 +53,14 @@ export class ItemHistorialDto {
   })
   fecha_fin: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Fecha y hora en que se realizó la reserva (null en reservas anteriores al registro de este dato)',
+    example: '2026-11-17T21:30:00.000Z',
+    nullable: true,
+  })
+  fecha_creacion?: string | null;
+
   @ApiProperty({
     description: 'Estado actual de la reserva',
     example: 'Confirmada',

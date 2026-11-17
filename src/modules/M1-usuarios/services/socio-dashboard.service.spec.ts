@@ -192,6 +192,36 @@ describe('SocioDashboardService', () => {
       expect(result.meta.limit).toBe(2);
       expect(result.meta.total_paginas).toBe(3);
     });
+
+    it('debería filtrar por id_sede en canchas y clases cuando se especifica id_sede', async () => {
+      prisma.canchaReserva.findMany.mockResolvedValue([]);
+      prisma.claseReserva.findMany.mockResolvedValue([]);
+
+      await service.obtenerHistorial(idUsuario, {
+        tipo: TipoActividadHistorial.TODAS,
+        id_sede: 3,
+      });
+
+      const llamadasCancha: unknown[][] =
+        prisma.canchaReserva.findMany.mock.calls;
+      const llamadasClase: unknown[][] =
+        prisma.claseReserva.findMany.mock.calls;
+      const argCancha = llamadasCancha[0][0] as {
+        where?: { id_usuario?: number; cancha?: { id_sede?: number } };
+      };
+      const argClase = llamadasClase[0][0] as {
+        where?: { id_usuario?: number; clase?: { id_sede?: number } };
+      };
+
+      expect(argCancha.where).toEqual({
+        id_usuario: idUsuario,
+        cancha: { id_sede: 3 },
+      });
+      expect(argClase.where).toEqual({
+        id_usuario: idUsuario,
+        clase: { id_sede: 3 },
+      });
+    });
   });
 
   describe('obtenerDashboard', () => {

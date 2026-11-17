@@ -43,4 +43,14 @@ export class HistorialQueryDto {
     message: 'El tipo debe ser uno de: todas, canchas, clases',
   })
   tipo?: TipoActividadHistorial = TipoActividadHistorial.TODAS;
+
+  @ApiPropertyOptional({
+    description: 'Filtrar por ID de sede',
+    example: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'El ID de sede debe ser un número entero' })
+  @Min(1, { message: 'El ID de sede mínimo es 1' })
+  id_sede?: number;
 }

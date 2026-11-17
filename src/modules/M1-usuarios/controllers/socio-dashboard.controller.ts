@@ -57,6 +57,7 @@ export class SocioDashboardController {
   }
 
   @Get('historial')
+  @Roles('socio', 'externo')
   @ApiOperation({
     summary:
       'Obtener historial unificado de reservas de canchas y clases grupales',
@@ -74,7 +75,7 @@ export class SocioDashboardController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol socio.',
+    description: 'Acceso denegado: se requiere rol socio o externo.',
   })
   async obtenerHistorial(
     @CurrentUserId() userId: number,
