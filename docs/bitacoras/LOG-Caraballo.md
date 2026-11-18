@@ -1,6 +1,6 @@
 #### 23/08/2026
 
-#### Angelina Vialle y Marcos Caraballo | Rol: Desarrolladores Backend
+#### Marcos Caraballo y Angelina Vialle | Rol: Desarrolladores Backend
 
 - **Actividades:**
   - Identificación de las entidades principales del sistema.
@@ -32,7 +32,7 @@
 - **Actividades:** Configuración inicial del schema.prisma para la base de datos.
 - **Decisiones:** Realizar el schema.prisma siguiendo el diagrama entidad-relación realizado anteriormente.
 - **Dificultades:** Ninguna
-- **Commits:** `Armado de schema.prisma inicial`
+- **Commits:** `0da863f` `Armado de schema.prisma inicial`
 
 ---
 
@@ -43,7 +43,7 @@
 - **Actividades:** Escribir los registros de decisiones (ADRs) para el backend del proyecto.
 - **Decisiones:** ----
 - **Dificultades:** Pensar en todas las decisiones de arquitectura y de implementación que deberían de tenerse en cuenta antes de arrancar el proyecto.
-- **Commits/PRs:** `ADR-backend`
+- **Commits/PRs:** `13dafe2` `ADR-backend`
 
 ---
 
@@ -59,10 +59,10 @@
   **Dificultades:**
 - Ajuste de los DTOs para mantener compatibilidad entre los datos de formulario de fotos de perfil y los atributos requeridos por la tabla de usuarios en Prisma sin alterar el flujo de registro.
   **Commits:**
-- `feat(M1): implementar UsuariosRepository con PrismaService`
-- `feat(M1): Implementar UsuarioService con encriptación bcrypt`
-- `feat(M1): implementar UsuariosController con anotaciones Swagger`
-- `feat(M1): Implementar class transformer en dtos y que sean utilizados en el flujo`
+- `bf1698f` `feat(M1): implementar UsuariosRepository con PrismaService`
+- `ad89e82` `feat(M1): Implementar UsuarioService con encriptación bcrypt`
+- `e2bf248` `feat(M1): implementar UsuariosController con anotaciones Swagger`
+- `d184b69` `feat(M1): Implementar class transformer en dtos y que sean utilizados en el flujo`
 
 ---
 
@@ -77,7 +77,7 @@
 - Definir un DTO específico de respuesta para la carga de imágenes, asegurando que el cliente reciba un formato estandarizado con la URL devuelta por el almacenamiento.
   **Dificultades:** Ninguna.
   **Commits:**
-- `feat(M1): crear UploadFotoResponseDto para respuesta de foto de perfil`
+- `3135dfe` `feat(M1): crear UploadFotoResponseDto para respuesta de foto de perfil`
 
 ---
 
@@ -96,11 +96,11 @@
   **Dificultades:**
 - Manejo de la interceptación de archivos `multipart/form-data` en NestJS y su correcto pasaje en memoria hacia la API de Supabase Storage.
   **Commits:**
-- `feat(M1): crear FotoStorageService para gestionar fotos con supabase storage`
-- `feat(M1): implementar UploadFotoController para carga de fotos`
-- `feat(M1): crear DTOs para crear, actualizar y el response de membresia_plan`
-- `feat(M1): crear MembresiasRepository para gestion de planes y estados`
-- `feat(M1):implementar repositorio, servicio y controlador para gestion de planes de membresia`
+- `f3a522d` `feat(M1): crear FotoStorageService para gestionar fotos con supabase storage`
+- `3ba3582` `feat(M1): implementar UploadFotoController para carga de fotos`
+- `8d66051` `feat(M1): crear DTOs para crear, actualizar y el response de membresia_plan`
+- `c75c94e` `feat(M1): crear MembresiasRepository para gestion de planes y estados`
+- `516f5ae` `feat(M1):implementar repositorio, servicio y controlador para gestion de planes de membresia`
 
 ---
 
@@ -121,10 +121,10 @@
   **Dificultades:**
 - Incompatibilidad de tipos estricta en TypeScript al pasar propiedades opcionales provinientes de DTOs parciales (`PartialType`) hacia parámetros requeridos del repositorio. Se resolvió aplicando guardas defensivas en el servicio.
   **Commits:**
-- `feat(M1): crear DTOs de asignacion, cambio de estado y respuesta de Membresias`
-- `feat(M1): implementar MembresiasService con validaciones de existencia y control de estado`
-- `feat(M1): implementar MembresiasController`
-- `docs(log): actualizar bitacora`
+- `b4de0c5` `feat(M1): crear DTOs de asignacion, cambio de estado y respuesta de Membresias`
+- `8552897` `feat(M1): implementar MembresiasService con validaciones de existencia y control de estado`
+- `64390bc` `feat(M1): implementar MembresiasController`
+- `95cede7` `docs(log): actualizar bitacora`
 
 ---
 
@@ -145,19 +145,11 @@
   **Dificultades:**
 - Análisis y definición del modelo de estados de membresía: requirió un análisis profundo de arquitectura para conciliar los estados persistidos en la BD (`Activa`, `Vencida`, `Suspendida`) con la expiración por fecha en tiempo real, evitando múltiples consultas al historial y reduciendo la complejidad de micro-casos redundantes.
   **Commits:**
-- `feat(M1): crear DTO de respuesta para verificacion multi-sede y regla de mora`
-- `feat(M1): agregar verificacion de membresia multi-sede y regla de mora en MembresiasService`
-- `feat(M1): implementar metodo para verificar membresia en el controller de membresias`
-- `feat(app): registrar UsuariosModule (M1) en AppModule`
-- `docs(log): actualizar bitacora`
-
----
-
-- **Commits:**
-  - `feat(M1): crear DTOs de asignacion, cambio de estado y respuesta de Membresias`
-  - `feat(M1): implementar metodos de persistencia de membresias en MembresiasRepository`
-  - `feat(M1): implementar MembresiasService con calculo de fechas y regla de una sola activa`
-  - `feat(M1): implementar MembresiasController ajustado a MembresiasService`
+- `838e0f5` `feat(M1): crear DTO de respuesta para verificacion multi-sede y regla de mora`
+- `a741ad3` `feat(M1): agregar verificacion de membresia multi-sede y regla de mora en MembresiasService`
+- `bc97489` `feat(M1): implementar metodo para verificar membresia en el controller de membresias`
+- `796b738` `feat(app): registrar UsuariosModule (M1) en AppModule`
+- `d4e15bb` `docs(log): actualizar bitacora`
 
 ---
 
@@ -186,10 +178,10 @@
 - Falta de endpoints necesarios y validaciones de seguridad en código preexistente.
 - Importante retraso en la delegación de responsabilidad de tareas relacionadas a esta entrada de bitácora, teniendo en cuenta el tiempo disponible y la complejidad de las tareas.
   **Commits:**
-  - `feat(prisma): adicion de entidades para calendario y horario`
-  - `feat(M0): flujo para obtener el horario operativo de una sede`
-  - `feat(M4): Implementacion de horarios para reservas de canchas y endpoint para cancha tipos`
-  - `docs(log): actualizar log con tareas de calendario y horarios`
+  - `50079d2` `feat(prisma): adicion de entidades para calendario y horario`
+  - `ea2b17f` `feat(M0): flujo para obtener el horario operativo de una sede`
+  - `5bfdc48` `feat(M4): Implementacion de horarios para reservas de canchas y endpoint para cancha tipos`
+  - `bc04953` `docs(log): actualizar log con tareas de calendario y horarios`
 
 ---
 
@@ -207,8 +199,8 @@
 - **Dificultades:**
   - Falta de endpoints necesarios, lo que justifica esta serie de modificaciones.
 - **Commits:**
-  - `feat(M4): nuevos endpoints para reserva canchas y disponibilidad por sede y cancha`
-  - `docs(log): actualizacion de bitacora`
+  - `9338bc8` `feat(M4): nuevos endpoints para reserva canchas y disponibilidad por sede y cancha`
+  - `2edc5e7` `docs(log): actualizacion de bitacora`
 
 ---
 
@@ -222,8 +214,8 @@
   - Incorporar `disponible` en los DTOs de creación y actualización para permitir definir la disponibilidad operativa de la cancha desde su alta o modificarla puntualmente según necesidades de la sede.
 - **Dificultades**: Ninguna
 - **Commits:**
-- `feat(M4): incorporar atributo disponible en dts para su modificacion`
-- `docs(log): actualizacion de bitacora`
+- `ca988b3` `feat(M4): incorporar atributo disponible en dts para su modificacion`
+- `9484741` `docs(log): actualizacion de bitacora`
 
 ---
 
@@ -247,10 +239,10 @@
   - Tiempos de respuesta lentos en la consulta de grilla de disponibilidad debido a la ejecución de consultas repetitivas a la base de datos por cada cancha; resuelto agrupando las peticiones por lote y procesando los rangos en memoria.
   - Dificultad para medir los tiempos de respuesta por problemas con el navegador; resuelto descargando uno diferente.
 - **Commits:**
-  - `feat(M4): Crud de cancha tipos funcionando`
-  - `refactor(M4): Optimizacion de consultas lentas en modulo de canchas`
-  - `chore(M4): formato con prettier`
-  - `docs(log): actualizacion de bitacora`
+  - `97bccb9` `feat(M4): Crud de cancha tipos funcionando`
+  - `20591b1` `refactor(M4): Optimizacion de consultas lentas en modulo de canchas`
+  - `ce5bc3d` `chore(M4): formato con prettier`
+  - `b8cb1b3` `docs(log): actualizacion de bitacora`
 
 ---
 
@@ -267,8 +259,8 @@
 - **Decisiones:** Ninguna
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `feat(M4): metodos para crud de mantenimiento`
-  - `docs(log): actualizacion de bitacora`
+  - `955b527` `feat(M4): metodos para crud de mantenimiento`
+  - `2b3c09c` `docs(log): actualizacion de bitacora`
 
 ---
 
@@ -284,10 +276,10 @@
 - **Decisiones:** Cambiar el endpoint para la grilla de turnos, de manera que traiga la disponibilidad para un tipo de cancha en vez de todas a la vez.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `feat(M4): fix de errores por supabase auth`
-  - `feat(M4): optimizacion de slots de horarios`
-  - `fix(log): correccion de formato`
-  - `docs(log): actualizacion de bitacora`
+  - `8d75303` `feat(M4): fix de errores por supabase auth`
+  - `63dc419` `feat(M4): optimizacion de slots de horarios`
+  - `0509465` `fix(log): correccion de formato`
+  - `ad5b961` `docs(log): actualizacion de bitacora`
 
 ---
 
@@ -309,10 +301,10 @@
 - **Dificultades:**
   - El servidor de la base de datos se encuentra en Oregon (EE.UU.), haciendo que hasta la petición más básica de SELECT 1 demore 250ms en el MEJOR caso posible. El uso de cache es una forma de evitar realizar consultas redundantes. Funciona bien por ahora en tests manuales y automatizados, por lo que si mañana sigue funcionando sin errores, planeo incluir una tarea, o más, en trello para integrarlo en otros puntos donde sea apropiado, sin afectar que realmente requieran ir a la base de datos real.
 - **Commits:**
-  - `feat(M4): crear endpoint para cotizar precios`
-  - `feat(M4): endpoint para cotizar canchas`
-  - `test(M4): test para cache de cotizacion`
-  - `docs(log): actualizacion de bitacora`
+  - `eec2908` `feat(M4): crear endpoint para cotizar precios`
+  - `6b2fea3` `feat(M4): endpoint para cotizar canchas`
+  - `4cb9d3a` `test(M4): test para cache de cotizacion`
+  - `c5e0ea7` `docs(log): actualizacion de bitacora`
 
 ---
 
@@ -330,16 +322,16 @@
   - Utilizar bloqueo pesimista a nivel de fila sobre la cancha para serializar atómicamente la verificación de colisión e inserción, evitando colisiones concurrentes sin degradar la concurrencia general.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `feat(Supabase): integrar logger en canal realtime`
-  - `feat(M4): crear service para reservas realtime`
-  - `feat(M4): utilizacion del service realtime`
-  - `feat(M4): bloqueo pesimista en reserva cancha repo`
-  - `feat(M4): tests para supabase realtime en canchas`
-  - `feat(M4): inclusion del modulo de realtime`
-  - `fix(M0): faltaba el campo es horario especial`
-  - `feat(M2): compatibilidad de test por cambios en realtime service`
-  - `docs(log): actualizacion de bitacora`
-  - `fix(entorno): reestablecer husky y eliminar settings`
+  - `fb182c1` `feat(Supabase): integrar logger en canal realtime`
+  - `765cd1f` `feat(M4): crear service para reservas realtime`
+  - `5d670b0` `feat(M4): utilizacion del service realtime`
+  - `f3bef05` `feat(M4): bloqueo pesimista en reserva cancha repo`
+  - `0dee3ec` `feat(M4): tests para supabase realtime en canchas`
+  - `faadc0b` `feat(M4): inclusion del modulo de realtime`
+  - `082edc7` `fix(M0): faltaba el campo es horario especial`
+  - `03e1940` `feat(M2): compatibilidad de test por cambios en realtime service`
+  - `0b09a93` `docs(log): actualizacion de bitacora`
+  - `978b56e` `fix(entorno): reestablecer husky y eliminar settings`
 
 ---
 
@@ -358,9 +350,9 @@
   - Asegurar `GET /reservas-canchas/:id` validando titularidad y roles de usuario para evitar consultas de un cliente a reservas ajenas.
 - **Dificultades:** Discrepancia de precios generada por calcular el descuento de socio sobre el subtotal con recargo pico en vez de sobre la tarifa base.
 - **Commits:**
-  - `fix(canchas): corregir calculo de precios`
-  - `feat(M4): autorizacion en endpoint de reservas`
-  - `docs(log): actualizacion de bitacora`
+  - `1b43650` `fix(canchas): corregir calculo de precios`
+  - `810eedf` `feat(M4): autorizacion en endpoint de reservas`
+  - `2b87774` `docs(log): actualizacion de bitacora`
 
 ---
 
@@ -378,8 +370,8 @@
   - Integrar compatibilidades con merges anteriores sobre beneficios de membresias desactivadas
   - Asegurar la correcta asignación del estado inicial `Pendiente de Pago` antes del impacto del webhook de cobro.
 - **Commits:**
-  - `refactor(M4): integrar beneficios, normalizar estados, blindar con useguards y limpieza`
-  - `docs(log): actualizacion de bitacora`
+  - `17a7ee7` `refactor(M4): integrar beneficios, normalizar estados, blindar con useguards y limpieza`
+  - `09c557c` `docs(log): actualizacion de bitacora`
 
 ---
 
@@ -396,8 +388,27 @@
     - Desligar lo relacionado a disponibilidad de canchas de cancha service en un archivo service dedicado a esa tarea.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `feat(M4) tests para disponibilidad de cancha y reservas`
-  - `refactor(M4): refactorizacion de modulo 4`
-  - `docs(log): actualizacion de bitacora`
+  - `ade20f2` `feat(M4) tests para disponibilidad de cancha y reservas`
+  - `458b8a3` `refactor(M4): refactorizacion de modulo 4`
+  - `723e74b` `docs(log): actualizacion de bitacora`
+
+---
+
+#### 17/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Depuración y eliminación de los diagramas obsoletos previos en `docs/diagramas/`.
+  - Incorporación de los archivos fuente Mermaid (`.mmd`) de los diagramas obligatorios: C4 (Niveles 1, 2 y 3 para Accesos y Canchas), DER físico y UML de clases del dominio.
+  - Generación e inclusión de las versiones vectoriales legibles (`.svg`) de los 6 diagramas en `docs/diagramas/`.
+  - Normalización de `docs/bitacoras/LOG-Caraballo.md` agregando los hashes cortos reales de Git en cada commit listado.
+- **Decisiones:**
+  - Versionar tanto los fuentes `.mmd` como los `.svg` exportados para facilitar su lectura y mantenimiento, manteniendo el UML enfocado en entidades core y patrones para preservar legibilidad.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `d428a9d` `docs(diagramas): eliminar diagramas obsoletos`
+  - `9f9f65a` `docs(diagramas): incluir archivos fuente en repo`
+  - `ad42520` `docs(diagramas): Agregar archivos svg legibles`
 
 ---
