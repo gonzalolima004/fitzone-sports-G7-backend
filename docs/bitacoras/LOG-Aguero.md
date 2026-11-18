@@ -493,3 +493,33 @@ M3 valida el horario de las clases con su propio horario por defecto (08:00 a 22
 - `5936d42` docs(log): registrar guards y limpieza de sedes y reportes
 
 ---
+
+## Sprint 8 — Cierre — Semana del 2026-11-16
+
+### 2026-11-18 · <horas> h
+<!-- PARA COMPLETAR: arreglo que pidió el líder técnico, sin tarjeta en Trello. Borrar este comentario. -->
+
+**Actividad**
+Tarea: arreglar los dos errores del panel de gerencia que informó el líder técnico (parte backend).
+- Agregué `GET /reportes/socios-activos` en M6: socios con una membresía Activa que ya empezó y todavía no venció en la fecha consultada (por defecto, hoy en Argentina), en total y por sede de origen. El conteo se hace en la base con un `groupBy` por la sede del usuario.
+- Agregué `GET /reportes/aforo`: aforo actual y máximo de todas las sedes activas en una sola respuesta, con la misma regla que `GET /accesos/aforo/:id` (registros de acceso sin egreso).
+- Los dos endpoints son solo para el gerente, como el resto de los reportes, y están documentados en Swagger.
+- Amplié el escenario de PGlite con socios, membresías suspendidas, vencidas y que empiezan más adelante, un registro con egreso y una sede dada de baja. Agregué pruebas de integración del servicio y pruebas HTTP de permisos (401 y 403), de fecha inválida (400) y de resultados.
+
+Verificación: 3 suites y 45 pruebas aprobadas en M6 (22 nuevas); suite completa del backend con 42 suites y 394 pruebas aprobadas (1 pendiente `todo`); typecheck y ESLint sin errores; cada commit compila y pasa sus pruebas.
+
+**Decisión**
+- Puse los endpoints nuevos en M6, que ya concentra los reportes del gerente, en lugar de modificar M1 o M2, que tienen otros responsables.
+- Un socio activo tiene una membresía Activa con fecha de inicio igual o anterior a la consultada y fecha de fin igual o posterior. Cada socio cuenta una vez aunque tenga dos membresías activas.
+- La fecha de hoy se calcula con la zona horaria de Argentina explícita, para no depender del huso horario del servidor.
+
+**Problema o bloqueo**
+- Desde el 14/11, `GET /usuarios` devuelve el listado paginado (`{ data, meta }`, 10 por página). El panel esperaba un arreglo, así que el indicador de socios activos quedaba "No disponible" y la pantalla de membresías no cargaba.
+- El panel pedía el aforo con `GET /accesos/aforo/:id` una vez por sede.
+- Quedó pendiente probarlo con la cuenta de gerente contra la base compartida.
+
+**Commits**
+- `3bb165d` feat(reportes): agregar socios activos y aforo de todas las sedes
+- `9730772` test(reportes): agregar pruebas de socios activos y aforo por sede
+
+---
