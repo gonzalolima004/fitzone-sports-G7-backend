@@ -498,3 +498,34 @@
   - `docs(log): registrar restriccion de cancelacion RF-07 y remocion de penalidades en modulo 3`
 
 ---
+
+#### 18/11/2026
+
+#### Joaquín Ribarola | Rol: Desarrollador Backend / DevOps
+
+- **Tarea:** Contenedorización del backend NestJS con Docker, Multi-Stage Build y Prisma ORM.
+- **Actividades:**
+  - **Creación y Configuración de `.dockerignore`:**
+    - Se definieron reglas de exclusión estricta para `node_modules`, `dist`, `.git`, `.gitignore`, archivos de secretos/entorno (`.env`, `.env.*`), logs del sistema y de package managers (`logs`, `*.log`, `npm-debug.log*`), así como carpetas de testing (`coverage`, `test`).
+    - Se previenen discrepancias y fallos de ejecución por colisión de binarios nativos compilados entre el sistema operativo anfitrión y el contenedor Linux Alpine.
+    - Se garantiza la seguridad evitando la fuga accidental de credenciales y variables de entorno dentro del contexto de compilación de la imagen.
+  - **Diseño e Implementación de `Dockerfile` (Multi-Stage Build):**
+    - **Etapa 1 (`builder`)**:
+      - Imagen base `node:20-alpine` con instalación del paquete del sistema `openssl` (`apk add --no-cache openssl`), indispensable para el soporte y compatibilidad del Query Engine de Prisma en distribuciones basadas en `musl`.
+      - Optimización de la caché de capas de Docker mediante la copia anticipada de `package*.json` y el directorio `prisma/` antes de copiar el código fuente.
+      - Ejecución determinista de `npm ci` y generación de los tipos del cliente con `npx prisma generate`.
+      - Copia del código fuente y compilación de la aplicación con `npm run build`.
+    - **Etapa 2 (`production`)**:
+      - Imagen base ligera `node:20-alpine` con `openssl` instalado para runtime.
+      - Definición de `ENV NODE_ENV=production`.
+      - Copia selectiva con asignación de permisos `--chown=node:node` únicamente de los artefactos indispensables generados en la etapa previa: `node_modules`, `package*.json`, `dist/` y `prisma/`.
+      - Configuración de seguridad ejecutando el proceso bajo el usuario sin privilegios `USER node` (no-root).
+      - Exposición del puerto `3000` y comando de arranque en modo producción `CMD ["npm", "run", "start:prod"]`.
+- **Decisiones:**
+  - Emplear una construcción multi-etapa (_multi-stage build_) para aislar las herramientas de compilación (TypeScript, CLI de Prisma, devDependencies) de la imagen final de producción, reduciendo sustancialmente el tamaño de la imagen y minimizando vectores de ataque.
+  - Asegurar la compatibilidad con Prisma en Alpine instalando `openssl` en ambas etapas del build.
+  - Excluir el archivo `.env` de la imagen para forzar la inyección de configuraciones en tiempo de ejecución (`--env-file` u orquestador), cumpliendo con los estándares de _The Twelve-Factor App_.
+- **Dificultades:** Ninguna.
+- **Verificación:** Sintaxis validada en `Dockerfile` y `.dockerignore`; compatibilidad confirmada con los scripts de `package.json` (`start:prod`) y la estructura de Prisma.
+- **Commits:**
+  - `deploy(docker): agregar Dockerfile multi-stage y .dockerignore optimizado para NestJS y Prisma`
