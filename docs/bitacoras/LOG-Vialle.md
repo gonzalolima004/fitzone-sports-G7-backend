@@ -32,7 +32,7 @@
 - **Actividades:** Escribir los registros de decisiones (ADRs) para el backend del proyecto.
 - **Decisiones:** ----
 - **Dificultades:** Pensar en todas las decisiones de arquitectura y de implementación que deberían de tenerse en cuenta antes de arrancar el proyecto.
-- **Commits/PRs:** `ADR-backend`
+- **Commits/PRs:** `13dafe2 ADR-backend`
 
 ---
 
@@ -47,7 +47,7 @@
   - Definir la vigencia del token JWT y del algoritmo TOTP en 60 segundos con una ventana de tolerancia de 5 segundos para prevenir ataques de repetición o desfases de tiempo.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - ``
+  - `ebfc694 feat(M2): Generación de Código QR Dinámico Temporal`
 
 ---
 
@@ -61,10 +61,10 @@
   - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `DTOs de Validación y Respuesta de Ingreso`
-  - `Tarea 2.2: Repositorio de Control de Acceso (Patrón Repository)`
-  - `Tarea 2.3: Servicio de Validación Central y Registro de Ingreso`
-  - `Tarea 2.4: Controlador HTTP de Validación de Acceso`
+  - `bd893f4 DTOs de Validación y Respuesta de Ingreso`
+  - `88f96c5 Tarea 2.2: Repositorio de Control de Acceso (Patrón Repository)`
+  - `ef74ee6 Tarea 2.3: Servicio de Validación Central y Registro de Ingreso`
+  - `c2cea55 Tarea 2.4: Controlador HTTP de Validación de Acceso`
 
 ---
 
@@ -78,10 +78,10 @@
   - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `Tarea 1: DTO Validacion de Reglas de Acceso`
-  - `Tarea 3.2: Consulta de Accesos Activos en Repositorio`
-  - `Tarea 3.3: Aplicación de la Regla RN-01 en el Servicio de Accesos`
-  - `Correcciones`
+  - `0e32206 Tarea 1: DTO Validacion de Reglas de Acceso`
+  - `06f3757 Tarea 3.2: Consulta de Accesos Activos en Repositorio`
+  - `30ea0ca Tarea 3.3: Aplicación de la Regla RN-01 en el Servicio de Accesos`
+  - `2023ea3 Correcciones`
 
 ---
 
@@ -95,10 +95,10 @@
   - Diseñar el DTO de solicitud con decoradores de class-validator y class-transformer (@IsInt, @IsPositive, @Type) para transformar y validar los datos de entrada, permitiendo además una marca de fecha opcional (fecha_egreso). Implementar una función de cálculo de minutos de permanencia para obtener la diferencia en minutos entre la entrada y salida.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `feat(M2): DTOs de solicitud de egreso`
-  - `feat(M2): Actualizacion de Egreso y Calculo de Permanencia`
-  - `feat(M2): Endpoint HTTP de Egreso`
-  - `feat(M2): Actualizacion log`
+  - `09aecac feat(M2): DTOs de solicitud de egreso`
+  - `01ebf19 feat(M2): Actualizacion de Egreso y Calculo de Permanencia`
+  - `32e4493 feat(M2): Endpoint HTTP de Egreso`
+  - `0e246ad feat(M2): Actualizacion log`
 
 ---
 
@@ -112,10 +112,11 @@
   - Desconexión del canal Realtime tras el envio del mensaje para evitar acumulación de suscripciones innecesarias en el servidor NestJS.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `feat(M2): DTOs de solicitud de egreso`
-  - `feat(M2): Actualizacion de Egreso y Calculo de Permanencia`
-  - `feat(M2): Endpoint HTTP de Egreso`
-  - `feat(M2): Actualizacion log`
+  - `1ede814 feat(M2): DTOs de solicitud de egreso`
+  - `4cf8166 feat(M2): Servicio de Emisión de Aforo Realtime`
+  - `24e89f3 feat(M2): Disparo de Broadcast tras Ingresos/Egresos y Endpoint GET`
+  - `32c7b31 feat(M2): Ensamblado del Módulo de Accesos`
+  - `d593a5f feat(M2): Bitacora`
 
 ---
 
@@ -130,7 +131,8 @@
   - Elimine UserRepository porque no se usaba.
   - Cambie send por httpSend porque se iba a quedar obsoleto
 - **Dificultades:** Ninguna.
-- **Commits:** `feat(M2-M1): arreglos`
+- **Commits:**
+  - `84c139f feat(M2-M1): arreglos`
 
 ---
 
@@ -165,10 +167,10 @@
 
 **Commits:**
 
-- `feat(M1): Cambios para obtener los usuarios con sus respectivos datos, actualizar datos de usuario y crear usuarios`
-- `feat(M2): quitar console.log, mensajes, mejora de obtener aforo`
-- `feat(M2): arreglos en aforo realtime para que funcione correctamente`
-- `docs(log): actualizar bitacora`
+- `58516e0 feat(M1): Cambios para obtener los usuarios con sus respectivos datos, actualizar datos de usuario y crear usuarios`
+- `df8ca03 feat(M2): quitar console.log, mensajes, mejora de obtener aforo`
+- `3d0641b feat(M2): arreglos en aforo realtime para que funcione correctamente`
+- `9f999d2 docs(log): actualizar bitacora`
 
 ---
 
@@ -188,12 +190,12 @@
   - Utilizar `BadRequestException` (400) en lugar de `UnauthorizedException` (401) para fallos de validación o expiración del token QR, reservando el 401 estrictamente para la autenticación de la sesión del usuario contra la API.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `feat(M2): correccion de excepciones y codigos de estado`
-  - `feat(M2): adicion de dni en dto de egreso e ingreso`
-  - `feat(M2): funcion para buscar usuario por dni`
-  - `feat(M2): correcion de excepciones y metodo para buscar por dni o token`
-  - `fix(M2): arreglo tipo de excepcion`
-  - `docs(log): actualizacion de bitacora`
+  - `9b00dfa feat(M2): correccion de excepciones y codigos de estado`
+  - `e57e8fc feat(M2): adicion de dni en dto de egreso e ingreso`
+  - `3cb3d89 feat(M2): funcion para buscar usuario por dni`
+  - `c974a9c feat(M2): correcion de excepciones y metodo para buscar por dni o token`
+  - `d4ad223 fix(M2): arreglo tipo de excepcion`
+  - `f7000fd docs(log): actualizacion de bitacora`
 
 ---
 
@@ -216,15 +218,14 @@
   - Implementar la sincronización offline con validación idempotente (omisión de errores fatales si el socio ya registraba ingreso activo previo) para no interrumpir el volcado de la cola de eventos al restaurarse la conexión del torniquete.
 - **Dificultades:** para guaradr los qr que se hacen offline no se puede tener en cuenta el timepo de expiracion.
 - **Commits:**
-  - `feat(common): adicion atributos dni y nombre a guards de supabase e interface de user`
-  - `feat(M1): adicion membresias y sedes y exports usuariosRepository`
-  - `feat(M2): dto para acceso offline`
-  - `feat(2): buscarSedePorId que incluye ciudad`
-  - `feat(M2): cambio manera de generarse firma  y token qr`
-  - `feat(M2): cambio metodo extraer id usuario y ciudad de token, adicion de metodo para acceso offline`
-  - `feat(M2): sincronizacion offline, obtener perfil e importacion de modulo usuario`
-  - `docs(log): actualizacion de bitacora`
-    `
+  - `57be48b feat(common): adicion atributos dni y nombre a guards de supabase e interface de user`
+  - `dae5030 feat(M1): adicion membresias y sedes y exports usuariosRepository`
+  - `b9f9577 feat(M2): dto para acceso offline`
+  - `631a45c feat(2): buscarSedePorId que incluye ciudad`
+  - `4a4caee feat(M2): cambio manera de generarse firma  y token qr`
+  - `e0684fb feat(M2): cambio metodo extraer id usuario y ciudad de token, adicion de metodo para acceso offline`
+  - `a09761e feat(M2): sincronizacion offline, obtener perfil e importacion de modulo usuario`
+  - `48dafb9 docs(log): actualizacion de bitacora`
 
 ---
 
@@ -233,21 +234,16 @@
 #### Angelina María Vialle | Rol: QA Backend
 
 - **Actividades:**
-  -Prueba unitaria de acceso.service
--
-
--Prueba unitaria de aforo-realtime.service
--
-
--Prueba unitaria de qr.service
-
+  - Prueba unitaria de acceso.service
+  - Prueba unitaria de aforo-realtime.service
+  - Prueba unitaria de qr.service
 - **Decisiones:**
-  -Tipar de forma estricta los mocks en Jest utilizando as unknown as DTO/Entity
+  - Tipar de forma estricta los mocks en Jest utilizando as unknown as DTO/Entity
 - **Dificultades:**
-  -Ninguna
+  - Ninguna
 - **Commits:**
-  -test(M2): test unitario de accesos, aforo y qr
-  -docs(M2): actualizacion bitacora
+  - `d77f006 test(M2): test unitario de accesos, aforo y qr`
+  - `d8715d5 docs(M2): actualizacion bitacora`
 
 ---
 
@@ -270,8 +266,25 @@
   - Parametrizar los identificadores de estado activo y desactivado como constantes a nivel de servicio (`ID_ESTADO_ACTIVO = 1`, `ID_ESTADO_DESACTIVADO = 3`) en lugar de dejarlos hardcodeados en las consultas del repositorio.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `fix(tM2): correcion de test`
-  - `feature(M1): findAll con paginacion  y actualizacion de la manera del softDelete`
-    \-`docs(log): actualizar bitacora`
+  - `1555ba5 fix(tM2): correcion de test`
+  - `8052b57 feature(M1): findAll con paginacion  y actualizacion de la manera del softDelete`
+  - `3e0f7fb docs(log): actualizar bitacora`
 
 ---
+# Vialle Angelina María — Rol Diseñador de Arquitectura
+
+## Sprint 8 — Unidad Cierre - Semana del 2026-11-16
+
+### 2026-11-18 . 4 h
+
+**Actividad**
+Redacción, estandarización y cierre de los Registros de Decisión Arquitectónica (ADR) del proyecto en `docs/adr/` ajustándolos a la plantilla oficial del Anexo B (incorporando deuda asumida). Además, redacté los ADR específicos de la estrategia de pruebas con umbral mínimo de cobertura del 80%, el de contenerización y despliegue, y el nuevo registro que reemplaza la estrategia de concurrencia en reservas de canchas.
+
+**Decisión**
+Adoptar despliegue Canary junto con contenerización en Docker Compose (`ADR-019`) para habilitar liberaciones graduales de nuevas versiones con capacidad de reversión inmediata ante fallos críticos.
+
+**Problema o bloqueo**
+Al auditar la documentación contra la rúbrica y los lineamientos de entrega, detecté que varios ADR existentes no cumplian con el formato. Lo resolví reestructurando todos los documentos al formato exigido,
+
+**Commits**
+- `c6dacd9 docs(adr):  formato y creacion`
