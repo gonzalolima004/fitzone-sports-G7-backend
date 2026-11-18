@@ -28,10 +28,10 @@
 - Incompatibilidad con la versión 7.9.1 de Prisma, que ya no soporta `directUrl` en el archivo `schema.prisma`. Se resolvió moviendo la configuración de las URLs al archivo `prisma.config.ts`.
 
 - _Commits:_
-- DTOs de Validación y Respuesta
-- Capa de Acceso a Datos
-- Lógica de Negocio y Controladores
-- Incorporar DTO de respuesta y validaciones de sede y tipo
+- `4b0e2f7` DTOs de Validación y Respuesta
+- `80dc105` Capa de Acceso a Datos
+- `b2dc5fc` Lógica de Negocio y Controladores
+- `a2c628e` Incorporar DTO de respuesta y validaciones de sede y tipo
 
 ---
 
@@ -47,10 +47,10 @@
 - **Dificultades:** Ninguna.
 
 - **Commits:**
-- `feat(dtos): crear dtos de validacion de fecha a ingresar`
-- `feat(repository): crear nuevo repositorio para separar la lógica de reservas/mantenimiento de la entidad base de canchas`
-- `feat(service): actualizar canchas.services.ts inyectando el nuevo repo reservas-canchas.repository.ts y agregar nuevo metodo obtenerDisponibilidad()`
-- `feat(controller): crear endpoint de disponibilidad en canchas.controller.ts`
+- `f374fe6` feat(dtos): crear dtos de validacion de fecha a ingresar
+- `de6c740` feat(repository): crear nuevo repositorio para separar la lógica de reservas/mantenimiento de la entidad base de canchas
+- `b5f8661` feat(service): actualizar canchas.services.ts inyectando el nuevo repo reservas-canchas.repository.ts y agregar nuevo metodo obtenerDisponibilidad()
+- `f72e8a5` feat(controller): crear endpoint de disponibilidad en canchas.controller.ts
 
 ---
 
@@ -64,10 +64,10 @@
 
 - **Dificultades:** Ninguna.
 - **Commits:**
-- `feat(strategy): definir la interfaz precio-strategy.interface.ts y cotizacion-turno-dto.ts`
-- `feat(strategy): implementar estrategias`
-- `feat(service): implementar precio-context.service.ts para gestionar las estrategias correspondientes`
-- `feat(module): inyectar las estrategias en el array providers en canchas.module.ts`
+- `e3792b9` feat(strategy): definir la interfaz precio-strategy.interface.ts y cotizacion-turno-dto.ts
+- `637ca90` feat(strategy): implementar estrategias
+- `1ff9a27` feat(service): implementar precio-context.service.ts para gestionar las estrategias correspondientes
+- `3fea29e` feat(module): inyectar las estrategias en el array providers en canchas.module.ts
 
 ---
 
@@ -83,10 +83,10 @@
 
 - **Dificultades:** Ninguna.
 - **Commits:**
-- `feat(canchas): crear DTOs de entrada y respuesta para reservas`
-- `feat(canchas): implementar bloqueo transaccional contra concurrencia en repositorio`
-- `feat(canchas): orquestar reserva integrando Strategy y persistencia atómica`
-- `feat(canchas): exponer endpoint protegido de reservas de canchas`
+- `98d6ca6` feat(canchas): crear DTOs de entrada y respuesta para reservas
+- `61afafe` feat(canchas): implementar bloqueo transaccional contra concurrencia en repositorio
+- `fe5e0d6` feat(canchas): orquestar reserva integrando Strategy y persistencia atómica
+- `4f1ae19` feat(canchas): exponer endpoint protegido de reservas de canchas
 
 ---
 
@@ -101,10 +101,10 @@
 
 - **Dificultades:** Ninguna.
 - **Commits:**
-- `feat(canchas): crear DTOs de request y response para mantenimiento`
-- `feat(canchas): implementar persistencia de mantenimiento en repositorio`
-- `feat(canchas): desarrollar servicio y endpoint para programar mantenimientos`
-- `chore(canchas): registrar controladores, servicios y estrategias en el módulo`
+- `167d926` feat(canchas): crear DTOs de request y response para mantenimiento
+- `1790edd` feat(canchas): implementar persistencia de mantenimiento en repositorio
+- `4509ed2` feat(canchas): desarrollar servicio y endpoint para programar mantenimientos
+- `3ec8923` chore(canchas): registrar controladores, servicios y estrategias en el módulo
 
 ---
 
@@ -126,10 +126,10 @@
 - Error de integridad referencial en Prisma (código P2025) al registrar un nuevo usuario con roles, resuelto insertando manualmente los registros maestros faltantes en la tabla `Rol` mediante un script SQL en Supabase.
 
 - **Commits:**
-- `feat(usuarios): implementar dto de login`
-- `feat(usuarios): implementar servicio de autenticación`
-- `feat(usuarios): implementar controlador de auntenticación`
-- `feat(usuarios): actualizar modulo de usuarios`
+- `7b17c21` feat(usuarios): implementar dto de login
+- `0296692` feat(usuarios): implementar servicio de autenticación
+- `01c9195` feat(usuarios): implementar controlador de auntenticación
+- `ebfa078` feat(usuarios): actualizar modulo de usuarios
 
 ---
 
@@ -159,7 +159,7 @@
 - Error HTTP 500 (`new row violates row-level security policy`), resuelto elevando los privilegios del cliente de Supabase mediante variables de entorno.
 
 - **Commits:**
-- `chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos`
+- `afb4def` chore(env): configurar service_role key de supabase para saltar rls y permitir subida de fotos
 
 ---
 
@@ -182,9 +182,9 @@
 - Discrepancia entre las relaciones solicitadas inicialmente (plan, estado) y las generadas reales de Prisma, lo que bloqueaba la consulta inicial.
 
 - **Commits:**
-- `fix(membresias): corregir nombres de relaciones prisma en repositorio y exponer nombre del plan en el dto`
-- `fix(membresias): exponer nombre del plan en la respuesta de verificación de membresía`
-- `fix(planes): convertir decimal de prisma a number nativo para evitar error en class-transformer`
+- `87f22a9` fix(membresias): corregir nombres de relaciones prisma en repositorio y exponer nombre del plan en el dto
+- `e9490ce` fix(membresias): exponer nombre del plan en la respuesta de verificación de membresía
+- `8f2b130` fix(planes): convertir decimal de prisma a number nativo para evitar error en class-transformer
 
 ---
 
@@ -203,9 +203,9 @@
 - Resolución de conflictos de integridad referencial (claves foráneas) en PostgreSQL al intentar eliminar usuarios de prueba manualmente para depurar el flujo de Google OAuth. Se optó por el uso de `prisma studio` y `prisma migrate reset` para mantener el entorno de desarrollo consistente.
 
 - **Commits:**
-- `fix(usuarios): hacer contrasenia y foto_url opcionales en CreateUsuarioDto`
-- `feat(usuarios): omitir hasheo si la contraseña es delegada a Supabase`
-- `feat(auth): agregar endpoint /auth/me para verificar existencia de perfil local`
+- `e3cafd2` fix(usuarios): hacer contrasenia y foto_url opcionales en CreateUsuarioDto
+- `f36c323` feat(usuarios): omitir hasheo si la contraseña es delegada a Supabase
+- `5c615eb` feat(auth): agregar endpoint /auth/me para verificar existencia de perfil local
 
 ---
 
@@ -227,10 +227,10 @@
 - Estructurar los mocks del repositorio `UsuariosRepository` y dependencias externas como `bcrypt` de forma estrictamente tipada en Jest para cumplir con la regla de no utilizar `any` en las pruebas unitarias.
 
 - **Commits:**
-- `test(auth): agregar pruebas unitarias de Auth Service`
-- `test(users): cubrir validaciones del DTO de creación mediante ValidationPipe`
-- `refactor(auth): separar validacion de credenciales en AuthService`
-- `refactor(users): aislar logica de hasheo de contraseñas de la creacion base`
+- `7a4d8a0` test(auth): agregar pruebas unitarias de Auth Service
+- `f5ac3c6` test(users): cubrir validaciones del DTO de creación mediante ValidationPipe
+- `e770350` refactor(auth): separar validacion de credenciales en AuthService
+- `26193e8` refactor(users): aislar logica de hasheo de contraseñas de la creacion base
 
 ---
 
@@ -253,14 +253,14 @@
 - **Dificultades:**
   - La carga repetida de relaciones completas (`defaultIncludes`) durante la validación de tokens en el guard incrementaba la latencia de respuesta en cada petición autenticada debido a la distancia con la base de datos remota, lo cual se mitigó reduciendo la selección granular en el repositorio.
 - **Commits:**
-  - `fix(router): corregir advertencia deprecada de consultas de cliente`
-  - `perf(auth): optimizar consultas de autenticacion y perfil de sesion`
-  - `fix(auth): asignar rol externo dinamicamente en el registro`
-  - `feat(profile): blindar actualizacion de perfil y almacenamiento de avatar`
-  - `test(auth): agregar pruebas unitarias y de integracion de auth y perfil`
-  - `fix(auth): resolver avatar de Google desde user_metadata como fallback`
-  - `fix(auth): formateo y ajustes adicionales de tests y DTOs`
-  - `fix(test): ignorar chequeo de tipos en adaptador temporal prisma-pglite`
+- `a44d333` fix(router): corregir advertencia deprecada de consultas de cliente
+- `3c4f070` perf(auth): optimizar consultas de autenticacion y perfil de sesion
+- `56a48cb` fix(auth): asignar rol externo dinamicamente en el registro
+- `297ceb8` feat(profile): blindar actualizacion de perfil y almacenamiento de avatar
+- `fcef291` test(auth): agregar pruebas unitarias y de integracion de auth y perfil
+- `ac5c58b` fix(auth): resolver avatar de Google desde user_metadata como fallback
+- `dd9da99` fix(auth): formateo y ajustes adicionales de tests y DTOs
+- `0d0a074` fix(test): ignorar chequeo de tipos en adaptador temporal prisma-pglite
 
 ---
 
@@ -279,7 +279,7 @@
 - **Dificultades:**
   - Unificar en una respuesta consistente las reservas de canchas y las inscripciones a clases grupales manteniendo los estados reales de cada entidad sin inferir estados por fecha; se resolvió normalizando ambos orígenes en DTOs tipados que preservan el estado persistido y la sede asociada de cada registro.
 - **Commits:**
-  - `feat(socio): implementar dashboard e historial de reservas para socio`
-  - `corregir reglas de lint y mock en tests unitarios y adaptadores`
+  - `ee2b760` feat(socio): implementar dashboard e historial de reservas para socio
+  - `db36e48` fix(test): corregir reglas de lint y mock en tests unitarios y adaptadores
 
 ---
