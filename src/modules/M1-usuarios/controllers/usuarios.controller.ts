@@ -36,8 +36,6 @@ interface RequestWithUser extends Request {
   user?: AuthenticatedUser;
 }
 
-@ApiBearerAuth()
-@UseGuards(SupabaseAuthGuard, RolesGuard)
 @ApiTags('Usuarios')
 @Controller('usuarios')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -54,6 +52,8 @@ export class UsuariosController {
   }
 
   @Get()
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Obtener lista de usuarios (con filtro opcional por sede)',
   })
@@ -94,6 +94,8 @@ export class UsuariosController {
   }
 
   @Get(':id')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener usuario por ID' })
   @ApiResponse({
     status: 200,
@@ -171,6 +173,8 @@ export class UsuariosController {
   }
 
   @Delete(':id')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar usuario (Soft Delete)' })
   @ApiResponse({ status: 200, description: 'Usuario eliminado correctamente.' })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado.' })

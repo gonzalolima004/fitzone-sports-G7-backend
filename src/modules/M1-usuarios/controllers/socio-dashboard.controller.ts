@@ -13,6 +13,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { SocioDashboardService } from '../services/socio-dashboard.service';
+import { DashboardQueryDto } from '../dto/dashboard-query.dto';
 import { HistorialQueryDto } from '../dto/historial-query.dto';
 import { HistorialResponseDto } from '../dto/historial-response.dto';
 import { SocioDashboardResponseDto } from '../dto/socio-dashboard-response.dto';
@@ -52,11 +53,13 @@ export class SocioDashboardController {
   })
   async obtenerDashboard(
     @CurrentUserId() userId: number,
+    @Query() query: DashboardQueryDto,
   ): Promise<SocioDashboardResponseDto> {
-    return this.socioDashboardService.obtenerDashboard(userId);
+    return this.socioDashboardService.obtenerDashboard(userId, query.id_sede);
   }
 
   @Get('historial')
+  @Roles('socio', 'externo')
   @ApiOperation({
     summary:
       'Obtener historial unificado de reservas de canchas y clases grupales',
@@ -74,7 +77,7 @@ export class SocioDashboardController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol socio.',
+    description: 'Acceso denegado: se requiere rol socio o externo.',
   })
   async obtenerHistorial(
     @CurrentUserId() userId: number,

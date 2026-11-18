@@ -18,6 +18,7 @@ interface CanchaReservaQueryResult {
   id_cancha_reserva: number;
   fecha_inicio: Date;
   fecha_fin: Date;
+  fecha_creacion: Date | null;
   precio_congelado: unknown;
   cancha: {
     nombre: string;
@@ -39,6 +40,7 @@ interface ClaseReservaQueryResult {
   id_clase_reserva: number;
   fecha_inicio: Date;
   fecha_fin: Date;
+  fecha_creacion: Date | null;
   clase: {
     nombre: string;
     profesor: string | null;
@@ -68,6 +70,7 @@ export class SocioDashboardService {
     const page = Math.max(1, query.page ?? 1);
     const limit = Math.max(1, Math.min(50, query.limit ?? 10));
     const tipo = query.tipo ?? TipoActividadHistorial.TODAS;
+    const id_sede = query.id_sede;
 
     const items: ItemHistorialDto[] = [];
 
@@ -78,11 +81,15 @@ export class SocioDashboardService {
     ) {
       const canchasReservas: CanchaReservaQueryResult[] =
         await this.prisma.canchaReserva.findMany({
-          where: { id_usuario },
+          where: {
+            id_usuario,
+            ...(id_sede ? { cancha: { id_sede } } : {}),
+          },
           select: {
             id_cancha_reserva: true,
             fecha_inicio: true,
             fecha_fin: true,
+            fecha_creacion: true,
             precio_congelado: true,
             cancha: {
               select: {
@@ -113,6 +120,9 @@ export class SocioDashboardService {
           subtitulo: r.cancha.cancha_tipo.descripcion,
           fecha_inicio: r.fecha_inicio.toISOString(),
           fecha_fin: r.fecha_fin.toISOString(),
+          fecha_creacion: r.fecha_creacion
+            ? r.fecha_creacion.toISOString()
+            : null,
           estado: r.cancha_reserva_estado.descripcion,
           sede: {
             id_sede: r.cancha.sede.id_sede,
@@ -132,11 +142,15 @@ export class SocioDashboardService {
     ) {
       const clasesReservas: ClaseReservaQueryResult[] =
         await this.prisma.claseReserva.findMany({
-          where: { id_usuario },
+          where: {
+            id_usuario,
+            ...(id_sede ? { clase: { id_sede } } : {}),
+          },
           select: {
             id_clase_reserva: true,
             fecha_inicio: true,
             fecha_fin: true,
+            fecha_creacion: true,
             clase: {
               select: {
                 nombre: true,
@@ -169,6 +183,9 @@ export class SocioDashboardService {
           subtitulo: subtituloPartes || undefined,
           fecha_inicio: c.fecha_inicio.toISOString(),
           fecha_fin: c.fecha_fin.toISOString(),
+          fecha_creacion: c.fecha_creacion
+            ? c.fecha_creacion.toISOString()
+            : null,
           estado: c.clase_reserva_estado.descripcion,
           sede: {
             id_sede: c.clase.sede.id_sede,
@@ -179,11 +196,29 @@ export class SocioDashboardService {
       }
     }
 
-    // Ordenar de más reciente a más antigua (descendente)
-    items.sort(
-      (a, b) =>
-        new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime(),
-    );
+    // Ordenar por momento de reserva (más reciente primero). Las reservas sin
+    // fecha_creacion (anteriores a este dato) van al final, ordenadas por fecha_inicio.
+    items.sort((a, b) => {
+      const creacionA = a.fecha_creacion
+        ? new Date(a.fecha_creacion).getTime()
+        : null;
+      const creacionB = b.fecha_creacion
+        ? new Date(b.fecha_creacion).getTime()
+        : null;
+
+      if (creacionA !== null && creacionB !== null && creacionA !== creacionB) {
+        return creacionB - creacionA;
+      }
+      if (creacionA !== null && creacionB === null) return -1;
+      if (creacionA === null && creacionB !== null) return 1;
+
+      const diffFecha =
+        new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime();
+      if (diffFecha !== 0) return diffFecha;
+      const idA = Number(a.id.split('-')[1] ?? 0);
+      const idB = Number(b.id.split('-')[1] ?? 0);
+      return idB - idA;
+    });
 
     const total = items.length;
     const total_paginas = Math.ceil(total / limit) || 1;
@@ -206,8 +241,11 @@ export class SocioDashboardService {
    */
   async obtenerDashboard(
     id_usuario: number,
+    id_sede?: number,
   ): Promise<SocioDashboardResponseDto> {
     const ahora = new Date();
+    const filtroCancha = id_sede ? { cancha: { id_sede } } : {};
+    const filtroClase = id_sede ? { clase: { id_sede } } : {};
 
     // 1. Membresía más relevante o activa
     const membresiaRow = await this.prisma.membresia.findFirst({
@@ -254,22 +292,35 @@ export class SocioDashboardService {
       };
     }
 
-    // 2. Conteo de reservas históricas de canchas y clases
+    // 2. Conteo de reservas históricas de canchas y clases (coincide 1:1 con /historial)
     const [totalCanchas, totalClases] = await Promise.all([
-      this.prisma.canchaReserva.count({ where: { id_usuario } }),
-      this.prisma.claseReserva.count({ where: { id_usuario } }),
+      this.prisma.canchaReserva.count({
+        where: {
+          id_usuario,
+          ...filtroCancha,
+        },
+      }),
+      this.prisma.claseReserva.count({
+        where: {
+          id_usuario,
+          ...filtroClase,
+        },
+      }),
     ]);
 
-    // 3. Próximas reservas a partir de la fecha/hora actual
+    // 3. Próximas reservas activas/pendientes a partir de la fecha/hora actual
     const [proximasCanchasRaw, proximasClasesRaw] = await Promise.all([
       this.prisma.canchaReserva.findMany({
         where: {
           id_usuario,
-          fecha_inicio: { gte: ahora },
+          ...filtroCancha,
+          fecha_fin: { gt: ahora },
           cancha_reserva_estado: {
-            descripcion: {
-              contains: 'confirmada',
-              mode: 'insensitive',
+            NOT: {
+              OR: [
+                { descripcion: { contains: 'cancel', mode: 'insensitive' } },
+                { descripcion: { contains: 'complet', mode: 'insensitive' } },
+              ],
             },
           },
         },
@@ -279,6 +330,7 @@ export class SocioDashboardService {
           id_cancha_reserva: true,
           fecha_inicio: true,
           fecha_fin: true,
+          fecha_creacion: true,
           precio_congelado: true,
           cancha: {
             select: {
@@ -297,11 +349,14 @@ export class SocioDashboardService {
       this.prisma.claseReserva.findMany({
         where: {
           id_usuario,
-          fecha_inicio: { gte: ahora },
+          ...filtroClase,
+          fecha_fin: { gt: ahora },
           clase_reserva_estado: {
-            descripcion: {
-              contains: 'confirmada',
-              mode: 'insensitive',
+            NOT: {
+              OR: [
+                { descripcion: { contains: 'cancel', mode: 'insensitive' } },
+                { descripcion: { contains: 'complet', mode: 'insensitive' } },
+              ],
             },
           },
         },
@@ -311,6 +366,7 @@ export class SocioDashboardService {
           id_clase_reserva: true,
           fecha_inicio: true,
           fecha_fin: true,
+          fecha_creacion: true,
           clase: {
             select: {
               nombre: true,
@@ -338,6 +394,9 @@ export class SocioDashboardService {
         subtitulo: r.cancha.cancha_tipo.descripcion,
         fecha_inicio: r.fecha_inicio.toISOString(),
         fecha_fin: r.fecha_fin.toISOString(),
+        fecha_creacion: r.fecha_creacion
+          ? r.fecha_creacion.toISOString()
+          : null,
         estado: r.cancha_reserva_estado.descripcion,
         sede: {
           id_sede: r.cancha.sede.id_sede,
@@ -361,6 +420,9 @@ export class SocioDashboardService {
         subtitulo: subtituloPartes || undefined,
         fecha_inicio: c.fecha_inicio.toISOString(),
         fecha_fin: c.fecha_fin.toISOString(),
+        fecha_creacion: c.fecha_creacion
+          ? c.fecha_creacion.toISOString()
+          : null,
         estado: c.clase_reserva_estado.descripcion,
         sede: {
           id_sede: c.clase.sede.id_sede,
@@ -380,7 +442,9 @@ export class SocioDashboardService {
       total_canchas: totalCanchas,
       total_clases: totalClases,
       total_actividades: totalCanchas + totalClases,
-      proximas_confirmadas: proximasActividades.length,
+      proximas_confirmadas: proximasActividades.filter((a) =>
+        a.estado.toLowerCase().includes('confirm'),
+      ).length,
     };
 
     return {
