@@ -287,5 +287,73 @@ describe('SocioDashboardService', () => {
       expect(result.totales.total_actividades).toBe(0);
       expect(result.proximas_actividades).toEqual([]);
     });
+
+    it('debería filtrar conteos y próximas reservas por id_sede', async () => {
+      prisma.membresia.findFirst.mockResolvedValue(null);
+      prisma.canchaReserva.count.mockResolvedValue(0);
+      prisma.claseReserva.count.mockResolvedValue(0);
+      prisma.canchaReserva.findMany.mockResolvedValue([]);
+      prisma.claseReserva.findMany.mockResolvedValue([]);
+
+      await service.obtenerDashboard(idUsuario, 2);
+
+      expect(prisma.canchaReserva.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ cancha: { id_sede: 2 } }),
+        }),
+      );
+      expect(prisma.claseReserva.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ clase: { id_sede: 2 } }),
+        }),
+      );
+      expect(prisma.canchaReserva.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ cancha: { id_sede: 2 } }),
+        }),
+      );
+      expect(prisma.claseReserva.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ clase: { id_sede: 2 } }),
+        }),
+      );
+    });
+
+    it('debería incluir reservas históricas totales (sin filtrar canceladas) y próximas actividades pendientes de pago', async () => {
+      prisma.membresia.findFirst.mockResolvedValue(null);
+      prisma.canchaReserva.count.mockResolvedValue(4);
+      prisma.claseReserva.count.mockResolvedValue(3);
+
+      const fechaFutura = new Date(Date.now() + 86400000);
+      prisma.canchaReserva.findMany.mockResolvedValue([
+        {
+          id_cancha_reserva: 20,
+          fecha_inicio: fechaFutura,
+          fecha_fin: new Date(fechaFutura.getTime() + 3600000),
+          precio_congelado: 5000,
+          cancha: {
+            nombre: 'Cancha 1',
+            cancha_tipo: { descripcion: 'Pádel' },
+            sede: { id_sede: 3, nombre: 'Sede Norte', direccion: 'Calle 1' },
+          },
+          cancha_reserva_estado: { descripcion: 'Pendiente de Pago' },
+        },
+      ]);
+      prisma.claseReserva.findMany.mockResolvedValue([]);
+
+      const result = await service.obtenerDashboard(idUsuario, 3);
+
+      expect(prisma.canchaReserva.count).toHaveBeenCalledWith({
+        where: { id_usuario: idUsuario, cancha: { id_sede: 3 } },
+      });
+      expect(prisma.claseReserva.count).toHaveBeenCalledWith({
+        where: { id_usuario: idUsuario, clase: { id_sede: 3 } },
+      });
+      expect(result.totales.total_canchas).toBe(4);
+      expect(result.totales.total_clases).toBe(3);
+      expect(result.totales.proximas_confirmadas).toBe(0);
+      expect(result.proximas_actividades).toHaveLength(1);
+      expect(result.proximas_actividades[0].estado).toBe('Pendiente de Pago');
+    });
   });
 });

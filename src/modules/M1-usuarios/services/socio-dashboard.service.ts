@@ -241,8 +241,11 @@ export class SocioDashboardService {
    */
   async obtenerDashboard(
     id_usuario: number,
+    id_sede?: number,
   ): Promise<SocioDashboardResponseDto> {
     const ahora = new Date();
+    const filtroCancha = id_sede ? { cancha: { id_sede } } : {};
+    const filtroClase = id_sede ? { clase: { id_sede } } : {};
 
     // 1. Membresía más relevante o activa
     const membresiaRow = await this.prisma.membresia.findFirst({
@@ -289,22 +292,35 @@ export class SocioDashboardService {
       };
     }
 
-    // 2. Conteo de reservas históricas de canchas y clases
+    // 2. Conteo de reservas históricas de canchas y clases (coincide 1:1 con /historial)
     const [totalCanchas, totalClases] = await Promise.all([
-      this.prisma.canchaReserva.count({ where: { id_usuario } }),
-      this.prisma.claseReserva.count({ where: { id_usuario } }),
+      this.prisma.canchaReserva.count({
+        where: {
+          id_usuario,
+          ...filtroCancha,
+        },
+      }),
+      this.prisma.claseReserva.count({
+        where: {
+          id_usuario,
+          ...filtroClase,
+        },
+      }),
     ]);
 
-    // 3. Próximas reservas a partir de la fecha/hora actual
+    // 3. Próximas reservas activas/pendientes a partir de la fecha/hora actual
     const [proximasCanchasRaw, proximasClasesRaw] = await Promise.all([
       this.prisma.canchaReserva.findMany({
         where: {
           id_usuario,
-          fecha_inicio: { gte: ahora },
+          ...filtroCancha,
+          fecha_fin: { gt: ahora },
           cancha_reserva_estado: {
-            descripcion: {
-              contains: 'confirmada',
-              mode: 'insensitive',
+            NOT: {
+              OR: [
+                { descripcion: { contains: 'cancel', mode: 'insensitive' } },
+                { descripcion: { contains: 'complet', mode: 'insensitive' } },
+              ],
             },
           },
         },
@@ -333,11 +349,14 @@ export class SocioDashboardService {
       this.prisma.claseReserva.findMany({
         where: {
           id_usuario,
-          fecha_inicio: { gte: ahora },
+          ...filtroClase,
+          fecha_fin: { gt: ahora },
           clase_reserva_estado: {
-            descripcion: {
-              contains: 'confirmada',
-              mode: 'insensitive',
+            NOT: {
+              OR: [
+                { descripcion: { contains: 'cancel', mode: 'insensitive' } },
+                { descripcion: { contains: 'complet', mode: 'insensitive' } },
+              ],
             },
           },
         },
@@ -423,7 +442,9 @@ export class SocioDashboardService {
       total_canchas: totalCanchas,
       total_clases: totalClases,
       total_actividades: totalCanchas + totalClases,
-      proximas_confirmadas: proximasActividades.length,
+      proximas_confirmadas: proximasActividades.filter((a) =>
+        a.estado.toLowerCase().includes('confirm'),
+      ).length,
     };
 
     return {

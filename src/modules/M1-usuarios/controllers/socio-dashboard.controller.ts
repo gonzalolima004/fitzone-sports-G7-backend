@@ -13,6 +13,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { SocioDashboardService } from '../services/socio-dashboard.service';
+import { DashboardQueryDto } from '../dto/dashboard-query.dto';
 import { HistorialQueryDto } from '../dto/historial-query.dto';
 import { HistorialResponseDto } from '../dto/historial-response.dto';
 import { SocioDashboardResponseDto } from '../dto/socio-dashboard-response.dto';
@@ -52,8 +53,9 @@ export class SocioDashboardController {
   })
   async obtenerDashboard(
     @CurrentUserId() userId: number,
+    @Query() query: DashboardQueryDto,
   ): Promise<SocioDashboardResponseDto> {
-    return this.socioDashboardService.obtenerDashboard(userId);
+    return this.socioDashboardService.obtenerDashboard(userId, query.id_sede);
   }
 
   @Get('historial')
