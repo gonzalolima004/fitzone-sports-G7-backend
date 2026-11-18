@@ -2,10 +2,11 @@
 
 Esta bitácora cubre mi trabajo en el repositorio backend. Lo que hice en el frontend, incluidas la planificación y el seguimiento como líder técnico, está en `src/docs/bitacoras/LOG-Aguero.md` del repositorio frontend.
 
+Las horas de cada entrada son estimadas: no las fuimos registrando, así que, como pidió el profesor, las calculé a partir de la estimación de las tarjetas de Trello y de los commits de cada sesión.
+
 ## Sprint 2 — Unidad II — Semana del 2026-08-24
 
-### 2026-08-24 al 2026-09-05 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «TL: Realizar diagramas C4 y documentacion ADR» no tenía estimación. Si te acordás el día de la reunión, poné esa fecha. Borrar este comentario. -->
+### 2026-08-24 al 2026-09-05 · 6 h
 
 **Actividad**
 Participé con Marcos Caraballo, Angelina Vialle y Matías Sillen en las reuniones del equipo para modelar el sistema completo en Visual Paradigm: diagramas de contexto (C1), de contenedores (C2) y de componentes (C3).
@@ -25,8 +26,7 @@ Sin commits: el modelo quedó en el [proyecto de Visual Paradigm](https://online
 
 ## Sprint 3 — Unidad III — Semana del 2026-09-14
 
-### 2026-09-14 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «E1 Tarea 1 - Configuración de Conexión Singleton de Base de Datos» estimaba 2 h. Borrar este comentario. -->
+### 2026-09-14 · 3 h
 
 **Actividad**
 Configuré el cliente de Prisma, creé el `PrismaService` y verifiqué la conexión del backend con PostgreSQL.
@@ -42,8 +42,7 @@ Al instanciar el cliente de Prisma apareció un error de compatibilidad con la v
 
 ---
 
-### 2026-09-17 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «E1 Tarea 3 - Configuración Global de Swagger, Filtro de Excepciones y ValidationPipe» estimaba 3 h. Borrar este comentario. -->
+### 2026-09-17 · 4 h
 
 **Actividad**
 Integré en `dev` el PR #8 del singleton de Prisma. Configuré Swagger para generar la documentación inicial de la API y ver los endpoints en `/api/docs`, y configuré `ValidationPipe` para validar los datos que recibe la API y rechazar las propiedades que no están definidas en los DTO.
@@ -60,8 +59,7 @@ Mientras configuraba Swagger hice cambios accidentales en `main.ts`. Usé Git pa
 
 ---
 
-### 2026-09-19 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «E1 Tarea 4 - Gestión de Ciudades y Sedes de la Cadena» estimaba 4 h para toda la tarea (sesiones del 19, 22, 24 y 25/09). Borrar este comentario. -->
+### 2026-09-19 · 1,5 h
 
 **Actividad**
 Creé los DTO de Ciudad y Sede para el alta y la actualización, con `class-validator` y `PartialType`.
@@ -79,8 +77,7 @@ Tuve que corregir errores menores de sintaxis y de formato en los DTO antes de h
 
 ## Sprint 4 — Unidad III — Semana del 2026-09-21
 
-### 2026-09-22 · <horas> h
-<!-- PARA COMPLETAR: parte de «E1 Tarea 4» (4 h estimadas para toda la tarea). Borrar este comentario. -->
+### 2026-09-22 · 1,5 h
 
 **Actividad**
 Implementé los repositorios de Ciudad y Sede con Prisma y el patrón Repository: consulta, alta, actualización y borrado lógico.
@@ -97,8 +94,7 @@ Ninguno.
 
 ---
 
-### 2026-09-24 · <horas> h
-<!-- PARA COMPLETAR: parte de «E1 Tarea 4». Borrar este comentario. -->
+### 2026-09-24 · 2 h
 
 **Actividad**
 Implementé los servicios de Ciudad y Sede, con validaciones de existencia y de la relación entre Sede y Ciudad, y los controladores REST con endpoints GET, POST, PATCH y DELETE. Creé `SedesModule`, registré sus controladores, servicios y repositorios, y lo integré en `AppModule`.
@@ -116,8 +112,7 @@ Ninguno.
 
 ---
 
-### 2026-09-25 · <horas> h
-<!-- PARA COMPLETAR: parte de «E1 Tarea 4». Borrar este comentario. -->
+### 2026-09-25 · 1 h
 
 **Actividad**
 Documenté en Swagger los endpoints de ciudades y sedes, con operaciones, parámetros y respuestas HTTP posibles, revisé los archivos con ESLint y Prettier y registré el avance en la bitácora.
@@ -138,8 +133,7 @@ Ninguna.
 
 ## Sprint 4 — Unidad IV — Semana del 2026-09-28
 
-### 2026-09-28 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «E1 Tarea 2 - Integración del Cliente Supabase y Guard de Autenticación JWT» estimaba 5 h. Borrar este comentario. -->
+### 2026-09-28 · 6 h
 
 **Actividad**
 En la rama `feature/auth-supabase` implementé la autenticación con Supabase Auth: `SupabaseService`, `SupabaseAuthGuard`, la interfaz `AuthenticatedUser` y los decoradores `CurrentUser` y `CurrentUserId`. Para completar el flujo tuve que ajustar otros módulos:
@@ -174,8 +168,7 @@ Vinculé el usuario de Supabase con el de FitZone por el email (la adopción de 
 
 ---
 
-### 2026-09-29 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «E1 Tarea 5 - Reporte Consolidado de Ingresos Multi-Sede» estimaba 3 h (sesiones del 29 y 30/09). Borrar este comentario. -->
+### 2026-09-29 · 2,5 h
 
 **Actividad**
 Empecé el reporte consolidado de ingresos multi-sede: los DTO de consulta y de respuesta, la consulta de ingresos aprobados por sede, que consolida los pagos de membresías y de reservas de canchas con filtros por rango de fechas, sede y concepto, y el servicio que arma el reporte.
@@ -194,8 +187,7 @@ A `package.json` le volvió a faltar la coma en la configuración de Jest; la ag
 
 ---
 
-### 2026-09-30 · <horas> h
-<!-- PARA COMPLETAR: cierre de «E1 Tarea 5» y la tarjeta «E1 Tarea 6 - Reporte Consolidado de Ocupación y Reservas Multi-Sede», que estimaba 3 h. Borrar este comentario. -->
+### 2026-09-30 · 4,5 h
 
 **Actividad**
 - Terminé el reporte de ingresos: expuse `GET /reportes/ingresos` e integré `ReportesModule` al sistema.
@@ -228,8 +220,7 @@ El PR #46 del reporte de ingresos quedó fusionado en `main` en lugar de `dev`. 
 
 ## Sprint 5 — Unidad IV — Semana del 2026-10-12
 
-### 2026-10-14 · <horas> h
-<!-- PARA COMPLETAR: corrección de «E1 Tarea 6», sin tarjeta ni estimación propia en Trello. Borrar este comentario. -->
+### 2026-10-14 · 2,5 h
 
 **Actividad**
 Corregí la consulta de ocupación, que hacía falta para terminar la pantalla de reportes del frontend:
@@ -258,8 +249,7 @@ Verificación: build y typecheck aprobados, 9 pruebas aprobadas y la consulta co
 
 ---
 
-### 2026-10-14 · <horas> h
-<!-- PARA COMPLETAR: trabajo de líder técnico. «TL Tarea 1» (4 h) y «TL Tarea 2» (3 h) cubren todas las sesiones de TL, que están casi todas en la bitácora del frontend. Borrar este comentario. -->
+### 2026-10-14 · 1 h
 
 **Actividad**
 Como líder técnico revisé la dependencia entre la pantalla de ocupación del frontend y el backend, y separé la corrección y sus pruebas en una entrega que se pudiera revisar. Integré en `dev` los PR #52 (clases), #53 (calendario y horarios) y #55 (consulta de planes) de mis compañeros. Antes de fusionar #53 traje `dev` a la rama y agregué la validación de límites de fechas y turnos; antes de fusionar #55 traje `dev` y corregí la respuesta para conservar los identificadores de los planes. También reconcilié en `dev` el revert del PR #46 que había quedado en `main`, conservando los reportes integrados.
@@ -282,8 +272,7 @@ Quedaron pendientes la revisión de los compañeros, la aceptación integrada y 
 
 ## Sprint 6 — Unidad V — Semana del 2026-10-19
 
-### 2026-10-23 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «Backend - Proteger endpoints de reportes para rol gerente» no tenía estimación. Borrar este comentario. -->
+### 2026-10-23 · 2 h
 
 **Actividad**
 Tarea: proteger los endpoints de reportes para el rol gerente.
@@ -312,8 +301,7 @@ Verificación: 20 suites y 151 pruebas aprobadas (13 nuevas) y ESLint sin errore
 
 ---
 
-### 2026-10-23 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «E11-T1: Panel de Gerente, CRUD Sedes/Membresías y Sede Dinámica» estimaba 10 h para backend y frontend (sesiones del 23 y 27/10 en los dos repositorios). Borrar este comentario. -->
+### 2026-10-23 · 1,5 h
 
 **Actividad**
 Tarea: panel de gerente, CRUD de sedes y membresías y sede dinámica (parte backend).
@@ -339,8 +327,7 @@ Verificación: 22 suites y 172 pruebas aprobadas (1 pendiente `todo`) y ESLint s
 
 ---
 
-### 2026-10-23 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «E11-T2: Migración a Prisma ORM, Reportes y Testing» estimaba 8 h. Borrar este comentario. -->
+### 2026-10-23 · 6 h
 
 **Actividad**
 Tarea: migración a Prisma ORM, reportes y testing.
@@ -374,8 +361,7 @@ Verificación: las mismas pruebas pasan con el SQL anterior y con Prisma, ya no 
 
 ## Sprint 6 — Unidad V — Semana del 2026-10-26
 
-### 2026-10-27 · <horas> h
-<!-- PARA COMPLETAR: correcciones de la revisión, sin tarjeta propia en Trello. Borrar este comentario. -->
+### 2026-10-27 · 1 h
 
 **Actividad**
 Tarea: correcciones de la revisión de reportes, sedes y planes.
@@ -397,8 +383,7 @@ Ninguno.
 
 ---
 
-### 2026-10-27 · <horas> h
-<!-- PARA COMPLETAR: parte de «E11-T1» (10 h estimadas para toda la tarea). Borrar este comentario. -->
+### 2026-10-27 · 2 h
 
 **Actividad**
 Tarea: CRUD de membresías de los socios para el gerente (parte backend).
@@ -429,8 +414,7 @@ Al serializar el precio del plan anidado, class-transformer intentaba construir 
 
 ## Sprint 7 — Unidad VI — Semana del 2026-11-02
 
-### 2026-11-06 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «E14-T1: CRUD de Calendario, Excepciones por Sede y Vista de Gestión» estimaba 10 h para backend y frontend (sesiones del 06/11 en el backend y del 10/11 en el frontend). Borrar este comentario. -->
+### 2026-11-06 · 6 h
 
 **Actividad**
 Tarea: CRUD de calendario, excepciones por sede y horario semanal para el gerente (parte backend).
@@ -464,8 +448,7 @@ Al borrar una fecha referenciada, PostgreSQL responde con el código 23001 (la c
 
 ## Sprint 7 — Unidad VI — Semana del 2026-11-09
 
-### 2026-11-12 · <horas> h
-<!-- PARA COMPLETAR: la tarjeta «E14-T2: Configuración de Horarios Semanales, Seguridad y Rutas de Gerencia» estimaba 7 h para backend y frontend (sesiones del 12/11 en los dos repositorios). Borrar este comentario. -->
+### 2026-11-12 · 4 h
 
 **Actividad**
 Tarea: guards en todos los endpoints de sedes y reportes y limpieza de valores fijos (parte backend).
@@ -496,8 +479,7 @@ M3 valida el horario de las clases con su propio horario por defecto (08:00 a 22
 
 ## Sprint 8 — Cierre — Semana del 2026-11-16
 
-### 2026-11-18 · <horas> h
-<!-- PARA COMPLETAR: arreglo que pidió el líder técnico, sin tarjeta en Trello. Borrar este comentario. -->
+### 2026-11-18 · 2,5 h
 
 **Actividad**
 Tarea: arreglar los dos errores del panel de gerencia que informó el líder técnico (parte backend).
