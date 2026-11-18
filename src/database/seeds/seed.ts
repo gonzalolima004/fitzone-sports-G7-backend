@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcryptjs';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, User } from '@supabase/supabase-js';
 
 const PASSWORD_USUARIOS = 'Asd12345.';
 
@@ -18,9 +18,24 @@ const usuarioEstados = [
 ];
 
 const membresiaPlanes = [
-  { id_membresia_plan: 1, nombre: 'Plan Mensual', duracion_dias: 30, precio: 40000 },
-  { id_membresia_plan: 2, nombre: 'Plan Trimestral', duracion_dias: 90, precio: 105000 },
-  { id_membresia_plan: 3, nombre: 'Plan Anual', duracion_dias: 365, precio: 360000 },
+  {
+    id_membresia_plan: 1,
+    nombre: 'Plan Mensual',
+    duracion_dias: 30,
+    precio: 40000,
+  },
+  {
+    id_membresia_plan: 2,
+    nombre: 'Plan Trimestral',
+    duracion_dias: 90,
+    precio: 105000,
+  },
+  {
+    id_membresia_plan: 3,
+    nombre: 'Plan Anual',
+    duracion_dias: 365,
+    precio: 360000,
+  },
 ];
 
 const membresiaEstados = [
@@ -167,7 +182,9 @@ async function resetSecuencia(pool: Pool, tabla: string, columna: string) {
 export async function seed() {
   const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL;
   if (!connectionString) {
-    throw new Error('DATABASE_URL no esta definida en las variables de entorno.');
+    throw new Error(
+      'DATABASE_URL no esta definida en las variables de entorno.',
+    );
   }
 
   const pool = new Pool({ connectionString });
@@ -176,7 +193,12 @@ export async function seed() {
   try {
     await pool.query('BEGIN');
 
-    await upsertRows(pool, 'rol', ['id_rol', 'nombre'], roles.map((r) => [r.id_rol, r.nombre]));
+    await upsertRows(
+      pool,
+      'rol',
+      ['id_rol', 'nombre'],
+      roles.map((r) => [r.id_rol, r.nombre]),
+    );
     await upsertRows(
       pool,
       'usuario_estado',
@@ -187,7 +209,12 @@ export async function seed() {
       pool,
       'membresia_plan',
       ['id_membresia_plan', 'nombre', 'duracion_dias', 'precio'],
-      membresiaPlanes.map((r) => [r.id_membresia_plan, r.nombre, r.duracion_dias, r.precio]),
+      membresiaPlanes.map((r) => [
+        r.id_membresia_plan,
+        r.nombre,
+        r.duracion_dias,
+        r.precio,
+      ]),
     );
     await upsertRows(
       pool,
@@ -211,19 +238,28 @@ export async function seed() {
       pool,
       'cancha_reserva_estado',
       ['id_cancha_reserva_estado', 'descripcion'],
-      canchaReservaEstados.map((r) => [r.id_cancha_reserva_estado, r.descripcion]),
+      canchaReservaEstados.map((r) => [
+        r.id_cancha_reserva_estado,
+        r.descripcion,
+      ]),
     );
     await upsertRows(
       pool,
       'clase_reserva_estado',
       ['id_clase_reserva_estado', 'descripcion'],
-      claseReservaEstados.map((r) => [r.id_clase_reserva_estado, r.descripcion]),
+      claseReservaEstados.map((r) => [
+        r.id_clase_reserva_estado,
+        r.descripcion,
+      ]),
     );
     await upsertRows(
       pool,
       'clase_lista_espera_estado',
       ['id_clase_lista_espera_estado', 'descripcion'],
-      claseListaEsperaEstados.map((r) => [r.id_clase_lista_espera_estado, r.descripcion]),
+      claseListaEsperaEstados.map((r) => [
+        r.id_clase_lista_espera_estado,
+        r.descripcion,
+      ]),
     );
     await upsertRows(
       pool,
@@ -235,12 +271,26 @@ export async function seed() {
       pool,
       'sede',
       ['id_sede', 'nombre', 'direccion', 'aforo_maximo', 'activo', 'id_ciudad'],
-      sedes.map(([id, nombre, direccion, aforo, ciudad]) => [id, nombre, direccion, aforo, true, ciudad]),
+      sedes.map(([id, nombre, direccion, aforo, ciudad]) => [
+        id,
+        nombre,
+        direccion,
+        aforo,
+        true,
+        ciudad,
+      ]),
     );
     await upsertRows(
       pool,
       'sede_horario',
-      ['id_sede_horario', 'id_sede', 'dia_semana', 'hora_apertura', 'hora_cierre', 'abierto'],
+      [
+        'id_sede_horario',
+        'id_sede',
+        'dia_semana',
+        'hora_apertura',
+        'hora_cierre',
+        'abierto',
+      ],
       sedeHorarios,
     );
 
@@ -301,9 +351,13 @@ export async function seed() {
       const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
         auth: { autoRefreshToken: false, persistSession: false },
       });
-      const { data: listData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+      const { data: listData, error: listError } =
+        await supabaseAdmin.auth.admin.listUsers({
+          perPage: 1000,
+        });
+      const existingUsers: User[] = listError ? [] : listData.users;
       const existingByEmail = new Map<string, string>(
-        (listData?.users ?? []).map((u): [string, string] => [
+        existingUsers.map((u): [string, string] => [
           (u.email ?? '').toLowerCase(),
           u.id,
         ]),
@@ -326,13 +380,19 @@ export async function seed() {
           });
         }
       }
-      console.log(`  ✅ auth.users (Supabase Auth): ${usuarios.length} usuarios sincronizados`);
+      console.log(
+        `  ✅ auth.users (Supabase Auth): ${usuarios.length} usuarios sincronizados`,
+      );
     } else {
-      console.warn('  ⚠️ No se sincronizó Supabase Auth (faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY)');
+      console.warn(
+        '  ⚠️ No se sincronizó Supabase Auth (faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY)',
+      );
     }
 
     console.log('🎉 Seed completado.');
-    console.log(`   Usuarios: gerente@, recepcionista@, socio@, externo@fitzone.com | contraseña: ${PASSWORD_USUARIOS}`);
+    console.log(
+      `   Usuarios: gerente@, recepcionista@, socio@, externo@fitzone.com | contraseña: ${PASSWORD_USUARIOS}`,
+    );
   } catch (error) {
     await pool.query('ROLLBACK');
     console.error('❌ Error durante el seed:', error);
