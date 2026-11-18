@@ -8,4 +8,6 @@ export const ESTADOS_QUE_CUENTAN = {
   PAGO: 'Aprobado',
   /** Reservas de canchas y de clases que suman en el reporte de ocupación. */
   RESERVA: 'Confirmada',
+  /** Membresías que hacen que un socio cuente como activo. */
+  MEMBRESIA: 'Activa',
 } as const;
