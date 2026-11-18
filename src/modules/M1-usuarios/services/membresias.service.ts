@@ -155,6 +155,50 @@ export class MembresiasService {
   }
 
   /**
+   * El socio suspende su membresía vigente: conserva los beneficios hasta
+   * fecha_fin y luego no se le genera un pago pendiente. No es reversible
+   * por el socio (solo el gerente puede cambiar el estado).
+   */
+  async suspenderMiMembresia(
+    id_usuario: number,
+  ): Promise<MembresiaResponseDto> {
+    const activa =
+      await this.membresiasRepository.findActiveByUsuarioId(id_usuario);
+
+    if (!activa) {
+      const suspendida =
+        await this.membresiasRepository.findSuspendidaVigenteByUsuarioId(
+          id_usuario,
+        );
+      if (suspendida) {
+        throw new ConflictException('Tu membresía ya se encuentra suspendida.');
+      }
+      throw new NotFoundException(
+        'No tenés una membresía activa vigente para suspender.',
+      );
+    }
+
+    // Sin pago aprobado la 'Suspendida' se confundiría con una intención de
+    // checkout y el socio perdería los beneficios en el acto.
+    const pagos = await this.membresiasRepository.countPagosAprobados(
+      activa.id_membresia,
+    );
+    if (pagos === 0) {
+      throw new ConflictException(
+        'La membresía no tiene un pago aprobado, no se puede suspender.',
+      );
+    }
+
+    const idSuspendida =
+      await this.membresiasRepository.obtenerEstadoId('Suspendida');
+    const actualizada = await this.membresiasRepository.updateEstado(
+      activa.id_membresia,
+      idSuspendida,
+    );
+    return plainToInstance(MembresiaResponseDto, actualizada);
+  }
+
+  /**
    * Catálogo de estados de membresía (tabla membresia_estado).
    */
   async findAllEstados(): Promise<MembresiaEstadoDto[]> {
@@ -260,6 +304,9 @@ export class MembresiasService {
     // 2. Obtener última membresía Activa o Vencida del socio (vigente o expirada)
     const ultimaMembresia =
       (await this.membresiasRepository.findActiveByUsuarioId(id_usuario)) ??
+      (await this.membresiasRepository.findSuspendidaVigenteByUsuarioId?.(
+        id_usuario,
+      )) ??
       (await this.membresiasRepository.findLatestActivaOrVencidaByUsuarioId?.(
         id_usuario,
       ));
@@ -282,6 +329,7 @@ export class MembresiasService {
     // 3. Determinar estado de mora según estado y fecha de vencimiento
     const estadoDescripcion =
       ultimaMembresia.membresia_estado?.descripcion?.toLowerCase();
+    const suspendida = estadoDescripcion === 'suspendida';
     const esMora =
       estadoDescripcion === 'vencida' ||
       new Date(ultimaMembresia.fecha_fin) < new Date();
@@ -291,6 +339,7 @@ export class MembresiasService {
       id_usuario: id_usuario,
       esSocioActivo: !esMora,
       enMora: esMora,
+      suspendida,
       id_sede_origen: idSedeOrigen,
       fecha_inicio: ultimaMembresia.fecha_inicio,
       fecha_vencimiento: ultimaMembresia.fecha_fin,

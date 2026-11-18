@@ -1,16 +1,21 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { ClasesRepository } from '../repositories/clases.repository';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
+import { ClasesRealtimeService } from './clases-realtime.service';
 import { InscribirListaEsperaDto } from '../dto/inscribir-lista-espera.dto';
 import {
   claseAplicaEnFecha,
   obtenerRangoDiaArgentina,
 } from '../../../common/utils/date-time.util';
+import { PrismaService } from '../../../database/prisma-service/prisma.service';
+import { whereBeneficiosVigentes } from '../../M1-usuarios/utils/membresia-beneficios';
 
 @Injectable()
 export class ListaEsperaService {
@@ -18,6 +23,8 @@ export class ListaEsperaService {
     private readonly listaEsperaRepository: ListaEsperaRepository,
     private readonly clasesRepository: ClasesRepository,
     private readonly reservasClasesRepository: ReservasClasesRepository,
+    @Optional() private readonly prisma?: PrismaService,
+    @Optional() private readonly clasesRealtime?: ClasesRealtimeService,
   ) {}
 
   async inscribir(data: InscribirListaEsperaDto, id_usuario: number) {
@@ -54,6 +61,43 @@ export class ListaEsperaService {
       throw new BadRequestException(
         'No se puede inscribir en lista de espera para una clase que ya comenzó.',
       );
+    }
+
+    // 1. Verificación de no mora del socio (RN-03)
+    if (this.prisma?.membresia?.findFirst) {
+      const membresiaActiva = await this.prisma.membresia.findFirst({
+        where: whereBeneficiosVigentes(id_usuario, ahora),
+      });
+
+      if (!membresiaActiva) {
+        throw new ForbiddenException(
+          'El socio presenta mora o no tiene una membresía activa vigente (RN-03). Por favor, regulariza tu membresía.',
+        );
+      }
+    }
+
+    // 2. Verificación de misma ciudad entre socio y sede de la clase (consultas en paralelo)
+    if (this.prisma?.usuario?.findUnique && this.prisma?.clase?.findUnique) {
+      const [socio, claseConSede] = await Promise.all([
+        this.prisma.usuario.findUnique({
+          where: { id_usuario },
+          include: { sede: true },
+        }),
+        this.prisma.clase.findUnique({
+          where: { id_clase: data.id_clase },
+          include: { sede: true },
+        }),
+      ]);
+
+      if (
+        socio?.sede?.id_ciudad &&
+        claseConSede?.sede?.id_ciudad &&
+        socio.sede.id_ciudad !== claseConSede.sede.id_ciudad
+      ) {
+        throw new BadRequestException(
+          'No puedes inscribirte en lista de espera en sedes de una ciudad diferente a la de tu sede de origen.',
+        );
+      }
     }
 
     // Verificamos si ya está inscripto
@@ -97,6 +141,28 @@ export class ListaEsperaService {
         fechaInicio,
         fechaFin,
       );
+
+    if (this.clasesRealtime) {
+      const cuposDisponibles = Math.max(
+        0,
+        clase.capacidad_maxima - reservasConfirmadas,
+      );
+      const estado: 'DISPONIBLE' | 'COMPLETO' =
+        cuposDisponibles > 0 ? 'DISPONIBLE' : 'COMPLETO';
+
+      void this.clasesRealtime.notificarCupoActualizado({
+        id_clase: data.id_clase,
+        id_sede: clase.id_sede,
+        fecha: fechaInicio.toISOString().slice(0, 10),
+        fecha_inicio: fechaInicio.toISOString(),
+        fecha_fin: fechaFin.toISOString(),
+        cupos_ocupados: reservasConfirmadas,
+        cupos_disponibles: cuposDisponibles,
+        capacidad_maxima: clase.capacidad_maxima,
+        en_espera: ordenEnCola,
+        estado,
+      });
+    }
 
     return {
       message: 'Inscripto correctamente a la lista de espera',

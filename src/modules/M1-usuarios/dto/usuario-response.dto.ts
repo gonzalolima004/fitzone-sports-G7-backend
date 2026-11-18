@@ -1,4 +1,5 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 
 // Interfaz auxiliar opcional para tipar el objeto que viene de la consulta
 interface UsuarioPrismaObj {
@@ -41,8 +42,19 @@ export class UsuarioResponseDto {
     aforo_maximo: number;
     activo: boolean;
     id_ciudad: number;
+    ciudad?: {
+      id_ciudad: number;
+      nombre: string;
+      activo: boolean;
+    };
   };
-
+  @ApiProperty({ description: 'Membresia' })
+  @Expose()
+  membresia?: {
+    membresia_estado?: {
+      descripcion: string;
+    };
+  };
   @Expose()
   creacion: Date;
   @Expose()

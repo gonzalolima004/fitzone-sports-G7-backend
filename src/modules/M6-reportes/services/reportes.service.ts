@@ -4,6 +4,7 @@ import { ReporteIngresosResponseDto } from '../dto/reporte-ingresos-response.dto
 import { ReportesRepository } from '../repositories/reportes.repository';
 import { ConsultaMetricasOcupacionDto } from '../dto/consulta-metricas-ocupacion.dto';
 import { ReporteOcupacionResponseDto } from '../dto/reporte-ocupacion-response.dto';
+import { ESTADOS_QUE_CUENTAN } from '../constants/reportes.constants';
 
 @Injectable()
 export class ReportesService {
@@ -27,7 +28,7 @@ export class ReportesService {
     const ingresos = await this.reportesRepository.obtenerIngresosPorSede(
       fechaDesde,
       fechaHastaExclusica,
-      'Aprobado',
+      ESTADOS_QUE_CUENTAN.PAGO,
       consulta.id_sede,
       consulta.concepto,
     );

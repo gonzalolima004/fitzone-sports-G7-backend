@@ -7,6 +7,7 @@ import {
   Logger,
   Post,
   Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
@@ -69,6 +70,14 @@ export class WebhooksController {
 
     // 2. Validación de firma criptográfica oficial (HMAC-SHA256) si webhookSecret y x-signature están presentes
     const secret = this.mercadopagoService.webhookSecret;
+    if (secret && !xSignature) {
+      // Endpoint público por diseño (Mercado Pago no envía JWT): la autenticidad
+      // se garantiza únicamente mediante la firma x-signature.
+      if (process.env.NODE_ENV === 'production') {
+        throw new UnauthorizedException('Falta la firma x-signature.');
+      }
+      this.logger.warn('Webhook sin x-signature aceptado fuera de producción.');
+    }
     if (secret && xSignature) {
       try {
         WebhookSignatureValidator.validate({

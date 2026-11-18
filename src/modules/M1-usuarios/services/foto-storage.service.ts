@@ -10,14 +10,16 @@ import { createClient } from '@supabase/supabase-js';
 export class FotoStorageService {
   private supabase: ReturnType<typeof createClient>;
   private readonly bucketName = 'fitzonepublic';
+  private readonly allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  private readonly maxFileSizeBytes = 2 * 1024 * 1024; // 2 MB
 
   constructor() {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
       process.env.SUPABASE_KEY ||
       process.env.SUPABASE_ANON_KEY ||
-      process.env.SUPABASE_PUBLISHABLE_KEY ||
-      process.env.SUPABASE_SERVICE_ROLE_KEY;
+      process.env.SUPABASE_PUBLISHABLE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       throw new InternalServerErrorException(
@@ -25,12 +27,41 @@ export class FotoStorageService {
       );
     }
 
-    this.supabase = createClient(supabaseUrl, supabaseKey);
+    this.supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+
+  private extractOwnedStoragePath(
+    fotoUrl: string | null | undefined,
+    idUsuario: number,
+  ): string | null {
+    if (!fotoUrl) return null;
+    const marker = `/storage/v1/object/public/${this.bucketName}/`;
+    const idx = fotoUrl.indexOf(marker);
+    if (idx === -1) return null;
+
+    const relativePath = decodeURIComponent(
+      fotoUrl.slice(idx + marker.length).split('?')[0],
+    );
+
+    if (
+      relativePath.startsWith(`avatars/usuario-${idUsuario}-`) ||
+      relativePath.startsWith(`avatars/usuario-${idUsuario}.`)
+    ) {
+      return relativePath;
+    }
+
+    return null;
   }
 
   async uploadFoto(
     file: Express.Multer.File,
     idUsuario: number,
+    fotoAnteriorUrl?: string | null,
   ): Promise<string> {
     if (!file) {
       throw new BadRequestException(
@@ -38,26 +69,33 @@ export class FotoStorageService {
       );
     }
 
-    if (!file.mimetype.startsWith('image/')) {
+    if (!this.allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
-        'El archivo subido debe ser una imagen (JPG, PNG, WEBP, etc.).',
+        'Formato no permitido. Solo se aceptan imágenes JPG, PNG o WEBP.',
       );
     }
 
-    //Genera nombre único del archivo para evitar coliciones
-    const fileExtension = (
-      file.originalname.split('.').pop() || 'jpg'
-    ).toLowerCase();
-    const filePath = `avatars/usuario-${idUsuario}.${fileExtension}`;
+    if (file.size > this.maxFileSizeBytes) {
+      throw new BadRequestException(
+        'La imagen supera el tamaño máximo permitido de 2 MB.',
+      );
+    }
 
-    //Sube la foto a Supabase Storage
+    const extensionPorMime: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+    };
+    const fileExtension = extensionPorMime[file.mimetype] || 'jpg';
+    const filePath = `avatars/usuario-${idUsuario}-${Date.now()}.${fileExtension}`;
+
     try {
       const { error } = await this.supabase.storage
         .from(this.bucketName)
         .upload(filePath, file.buffer, {
           contentType: file.mimetype,
           cacheControl: '3600',
-          upsert: true,
+          upsert: false,
         });
 
       if (error) {
@@ -74,6 +112,11 @@ export class FotoStorageService {
         throw new InternalServerErrorException(
           'No se pudo generar la URL pública de la foto de perfil.',
         );
+      }
+
+      const oldPath = this.extractOwnedStoragePath(fotoAnteriorUrl, idUsuario);
+      if (oldPath && oldPath !== filePath) {
+        await this.supabase.storage.from(this.bucketName).remove([oldPath]);
       }
 
       return data.publicUrl;

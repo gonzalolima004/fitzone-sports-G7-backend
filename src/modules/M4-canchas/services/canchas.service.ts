@@ -8,12 +8,18 @@ import { CrearCanchaDto } from '../dto/crear-cancha.dto';
 import { ActualizarCanchaDto } from '../dto/actualizar-cancha.dto';
 import { ActualizarTipoCanchaDto } from '../dto/actualizar-tipo-cancha.dto';
 import { ReservasCanchasRepository } from '../repositories/reservas-canchas.repository';
+import { DisponibilidadSlotResponseDto } from '../dto/disponibilidad-slot-response.dto';
 import {
-  DisponibilidadSlotResponseDto,
-  SlotEstado,
-} from '../dto/disponibilidad-slot-response.dto';
+  CotizarTurnoQueryDto,
+  CotizacionResponseDto,
+  MotivoSinDescuento,
+} from '../dto/cotizacion-turno.dto';
 import { SedeService } from '../../M0-sedes/services/sede.service';
-import { CanchaMantenimiento, CanchaReserva } from '@prisma/client';
+import { PrecioContextService } from './precio-context.service';
+import { CotizacionCacheService } from './cotizacion-cache.service';
+import { CanchasDisponibilidadService } from './canchas-disponibilidad.service';
+import { REGLAS_CANCHAS } from '../constants/canchas.constants';
+import { normalizarHorarioHHmm } from '../../../common/utils/date-time.util';
 
 @Injectable()
 export class CanchasService {
@@ -21,6 +27,13 @@ export class CanchasService {
     private readonly canchasRepository: CanchasRepository,
     private readonly reservasRepository: ReservasCanchasRepository,
     private readonly sedeService: SedeService,
+    private readonly precioContext?: PrecioContextService,
+    private readonly cotizacionCache: CotizacionCacheService = new CotizacionCacheService(),
+    private readonly disponibilidadService: CanchasDisponibilidadService = new CanchasDisponibilidadService(
+      canchasRepository,
+      reservasRepository,
+      sedeService,
+    ),
   ) {}
 
   async crearCancha(dto: CrearCanchaDto) {
@@ -129,243 +142,186 @@ export class CanchasService {
     id_cancha: number,
     fechaStr: string,
   ): Promise<DisponibilidadSlotResponseDto[]> {
-    // 1. Validar existencia de la cancha y obtener a qué sede pertenece
-    const cancha = await this.obtenerCancha(id_cancha);
-
-    // 2. Consultar el horario operativo de la sede cruzando SedeHorario y Calendario
-    const horarioSede = await this.sedeService.getHorarioOperativo(
-      cancha.id_sede,
+    return this.disponibilidadService.obtenerDisponibilidad(
+      id_cancha,
       fechaStr,
     );
-
-    // Si la sede está cerrada por feriado, domingo u horario especial, retornamos 0 slots
-    if (!horarioSede.abierto) {
-      return [];
-    }
-
-    // 3. Configurar límites dinámicos del día según la apertura y cierre de la sede
-    const [horaApertura, minutoApertura] = horarioSede.hora_apertura
-      .split(':')
-      .map(Number);
-    const [horaCierre, minutoCierre] = horarioSede.hora_cierre
-      .split(':')
-      .map(Number);
-
-    const [year, month, day] = fechaStr.split('-').map(Number);
-    const inicioDia = new Date(
-      Date.UTC(year, month - 1, day, horaApertura, minutoApertura, 0),
-    );
-    const finDia = new Date(
-      Date.UTC(year, month - 1, day, horaCierre, minutoCierre, 0),
-    );
-
-    // Los turnos empiezan en punto y deben caber completos en la apertura.
-    if (inicioDia.getUTCMinutes() !== 0) {
-      inicioDia.setUTCHours(inicioDia.getUTCHours() + 1, 0, 0, 0);
-    }
-
-    // 4. Obtener bloqueos (Reservas y Mantenimientos) en paralelo para esa ventana
-    const [reservas, mantenimientos] = await Promise.all([
-      this.reservasRepository.obtenerReservasPorFecha(
-        id_cancha,
-        inicioDia,
-        finDia,
-      ),
-      this.reservasRepository.obtenerMantenimientosPorFecha(
-        id_cancha,
-        inicioDia,
-        finDia,
-      ),
-    ]);
-
-    // 5. Generar Slots en memoria entre hora_apertura y hora_cierre
-    const slots: DisponibilidadSlotResponseDto[] = [];
-    let horaActual = new Date(inicioDia);
-
-    while (horaActual.getTime() + 60 * 60 * 1000 <= finDia.getTime()) {
-      const horaSiguiente = new Date(horaActual);
-      horaSiguiente.setUTCHours(horaActual.getUTCHours() + 1);
-
-      // Evaluar colisiones con mantenimientos y reservas
-      const enMantenimiento = mantenimientos.some(
-        (m) => m.fecha_inicio < horaSiguiente && m.fecha_fin > horaActual,
-      );
-
-      const reservado = reservas.some(
-        (r) => r.fecha_inicio < horaSiguiente && r.fecha_fin > horaActual,
-      );
-
-      let estado = SlotEstado.DISPONIBLE;
-      if (enMantenimiento) estado = SlotEstado.MANTENIMIENTO;
-      else if (reservado) estado = SlotEstado.RESERVADO;
-
-      slots.push({
-        horaInicio: horaActual.toISOString().slice(11, 16),
-        horaFin: horaSiguiente.toISOString().slice(11, 16),
-        estado,
-      });
-
-      horaActual = horaSiguiente;
-    }
-
-    return slots;
   }
 
-  async obtenerDisponibilidadPorSede(sedeId: number, fechaStr: string) {
-    // 1. Obtener canchas y horario operativo en paralelo (solo 2 viajes a Supabase)
-    const [canchas, horarioSede] = await Promise.all([
-      this.canchasRepository.obtenerTodasActivas(sedeId),
-      this.sedeService.getHorarioOperativo(sedeId, fechaStr),
-    ]);
-
-    if (!canchas.length) {
-      return [];
-    }
-
-    // Si la sede está cerrada ese día, retornamos las canchas con slots vacíos sin consultar reservas
-    if (!horarioSede.abierto) {
-      return canchas.map((cancha) => ({
-        id_cancha: cancha.id_cancha,
-        nombre_cancha: cancha.nombre,
-        costo_base: Number(cancha.costo_base),
-        slots: [],
-      }));
-    }
-
-    // 2. Calcular límites horarios del día
-    const [horaApertura, minutoApertura] = horarioSede.hora_apertura
-      .split(':')
-      .map(Number);
-    const [horaCierre, minutoCierre] = horarioSede.hora_cierre
-      .split(':')
-      .map(Number);
-    const [year, month, day] = fechaStr.split('-').map(Number);
-
-    const inicioDia = new Date(
-      Date.UTC(year, month - 1, day, horaApertura, minutoApertura, 0),
+  async obtenerDisponibilidadPorSede(
+    sedeId: number,
+    fechaStr: string,
+    tipoId?: number,
+  ) {
+    return this.disponibilidadService.obtenerDisponibilidadPorSede(
+      sedeId,
+      fechaStr,
+      tipoId,
     );
-    const finDia = new Date(
-      Date.UTC(year, month - 1, day, horaCierre, minutoCierre, 0),
-    );
-
-    if (inicioDia.getUTCMinutes() !== 0) {
-      inicioDia.setUTCHours(inicioDia.getUTCHours() + 1, 0, 0, 0);
-    }
-
-    const idsCanchas = canchas.map((c) => c.id_cancha);
-
-    // 3. Obtener TODAS las reservas y mantenimientos de la sede en paralelo (1 solo viaje)
-    const [todasLasReservas, todosLosMantenimientos] = await Promise.all([
-      this.reservasRepository.obtenerReservasPorCanchasYFecha(
-        idsCanchas,
-        inicioDia,
-        finDia,
-      ),
-      this.reservasRepository.obtenerMantenimientosPorCanchasYFecha(
-        idsCanchas,
-        inicioDia,
-        finDia,
-      ),
-    ]);
-
-    // 4. Agrupar bloqueos por cancha en memoria usando Maps para acceso instantáneo O(1)
-    const reservasPorCancha = new Map<number, CanchaReserva[]>();
-    for (const r of todasLasReservas) {
-      const list = reservasPorCancha.get(r.id_cancha) ?? [];
-      list.push(r);
-      reservasPorCancha.set(r.id_cancha, list);
-    }
-
-    const mantenimientosPorCancha = new Map<number, CanchaMantenimiento[]>();
-    for (const m of todosLosMantenimientos) {
-      const list = mantenimientosPorCancha.get(m.id_cancha) ?? [];
-      list.push(m);
-      mantenimientosPorCancha.set(m.id_cancha, list);
-    }
-
-    // 5. Construir los resultados en memoria (cero llamadas de red)
-    return canchas.map((cancha) => {
-      const reservasCancha = reservasPorCancha.get(cancha.id_cancha) ?? [];
-      const mantenimientosCancha =
-        mantenimientosPorCancha.get(cancha.id_cancha) ?? [];
-
-      const slots = this.calcularSlotsEnMemoria(
-        inicioDia,
-        finDia,
-        reservasCancha,
-        mantenimientosCancha,
-      );
-
-      return {
-        id_cancha: cancha.id_cancha,
-        nombre_cancha: cancha.nombre,
-        costo_base: Number(cancha.costo_base),
-        slots,
-      };
-    });
   }
 
   /**
-   * Función pura en memoria: no toca la base de datos
+   * Conecta el cálculo de precios dinámicos con el endpoint /canchas/cotizar,
+   * validando que el descuento de socio aplique solo si tiene membresía activa
+   * y reserva en una sede de su misma ciudad.
    */
-  private calcularSlotsEnMemoria(
-    inicioDia: Date,
-    finDia: Date,
-    reservas: CanchaReserva[],
-    mantenimientos: CanchaMantenimiento[],
-  ): DisponibilidadSlotResponseDto[] {
-    const slots: DisponibilidadSlotResponseDto[] = [];
-    let horaActual = new Date(inicioDia);
-
-    while (horaActual.getTime() + 60 * 60 * 1000 <= finDia.getTime()) {
-      const horaSiguiente = new Date(horaActual);
-      horaSiguiente.setUTCHours(horaActual.getUTCHours() + 1);
-
-      const enMantenimiento = mantenimientos.some(
-        (m) => m.fecha_inicio < horaSiguiente && m.fecha_fin > horaActual,
-      );
-
-      const reservado = reservas.some(
-        (r) => r.fecha_inicio < horaSiguiente && r.fecha_fin > horaActual,
-      );
-
-      let estado = SlotEstado.DISPONIBLE;
-      if (enMantenimiento) estado = SlotEstado.MANTENIMIENTO;
-      else if (reservado) estado = SlotEstado.RESERVADO;
-
-      slots.push({
-        horaInicio: horaActual.toISOString().slice(11, 16),
-        horaFin: horaSiguiente.toISOString().slice(11, 16),
-        estado,
-      });
-
-      horaActual = horaSiguiente;
+  async cotizarTurno(
+    query: CotizarTurnoQueryDto,
+    idUsuario: number,
+  ): Promise<CotizacionResponseDto> {
+    // 1. Validar fecha válida en calendario
+    const [year, month, day] = query.fecha.split('-').map(Number);
+    const parsedDate = new Date(Date.UTC(year, month - 1, day));
+    if (
+      isNaN(parsedDate.getTime()) ||
+      parsedDate.getUTCFullYear() !== year ||
+      parsedDate.getUTCMonth() !== month - 1 ||
+      parsedDate.getUTCDate() !== day
+    ) {
+      throw new BadRequestException('Formato de fecha inválido.');
     }
 
-    return slots;
-  }
-  /*
-  async obtenerDisponibilidadPorSede(sedeId: number, fechaStr: string) {
-    // 1. Obtiene las canchas de la sede mediante el repositorio existente
-    const canchas = await this.canchasRepository.obtenerTodasActivas(sedeId);
+    const cacheKey = `${query.canchaId}_${idUsuario}_${query.fecha}`;
 
-    // 2. Ejecuta la disponibilidad en paralelo reutilizando la función que ya tienen
-    const resultados = await Promise.all(
-      canchas.map(async (cancha) => {
-        const slots = await this.obtenerDisponibilidad(
-          cancha.id_cancha,
-          fechaStr,
+    let costoBase: number;
+    let esSocio: boolean;
+    let aplicaDescuentoSocio: boolean;
+    let motivoSinDescuento: MotivoSinDescuento;
+
+    // 2. Verificar caché
+    const cached = await this.cotizacionCache.get(cacheKey);
+    if (cached) {
+      costoBase = cached.costoBase;
+      esSocio = cached.esSocio;
+      aplicaDescuentoSocio = cached.aplicaDescuentoSocio;
+      motivoSinDescuento = cached.motivoSinDescuento;
+    } else {
+      // 3. Obtener cancha y usuario en paralelo con Prisma (2 consultas concurrentes)
+      const [cancha, usuario] = await Promise.all([
+        this.canchasRepository.obtenerPorId(query.canchaId),
+        this.canchasRepository.obtenerDatosUsuarioParaCotizacion(
+          idUsuario,
+          query.fecha,
+        ),
+      ]);
+
+      // Validar cancha (si no existe o está inactiva -> 404)
+      if (!cancha || !cancha.activo) {
+        throw new NotFoundException(
+          `La cancha con ID ${query.canchaId} no existe o se encuentra inactiva.`,
         );
-        return {
-          id_cancha: cancha.id_cancha,
-          nombre_cancha: cancha.nombre,
-          costo_base: Number(cancha.costo_base),
-          slots,
-        };
-      }),
-    );
+      }
 
-    return resultados;
+      // Validar usuario
+      if (!usuario) {
+        throw new NotFoundException(
+          `El usuario con ID ${idUsuario} no fue encontrado.`,
+        );
+      }
+
+      costoBase = Number(cancha.costo_base);
+
+      // 4. Evaluar condiciones para descuento de socio (15%)
+      // a) El usuario tiene rol 'socio' (si es 'externo' u otro rol, no aplica)
+      esSocio =
+        usuario.usuario_rol?.some(
+          (ur) => ur.rol?.nombre?.trim().toLowerCase() === 'socio',
+        ) ?? false;
+
+      aplicaDescuentoSocio = false;
+      motivoSinDescuento = null;
+
+      if (!esSocio) {
+        motivoSinDescuento = 'ROL_EXTERNO';
+      } else {
+        // b) Membresía ACTIVA (o SUSPENDIDA con pago aprobado) vigente para la fecha del turno: fecha_inicio <= fecha <= fecha_fin
+        const tieneMembresiaActiva = (usuario.membresia ?? []).some((m) => {
+          const desc = m.membresia_estado?.descripcion?.trim().toLowerCase();
+          const esEstadoActivo =
+            m.id_membresia_estado === 1 || desc === 'activa';
+          const esSuspendidaConPago =
+            desc === 'suspendida' && (m.pagos?.length ?? 0) > 0;
+
+          if (!esEstadoActivo && !esSuspendidaConPago) {
+            return false;
+          }
+
+          const fechaInicioStr = m.fecha_inicio.toISOString().slice(0, 10);
+          const fechaFinStr = m.fecha_fin.toISOString().slice(0, 10);
+
+          return fechaInicioStr <= query.fecha && query.fecha <= fechaFinStr;
+        });
+
+        if (!tieneMembresiaActiva) {
+          motivoSinDescuento = 'SIN_MEMBRESIA';
+        } else {
+          // c) Misma Ciudad: usuario.id_sede -> sede.id_ciudad coincide con cancha.id_sede -> sede.id_ciudad
+          const usuarioCiudadId = usuario.sede?.id_ciudad;
+          const canchaCiudadId = cancha.sede?.id_ciudad;
+
+          if (
+            !usuarioCiudadId ||
+            !canchaCiudadId ||
+            usuarioCiudadId !== canchaCiudadId
+          ) {
+            motivoSinDescuento = 'OTRA_CIUDAD';
+          } else {
+            aplicaDescuentoSocio = true;
+            motivoSinDescuento = null;
+          }
+        }
+      }
+
+      // Almacenar en caché el contexto verificado
+      await this.cotizacionCache.set(cacheKey, {
+        costoBase,
+        esSocio,
+        aplicaDescuentoSocio,
+        motivoSinDescuento,
+      });
+    }
+
+    // 5. Delegar cálculo de precios dinámicos a PrecioContextService (Strategy Pattern)
+    if (this.precioContext) {
+      return this.precioContext.calcularCotizacion({
+        costoBase,
+        hora: query.hora,
+        esSocio,
+        aplicaDescuentoSocio,
+        motivoSinDescuento,
+      });
+    }
+
+    // Fallback defensivo si se instancia sin DI
+    const horaNormalizada = normalizarHorarioHHmm(query.hora);
+    const [horaStr] = horaNormalizada.split(':');
+    const horaNum = parseInt(horaStr, 10);
+    const esHorarioPico =
+      horaNum >= REGLAS_CANCHAS.HORARIO_PICO_INICIO &&
+      horaNum <= REGLAS_CANCHAS.HORARIO_PICO_FIN;
+    const montoRecargoPico = esHorarioPico
+      ? Math.round(costoBase * (REGLAS_CANCHAS.PORCENTAJE_RECARGO_PICO / 100))
+      : 0;
+    const descuentoPorcentaje = aplicaDescuentoSocio
+      ? REGLAS_CANCHAS.PORCENTAJE_DESCUENTO_SOCIO
+      : 0;
+    const montoDescuento = aplicaDescuentoSocio
+      ? Math.round(
+          costoBase * (REGLAS_CANCHAS.PORCENTAJE_DESCUENTO_SOCIO / 100),
+        )
+      : 0;
+    const precioFinal = costoBase - montoDescuento + montoRecargoPico;
+
+    return {
+      costo_base: costoBase,
+      descuento_porcentaje: descuentoPorcentaje,
+      monto_descuento: montoDescuento,
+      es_horario_pico: esHorarioPico,
+      monto_recargo_pico: montoRecargoPico,
+      precio_final: precioFinal,
+      es_socio: esSocio,
+      aplica_descuento_socio: aplicaDescuentoSocio,
+      motivo_sin_descuento: motivoSinDescuento,
+    };
   }
-    */
 }

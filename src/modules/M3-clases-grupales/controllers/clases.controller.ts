@@ -36,10 +36,10 @@ export class ClasesController {
 
   @Post()
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('admin', 'gerente')
+  @Roles('gerente')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Crear una nueva clase grupal (Solo admin y gerente)',
+    summary: 'Crear una nueva clase grupal (Solo gerente)',
   })
   @ApiResponse({
     status: 201,
@@ -52,7 +52,7 @@ export class ClasesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol admin o gerente.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   async crearClase(
     @Body() createClaseDto: CreateClaseDto,
@@ -81,6 +81,14 @@ export class ClasesController {
     description: 'Fecha en formato YYYY-MM-DD para calcular ocupación y agenda',
     example: '2026-10-12',
   })
+  @ApiQuery({
+    name: 'incluir_inactivas',
+    required: false,
+    type: Boolean,
+    description:
+      'Permite al gerente visualizar también clases dadas de baja lógica o inactivas',
+    example: false,
+  })
   @ApiResponse({
     status: 200,
     description:
@@ -90,7 +98,17 @@ export class ClasesController {
   async obtenerClasesPorSede(
     @Query('id_sede', ParseIntPipe) id_sede: number,
     @Query('fecha') fecha?: string,
+    @Query('incluir_inactivas') incluir_inactivas?: string,
   ): Promise<ClaseResponseDto[] | ClaseAgendaResponseDto[]> {
+    if (incluir_inactivas !== undefined) {
+      const incluirInactivasBool =
+        incluir_inactivas === 'true' || incluir_inactivas === '1';
+      return await this.clasesService.obtenerClasesPorSede(
+        id_sede,
+        fecha,
+        incluirInactivasBool,
+      );
+    }
     return await this.clasesService.obtenerClasesPorSede(id_sede, fecha);
   }
 
@@ -116,11 +134,11 @@ export class ClasesController {
 
   @Patch(':id')
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('admin', 'gerente')
+  @Roles('gerente')
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Actualizar parcialmente datos o cupos de una clase (Solo admin y gerente)',
+      'Actualizar parcialmente datos o cupos de una clase (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -139,7 +157,7 @@ export class ClasesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol admin o gerente.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({ status: 404, description: 'Clase no encontrada.' })
   async actualizarClase(
@@ -151,11 +169,10 @@ export class ClasesController {
 
   @Put(':id')
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('admin', 'gerente')
+  @Roles('gerente')
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      'Reemplazar totalmente los datos de una clase (Solo admin y gerente)',
+    summary: 'Reemplazar totalmente los datos de una clase (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -174,7 +191,7 @@ export class ClasesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol admin o gerente.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({ status: 404, description: 'Clase no encontrada.' })
   async reemplazarClase(
@@ -186,11 +203,11 @@ export class ClasesController {
 
   @Delete(':id')
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('admin', 'gerente')
+  @Roles('gerente')
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Baja lógica de una clase grupal y cancelación preventiva de reservas futuras (Solo admin y gerente)',
+      'Baja lógica de una clase grupal y cancelación preventiva de reservas futuras (Solo gerente)',
   })
   @ApiParam({
     name: 'id',
@@ -210,7 +227,7 @@ export class ClasesController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Acceso denegado: se requiere rol admin o gerente.',
+    description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({ status: 404, description: 'Clase no encontrada.' })
   async eliminarClase(

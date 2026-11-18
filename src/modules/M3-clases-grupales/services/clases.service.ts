@@ -1,8 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma-service/prisma.service';
 import { ClasesRepository } from '../repositories/clases.repository';
-import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
-import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
+import {
+  ReservasClasesRepository,
+  ESTADOS_CLASE_RESERVA,
+} from '../repositories/reservas-clases.repository';
+import {
+  ListaEsperaRepository,
+  ESTADOS_LISTA_ESPERA,
+} from '../repositories/lista-espera.repository';
+import { ClasesRealtimeService } from './clases-realtime.service';
 import { CreateClaseDto } from '../dto/create-clase.dto';
 import { UpdateClaseDto } from '../dto/update-clase.dto';
 import { ClaseResponseDto } from '../dto/clase-response.dto';
@@ -22,6 +34,7 @@ export class ClasesService {
     private readonly clasesRepository: ClasesRepository,
     private readonly reservasRepository: ReservasClasesRepository,
     private readonly listaEsperaRepository: ListaEsperaRepository,
+    @Optional() private readonly clasesRealtime?: ClasesRealtimeService,
   ) {}
 
   private formatearClaseResponse(
@@ -72,7 +85,141 @@ export class ClasesService {
     };
   }
 
+  private async validarHorarioOperativoSede(
+    id_sede: number,
+    horarioInicioStr: string,
+    horarioFinStr: string,
+    diasSemana?: number[],
+    fechaStr?: string | null,
+  ): Promise<void> {
+    const hInicio = normalizarHorarioHHmm(horarioInicioStr);
+    const hFin = normalizarHorarioHHmm(horarioFinStr);
+
+    const diasAValidar = new Set<number>();
+    if (Array.isArray(diasSemana) && diasSemana.length > 0) {
+      diasSemana.forEach((d) => diasAValidar.add(d));
+    }
+
+    if (fechaStr && /^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) {
+      const [year, month, day] = fechaStr.split('-').map(Number);
+      const fechaUtc = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+      diasAValidar.add(fechaUtc.getUTCDay());
+    }
+
+    let horariosSede: Array<{
+      dia_semana: number;
+      hora_apertura: string;
+      hora_cierre: string;
+      abierto: boolean;
+    }> = [];
+
+    if (this.prisma?.sede_horario?.findMany && id_sede) {
+      horariosSede = await this.prisma.sede_horario.findMany({
+        where: { id_sede },
+      });
+    }
+
+    const mapaHorarios = new Map<
+      number,
+      { hora_apertura: string; hora_cierre: string; abierto: boolean }
+    >();
+    for (const h of horariosSede) {
+      mapaHorarios.set(h.dia_semana, h);
+    }
+
+    const nombresDias: Record<number, string> = {
+      0: 'Domingo',
+      1: 'Lunes',
+      2: 'Martes',
+      3: 'Miércoles',
+      4: 'Jueves',
+      5: 'Viernes',
+      6: 'Sábado',
+    };
+
+    const diasIterar =
+      diasAValidar.size > 0 ? Array.from(diasAValidar) : [null];
+
+    for (const dia of diasIterar) {
+      if (dia !== null) {
+        const configDia = mapaHorarios.get(dia);
+        const nombreDia = nombresDias[dia] ?? `Día ${dia}`;
+
+        if (configDia) {
+          if (!configDia.abierto) {
+            throw new BadRequestException(
+              `La sede se encuentra cerrada los días ${nombreDia}.`,
+            );
+          }
+
+          const horaApertura = normalizarHorarioHHmm(configDia.hora_apertura);
+          const horaCierre = normalizarHorarioHHmm(configDia.hora_cierre);
+
+          if (hInicio < horaApertura || hFin > horaCierre) {
+            throw new BadRequestException(
+              `El horario de la clase (${hInicio} a ${hFin}) está fuera del horario operativo de la sede para el día ${nombreDia} (${horaApertura} a ${horaCierre} hs).`,
+            );
+          }
+        } else {
+          // Fallback estándar 08:00 - 22:00
+          const horaApertura = '08:00';
+          const horaCierre = '22:00';
+          if (hInicio < horaApertura || hFin > horaCierre) {
+            throw new BadRequestException(
+              `El horario de la clase (${hInicio} a ${hFin}) está fuera del horario operativo de la sede para el día ${nombreDia} (${horaApertura} a ${horaCierre} hs).`,
+            );
+          }
+        }
+      } else {
+        // Fallback general sin días especificados
+        const horaApertura = '08:00';
+        const horaCierre = '22:00';
+        if (hInicio < horaApertura || hFin > horaCierre) {
+          throw new BadRequestException(
+            `El horario de la clase (${hInicio} a ${hFin}) está fuera del horario operativo estándar de la sede (${horaApertura} a ${horaCierre} hs).`,
+          );
+        }
+      }
+    }
+  }
+
   async crearClase(createClaseDto: CreateClaseDto): Promise<ClaseResponseDto> {
+    await Promise.resolve();
+
+    // 1. Validación de horarios: fin debe ser estrictamente posterior al inicio si ambos están definidos
+    if (createClaseDto.horario_inicio && createClaseDto.horario_fin) {
+      const hInicio = normalizarHorarioHHmm(createClaseDto.horario_inicio);
+      const hFin = normalizarHorarioHHmm(createClaseDto.horario_fin);
+      if (hFin <= hInicio) {
+        throw new BadRequestException(
+          'El horario de fin debe ser posterior al horario de inicio.',
+        );
+      }
+    }
+
+    // 2. Validación de existencia de la sede
+    if (this.prisma?.sede?.findUnique && createClaseDto.id_sede) {
+      const sede = await this.prisma.sede.findUnique({
+        where: { id_sede: createClaseDto.id_sede },
+      });
+      if (!sede) {
+        throw new NotFoundException(
+          `La sede con ID ${createClaseDto.id_sede} no existe.`,
+        );
+      }
+    }
+
+    // 3. Validación de horario operativo de apertura/cierre de la sede
+    if (createClaseDto.horario_inicio && createClaseDto.horario_fin) {
+      await this.validarHorarioOperativoSede(
+        createClaseDto.id_sede,
+        createClaseDto.horario_inicio,
+        createClaseDto.horario_fin,
+        createClaseDto.dias_semana,
+        createClaseDto.fecha,
+      );
+    }
+
     const nuevaClase = await this.clasesRepository.crearClase(createClaseDto);
     return this.formatearClaseResponse(nuevaClase);
   }
@@ -80,8 +227,12 @@ export class ClasesService {
   async obtenerClasesPorSede(
     id_sede: number,
     fecha?: string,
+    incluirInactivas = false,
   ): Promise<ClaseResponseDto[] | ClaseAgendaResponseDto[]> {
-    const clases = await this.clasesRepository.obtenerClasesPorSede(id_sede);
+    const clases = await this.clasesRepository.obtenerClasesPorSede(
+      id_sede,
+      incluirInactivas,
+    );
 
     if (!fecha) {
       return clases.map((clase) => this.formatearClaseResponse(clase));
@@ -91,6 +242,20 @@ export class ClasesService {
     const clasesFiltradas = clases.filter((clase) =>
       claseAplicaEnFecha(clase, fecha),
     );
+
+    // Pre-cargar IDs de estado si los métodos del repositorio están disponibles (evita N consultas redundantes)
+    const [idEstadoConfirmada, idEstadoEspera] = await Promise.all([
+      this.reservasRepository.obtenerIdEstadoPorDescripcion
+        ? this.reservasRepository.obtenerIdEstadoPorDescripcion(
+            ESTADOS_CLASE_RESERVA.CONFIRMADA,
+          )
+        : Promise.resolve(undefined),
+      this.listaEsperaRepository.obtenerIdEstadoPorDescripcion
+        ? this.listaEsperaRepository.obtenerIdEstadoPorDescripcion(
+            ESTADOS_LISTA_ESPERA.EN_ESPERA,
+          )
+        : Promise.resolve(undefined),
+    ]);
 
     // Calculamos la agenda del día con ocupación real para las clases que aplican en esa fecha:
     const agenda: ClaseAgendaResponseDto[] = await Promise.all(
@@ -104,19 +269,23 @@ export class ClasesService {
         const fechaInicio = crearFechaArgentina(fecha, horaInicioStr);
         const fechaFin = crearFechaArgentina(fecha, horaFinStr);
 
-        const cuposOcupados =
-          await this.reservasRepository.contarReservasConfirmadas(
+        // Optimización de concurrencia: consultar cupos ocupados y lista de espera en paralelo
+        const [cuposOcupados, enEspera] = await Promise.all([
+          this.reservasRepository.contarReservasConfirmadas(
             clase.id_clase,
             fechaInicio,
             fechaFin,
-          );
-
-        const enEspera =
-          await this.listaEsperaRepository.contarInscriptosActivos(
+            undefined,
+            idEstadoConfirmada,
+          ),
+          this.listaEsperaRepository.contarInscriptosActivos(
             clase.id_clase,
             fechaInicio,
             fechaFin,
-          );
+            undefined,
+            idEstadoEspera,
+          ),
+        ]);
 
         const cuposDisponibles = Math.max(
           0,
@@ -170,7 +339,50 @@ export class ClasesService {
     updateClaseDto: UpdateClaseDto,
   ): Promise<ClaseResponseDto> {
     // Verificamos que la clase exista antes de intentar actualizarla
-    await this.obtenerClasePorId(id_clase);
+    const claseExistente = await this.obtenerClasePorId(id_clase);
+
+    const idSedeEfectivo = updateClaseDto.id_sede ?? claseExistente.id_sede;
+    const nuevoHorarioInicio =
+      updateClaseDto.horario_inicio ?? claseExistente.horario_inicio;
+    const nuevoHorarioFin =
+      updateClaseDto.horario_fin ?? claseExistente.horario_fin;
+    const diasSemanaEfectivos =
+      updateClaseDto.dias_semana ?? claseExistente.dias_semana;
+    const fechaEfectiva =
+      updateClaseDto.fecha !== undefined
+        ? updateClaseDto.fecha
+        : (claseExistente.fecha ?? undefined);
+
+    if (nuevoHorarioInicio && nuevoHorarioFin) {
+      const hInicio = normalizarHorarioHHmm(nuevoHorarioInicio);
+      const hFin = normalizarHorarioHHmm(nuevoHorarioFin);
+      if (hFin <= hInicio) {
+        throw new BadRequestException(
+          'El horario de fin debe ser posterior al horario de inicio.',
+        );
+      }
+    }
+
+    if (this.prisma?.sede?.findUnique && updateClaseDto.id_sede) {
+      const sede = await this.prisma.sede.findUnique({
+        where: { id_sede: updateClaseDto.id_sede },
+      });
+      if (!sede) {
+        throw new NotFoundException(
+          `La sede con ID ${updateClaseDto.id_sede} no existe.`,
+        );
+      }
+    }
+
+    if (nuevoHorarioInicio && nuevoHorarioFin) {
+      await this.validarHorarioOperativoSede(
+        idSedeEfectivo,
+        nuevoHorarioInicio,
+        nuevoHorarioFin,
+        diasSemanaEfectivos,
+        fechaEfectiva,
+      );
+    }
 
     const claseActualizada = await this.clasesRepository.actualizarClase(
       id_clase,
@@ -186,6 +398,37 @@ export class ClasesService {
   ): Promise<ClaseResponseDto> {
     // Verificamos que la clase exista antes de intentar reemplazarla
     await this.obtenerClasePorId(id_clase);
+
+    if (createClaseDto.horario_inicio && createClaseDto.horario_fin) {
+      const hInicio = normalizarHorarioHHmm(createClaseDto.horario_inicio);
+      const hFin = normalizarHorarioHHmm(createClaseDto.horario_fin);
+      if (hFin <= hInicio) {
+        throw new BadRequestException(
+          'El horario de fin debe ser posterior al horario de inicio.',
+        );
+      }
+    }
+
+    if (this.prisma?.sede?.findUnique && createClaseDto.id_sede) {
+      const sede = await this.prisma.sede.findUnique({
+        where: { id_sede: createClaseDto.id_sede },
+      });
+      if (!sede) {
+        throw new NotFoundException(
+          `La sede con ID ${createClaseDto.id_sede} no existe.`,
+        );
+      }
+    }
+
+    if (createClaseDto.horario_inicio && createClaseDto.horario_fin) {
+      await this.validarHorarioOperativoSede(
+        createClaseDto.id_sede,
+        createClaseDto.horario_inicio,
+        createClaseDto.horario_fin,
+        createClaseDto.dias_semana,
+        createClaseDto.fecha,
+      );
+    }
 
     const claseReemplazada = await this.clasesRepository.reemplazarClase(
       id_clase,

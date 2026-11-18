@@ -33,6 +33,7 @@ import { VerificarMembresiaResponseDto } from '../dto/verificar-membresia-respon
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { CurrentUserId } from '../../../common/decorators/current-user.decorator';
 
 // La administración de las membresías de los socios (alta, listado general,
 // detalle, modificación, cambio de estado y baja) queda para el gerente.
@@ -63,6 +64,34 @@ export class MembresiasController {
     @Body() createMembresiaDto: CreateMembresiaDto,
   ): Promise<MembresiaResponseDto> {
     return this.membresiasService.create(createMembresiaDto);
+  }
+
+  // Va antes de las rutas con :id para que "mi-membresia" no se tome como ID.
+  @Patch('mi-membresia/suspender')
+  @UseGuards(SupabaseAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Suspender la membresía propia: mantiene beneficios hasta fecha_fin y no genera nuevo pago pendiente (no reversible)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Membresía suspendida correctamente.',
+    type: MembresiaResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado.' })
+  @ApiResponse({
+    status: 404,
+    description: 'El usuario no tiene una membresía activa vigente.',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'La membresía ya está suspendida o no tiene pago aprobado.',
+  })
+  suspenderMiMembresia(
+    @CurrentUserId() id_usuario: number,
+  ): Promise<MembresiaResponseDto> {
+    return this.membresiasService.suspenderMiMembresia(id_usuario);
   }
 
   @Get('usuario/:id_usuario')

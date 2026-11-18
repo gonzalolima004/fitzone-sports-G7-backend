@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Get,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,9 +16,11 @@ import {
 import { ReservasCanchasService } from '../services/reservas-canchas.service';
 import { CrearReservaCanchaDto } from '../dto/crear-reserva-cancha.dto';
 import { ReservaCanchaResponseDto } from '../dto/reserva-cancha-response.dto';
-// Ajustar rutas relativas si los decorators/guards de la Épica 1 están en otra ubicación
-// import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
-// import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import * as authenticatedUserInterface from '../../../common/interfaces/authenticated-user.interface';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
 
 @ApiTags('Reservas de Canchas')
 @Controller('reservas-canchas')
@@ -25,22 +28,39 @@ export class ReservasCanchasController {
   constructor(private readonly reservasService: ReservasCanchasService) {}
 
   @Post()
-  // @UseGuards(SupabaseAuthGuard) <-- Descomentar cuando la Épica 1 esté integrada
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('socio', 'externo', 'gerente', 'recepcionista')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Crear una reserva de cancha garantizando concurrencia (RN-02)',
+    summary: 'Crear una reserva de cancha garantizando concurrencia',
   })
   @ApiResponse({ status: 201, type: ReservaCanchaResponseDto })
+  @ApiResponse({ status: 401, description: 'No autorizado / Token inválido.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido / Rol no autorizado para reservar canchas.',
+  })
   crearReserva(
     @Body() dto: CrearReservaCanchaDto,
-    // @CurrentUser() usuario: AuthenticatedUser <-- Descomentar luego
+    @CurrentUser() usuario: authenticatedUserInterface.AuthenticatedUser,
   ) {
-    const idUsuarioMock = 1; // Temporal para testing local sin JWT
-    return this.reservasService.crearReserva(dto, idUsuarioMock);
+    return this.reservasService.crearReserva(dto, usuario.id_usuario);
   }
   @Get(':id')
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('socio', 'externo', 'gerente', 'recepcionista')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener detalle de una reserva por ID' })
-  obtenerReserva(@Param('id', ParseIntPipe) id: number) {
-    return this.reservasService.obtenerReservaPorId(id);
+  @ApiResponse({ status: 401, description: 'No autorizado / Token inválido.' })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Prohibido / No autorizado para acceder a reservas de otro usuario.',
+  })
+  obtenerReserva(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() usuario: authenticatedUserInterface.AuthenticatedUser,
+  ) {
+    return this.reservasService.obtenerReservaPorId(id, usuario);
   }
 }

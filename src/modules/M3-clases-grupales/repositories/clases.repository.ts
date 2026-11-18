@@ -8,23 +8,63 @@ import { UpdateClaseDto } from '../dto/update-clase.dto';
 export class ClasesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private sanitizarDatosCreacion(
+    data: CreateClaseDto,
+  ): Prisma.ClaseUncheckedCreateInput {
+    const { fecha, descripcion, ...resto } = data;
+    const descripcionSanitizada =
+      descripcion === undefined
+        ? undefined
+        : descripcion === null ||
+            (typeof descripcion === 'string' && descripcion.trim() === '')
+          ? null
+          : typeof descripcion === 'string'
+            ? descripcion.trim()
+            : (descripcion as string);
+
+    return {
+      ...resto,
+      ...(descripcion !== undefined
+        ? { descripcion: descripcionSanitizada }
+        : {}),
+      ...(fecha !== undefined ? { fecha: fecha ? new Date(fecha) : null } : {}),
+    };
+  }
+
+  private sanitizarDatosActualizacion(
+    data: UpdateClaseDto,
+  ): Prisma.ClaseUncheckedUpdateInput {
+    const { fecha, descripcion, ...resto } = data;
+    const descripcionSanitizada =
+      descripcion === undefined
+        ? undefined
+        : descripcion === null ||
+            (typeof descripcion === 'string' && descripcion.trim() === '')
+          ? null
+          : typeof descripcion === 'string'
+            ? descripcion.trim()
+            : (descripcion as string);
+
+    return {
+      ...resto,
+      ...(descripcion !== undefined
+        ? { descripcion: descripcionSanitizada }
+        : {}),
+      ...(fecha !== undefined ? { fecha: fecha ? new Date(fecha) : null } : {}),
+    };
+  }
+
   async crearClase(data: CreateClaseDto) {
-    const { fecha, ...resto } = data;
     return await this.prisma.clase.create({
-      data: {
-        ...resto,
-        ...(fecha !== undefined
-          ? { fecha: fecha ? new Date(fecha) : null }
-          : {}),
-      },
+      data: this.sanitizarDatosCreacion(data),
     });
   }
 
-  async obtenerClasesPorSede(id_sede: number) {
+  async obtenerClasesPorSede(id_sede: number, incluirInactivas = false) {
     return await this.prisma.clase.findMany({
       where: {
         id_sede,
-        activo: true,
+        ...(incluirInactivas ? {} : { activo: true }),
       },
     });
   }
@@ -38,32 +78,20 @@ export class ClasesRepository {
   }
 
   async actualizarClase(id_clase: number, data: UpdateClaseDto) {
-    const { fecha, ...resto } = data;
     return await this.prisma.clase.update({
       where: {
         id_clase,
       },
-      data: {
-        ...resto,
-        ...(fecha !== undefined
-          ? { fecha: fecha ? new Date(fecha) : null }
-          : {}),
-      },
+      data: this.sanitizarDatosActualizacion(data),
     });
   }
 
   async reemplazarClase(id_clase: number, data: CreateClaseDto) {
-    const { fecha, ...resto } = data;
     return await this.prisma.clase.update({
       where: {
         id_clase,
       },
-      data: {
-        ...resto,
-        ...(fecha !== undefined
-          ? { fecha: fecha ? new Date(fecha) : null }
-          : {}),
-      },
+      data: this.sanitizarDatosCreacion(data),
     });
   }
 

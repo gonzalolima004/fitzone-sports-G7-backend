@@ -3,7 +3,7 @@ import {
   Get,
   Query,
   ParseIntPipe,
-  //UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -11,7 +11,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-//import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 import { QrService } from '../services/qr.service';
@@ -19,10 +19,11 @@ import { QrDinamicoResponseDto } from '../dto/qr-dinamico-response.dto';
 
 @ApiTags('Control de Acceso')
 @ApiBearerAuth()
-//@UseGuards(SupabaseAuthGuard)
+@UseGuards(SupabaseAuthGuard)
 @Controller('access/qr')
 export class QrController {
   constructor(private readonly qrService: QrService) {}
+
   @Get('generate')
   @ApiOperation({
     summary: 'Generar código QR dinámico temporal (60s)',
@@ -40,15 +41,20 @@ export class QrController {
       'No autorizado. El token de autenticación está ausente, manipulado o expirado.',
   })
   @ApiResponse({
+    status: 403,
+    description:
+      'No se puede generar el código QR: El usuario no cuenta con una membresía activa o se encuentra en mora.',
+  })
+  @ApiResponse({
     status: 500,
     description:
       'Error interno del servidor durante la generación del token o guardado de perfil.',
   })
-  generarQr(
+  async generarQr(
     @CurrentUser() user: AuthenticatedUser,
     @Query('id_usuario', ParseIntPipe) idUsuarioQuery?: number,
-  ): QrDinamicoResponseDto {
+  ): Promise<QrDinamicoResponseDto> {
     const idUsuario = user?.id_usuario ?? idUsuarioQuery;
-    return this.qrService.generarQrDinamico(idUsuario);
+    return await this.qrService.generarQrDinamico(idUsuario);
   }
 }

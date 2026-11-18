@@ -1,9 +1,15 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ListaEsperaService } from '../services/lista-espera.service';
 import { ListaEsperaRepository } from '../repositories/lista-espera.repository';
 import { ClasesRepository } from '../repositories/clases.repository';
 import { ReservasClasesRepository } from '../repositories/reservas-clases.repository';
+import { ClasesRealtimeService } from '../services/clases-realtime.service';
 import { InscribirListaEsperaDto } from '../dto/inscribir-lista-espera.dto';
+import { PrismaService } from '../../../database/prisma-service/prisma.service';
 
 describe('ListaEsperaService', () => {
   let service: ListaEsperaService;
@@ -188,6 +194,52 @@ describe('ListaEsperaService', () => {
       );
     });
 
+    it('debe rechazar inscripción en lista de espera si la clase está completamente vacía (0 reservas de 20)', async () => {
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase, // capacidad: 20
+      );
+      (
+        mockListaEsperaRepo.existeInscripcionActiva as jest.Mock
+      ).mockResolvedValue(null);
+      (
+        mockReservasClasesRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(0); // 0 ocupados -> Clase vacía
+
+      const ahora = Date.now();
+      const dto: InscribirListaEsperaDto = {
+        id_clase: 1,
+        fecha_inicio: new Date(ahora + 3600000).toISOString(),
+        fecha_fin: new Date(ahora + 7200000).toISOString(),
+      };
+
+      await expect(service.inscribir(dto, idUsuario)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('debe rechazar inscripción en lista de espera si la clase tiene un único cupo disponible (19 de 20)', async () => {
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase, // capacidad: 20
+      );
+      (
+        mockListaEsperaRepo.existeInscripcionActiva as jest.Mock
+      ).mockResolvedValue(null);
+      (
+        mockReservasClasesRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(19); // 19 de 20 -> 1 libre
+
+      const ahora = Date.now();
+      const dto: InscribirListaEsperaDto = {
+        id_clase: 1,
+        fecha_inicio: new Date(ahora + 3600000).toISOString(),
+        fecha_fin: new Date(ahora + 7200000).toISOString(),
+      };
+
+      await expect(service.inscribir(dto, idUsuario)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it('debe inscribir con éxito cuando la clase está llena y calcular orden en cola', async () => {
       (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
         mockClase, // capacidad: 20
@@ -230,6 +282,76 @@ describe('ListaEsperaService', () => {
         inscripcion: inscripcionCreada,
       });
       expect(mockListaEsperaRepo.crearInscripcion).toHaveBeenCalled();
+    });
+
+    it('debe lanzar ForbiddenException si el socio presenta mora o no tiene membresía activa', async () => {
+      const mockPrisma = {
+        membresia: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+      };
+      const serviceConPrisma = new ListaEsperaService(
+        mockListaEsperaRepo as ListaEsperaRepository,
+        mockClasesRepo as ClasesRepository,
+        mockReservasClasesRepo as ReservasClasesRepository,
+        mockPrisma as unknown as PrismaService,
+      );
+
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase,
+      );
+
+      const ahora = Date.now();
+      const dto: InscribirListaEsperaDto = {
+        id_clase: 1,
+        fecha_inicio: new Date(ahora + 3600000).toISOString(),
+        fecha_fin: new Date(ahora + 7200000).toISOString(),
+      };
+
+      await expect(serviceConPrisma.inscribir(dto, idUsuario)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('debe lanzar BadRequestException si el socio pertenece a una sede de otra ciudad', async () => {
+      const mockPrisma = {
+        membresia: {
+          findFirst: jest.fn().mockResolvedValue({ id_membresia: 1 }),
+        },
+        usuario: {
+          findUnique: jest.fn().mockResolvedValue({
+            id_usuario: idUsuario,
+            sede: { id_sede: 2, id_ciudad: 2 },
+          }),
+        },
+        clase: {
+          findUnique: jest.fn().mockResolvedValue({
+            id_clase: 1,
+            sede: { id_sede: 1, id_ciudad: 1 },
+          }),
+        },
+      };
+      const serviceConPrisma = new ListaEsperaService(
+        mockListaEsperaRepo as ListaEsperaRepository,
+        mockClasesRepo as ClasesRepository,
+        mockReservasClasesRepo as ReservasClasesRepository,
+        mockPrisma as unknown as PrismaService,
+      );
+
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue(
+        mockClase,
+      );
+
+      const ahora = Date.now();
+      const dto: InscribirListaEsperaDto = {
+        id_clase: 1,
+        fecha_inicio: new Date(ahora + 3600000).toISOString(),
+        fecha_fin: new Date(ahora + 7200000).toISOString(),
+      };
+
+      await expect(serviceConPrisma.inscribir(dto, idUsuario)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -279,6 +401,64 @@ describe('ListaEsperaService', () => {
         fechaInicio,
         fechaFin,
         25,
+      );
+    });
+
+    it('inscribir debe emitir notificarCupoActualizado si el servicio realtime está presente', async () => {
+      const mockClasesRealtime = {
+        notificarCupoActualizado: jest.fn().mockResolvedValue(undefined),
+      };
+
+      const serviceConRealtime = new ListaEsperaService(
+        mockListaEsperaRepo as ListaEsperaRepository,
+        mockClasesRepo as ClasesRepository,
+        mockReservasClasesRepo as ReservasClasesRepository,
+        undefined,
+        mockClasesRealtime as unknown as ClasesRealtimeService,
+      );
+
+      const fechaInicio = new Date(Date.now() + 24 * 3600000);
+      const fechaFin = new Date(fechaInicio.getTime() + 3600000);
+
+      (mockClasesRepo.obtenerClasePorId as jest.Mock).mockResolvedValue({
+        id_clase: 1,
+        id_sede: 5,
+        capacidad_maxima: 10,
+        dias_semana: [fechaInicio.getDay()],
+        fecha: null,
+      });
+      (
+        mockListaEsperaRepo.existeInscripcionActiva as jest.Mock
+      ).mockResolvedValue(false);
+      (
+        mockReservasClasesRepo.contarReservasConfirmadas as jest.Mock
+      ).mockResolvedValue(10); // Llena
+      (mockListaEsperaRepo.crearInscripcion as jest.Mock).mockResolvedValue({
+        id_clase_lista_espera: 8,
+      });
+      (
+        mockListaEsperaRepo.contarInscriptosActivos as jest.Mock
+      ).mockResolvedValue(2);
+
+      const res = await serviceConRealtime.inscribir(
+        {
+          id_clase: 1,
+          fecha_inicio: fechaInicio.toISOString(),
+          fecha_fin: fechaFin.toISOString(),
+        },
+        77,
+      );
+
+      expect(res.orden_en_cola).toBe(2);
+      expect(mockClasesRealtime.notificarCupoActualizado).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id_clase: 1,
+          id_sede: 5,
+          cupos_ocupados: 10,
+          cupos_disponibles: 0,
+          en_espera: 2,
+          estado: 'COMPLETO',
+        }),
       );
     });
   });

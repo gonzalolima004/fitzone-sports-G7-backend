@@ -6,6 +6,7 @@ import { ListaEsperaController } from './controllers/lista-espera.controller';
 import { ClasesService } from './services/clases.service';
 import { ReservasClasesService } from './services/reservas-clases.service';
 import { ListaEsperaService } from './services/lista-espera.service';
+import { ClasesRealtimeService } from './services/clases-realtime.service';
 import { ClasesRepository } from './repositories/clases.repository';
 import { ReservasClasesRepository } from './repositories/reservas-clases.repository';
 import { ListaEsperaRepository } from './repositories/lista-espera.repository';
@@ -23,12 +24,18 @@ import { NotificacionRealtimeObserver } from './patterns/observer/notificacion-r
     ClasesService,
     ReservasClasesService,
     ListaEsperaService,
+    ClasesRealtimeService,
     ClasesRepository,
     ReservasClasesRepository,
     ListaEsperaRepository,
     ListaEsperaSubject,
     NotificacionRealtimeObserver,
   ],
-  exports: [ClasesService, ReservasClasesService, ListaEsperaService],
+  exports: [
+    ClasesService,
+    ReservasClasesService,
+    ListaEsperaService,
+    ClasesRealtimeService,
+  ],
 })
 export class ClasesGrupalesModule {}

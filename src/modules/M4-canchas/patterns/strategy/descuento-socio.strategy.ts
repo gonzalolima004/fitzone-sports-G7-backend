@@ -4,11 +4,12 @@ import {
   CotizacionContext,
   ResultadoPrecio,
 } from '../../dto/cotizacion-turno.dto';
+import { REGLAS_CANCHAS } from '../../constants/canchas.constants';
 
 @Injectable()
 export class DescuentoSocioStrategy implements PrecioStrategy {
   calcular(costoBase: number, _context: CotizacionContext): ResultadoPrecio {
-    const DESCUENTO = 15; // 15% de descuento para socios activos
+    const DESCUENTO = REGLAS_CANCHAS.PORCENTAJE_DESCUENTO_SOCIO;
     const montoDescuento = costoBase * (DESCUENTO / 100);
 
     return {

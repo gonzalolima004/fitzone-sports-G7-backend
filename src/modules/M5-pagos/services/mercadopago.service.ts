@@ -58,6 +58,29 @@ export class MercadoPagoService {
     }
   }
 
+  /**
+   * Busca pagos en Mercado Pago filtrando por external_reference (ej. 'membresia-18' o 'cancha-5').
+   * Permite reconciliar pagos aprobados en entornos locales donde no llega el webhook ni el redirect.
+   */
+  async buscarPagosPorReferenciaExterna(
+    externalReference: string,
+  ): Promise<PaymentResponse[]> {
+    try {
+      const response = await this.payment.search({
+        options: {
+          external_reference: externalReference,
+        },
+      });
+      return (response?.results as PaymentResponse[] | undefined) ?? [];
+    } catch (error: unknown) {
+      this.logger.warn(
+        `No se pudieron buscar pagos por external_reference '${externalReference}' en Mercado Pago:`,
+        error,
+      );
+      return [];
+    }
+  }
+
   get config(): MercadoPagoConfigOptions {
     return (
       this.configService.get<MercadoPagoConfigOptions>('mercadopago') || {

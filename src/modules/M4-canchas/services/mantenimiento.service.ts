@@ -25,8 +25,8 @@ export class MantenimientoService {
     }
 
     // 2. Registrar el mantenimiento.
-    // Como la grilla (US-05-02) ya lee esta tabla, bloqueará futuros turnos automáticamente,
-    // y al no tocar la tabla cancha_reserva, las reservas ya tomadas quedan intactas (RF-12).
+    // Como la grilla de disponibilidad ya lee esta tabla, bloqueará futuros turnos automáticamente,
+    // y al no tocar la tabla cancha_reserva, las reservas ya tomadas quedan intactas.
     const mantenimiento = await this.canchasRepository.crearMantenimiento({
       id_cancha,
       fecha_inicio: new Date(dto.fecha_inicio),

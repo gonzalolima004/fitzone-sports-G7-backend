@@ -6,6 +6,7 @@ import { UsuariosController } from './controllers/usuarios.controller';
 import { PlanesController } from './controllers/planes.controller';
 import { UploadFotoController } from './controllers/upload-foto.controller';
 import { AuthController } from './controllers/auth.controller'; // <-- Nuevo
+import { SocioDashboardController } from './controllers/socio-dashboard.controller';
 // Servicios y Repositorios
 import { UsuariosService } from './services/usuarios.service';
 import { UsuariosRepository } from './repositories/usuarios.repository';
@@ -14,6 +15,7 @@ import { PlanesService } from './services/planes.service';
 import { MembresiasService } from './services/membresias.service';
 import { FotoStorageService } from './services/foto-storage.service';
 import { AuthService } from './services/auth.service'; // <-- Nuevo
+import { SocioDashboardService } from './services/socio-dashboard.service';
 
 @Global()
 @Module({
@@ -30,6 +32,7 @@ import { AuthService } from './services/auth.service'; // <-- Nuevo
     MembresiasController,
     UploadFotoController,
     AuthController,
+    SocioDashboardController,
   ],
   providers: [
     UsuariosService,
@@ -39,7 +42,14 @@ import { AuthService } from './services/auth.service'; // <-- Nuevo
     MembresiasService,
     FotoStorageService,
     AuthService,
+    SocioDashboardService,
   ],
-  exports: [UsuariosService, MembresiasService, JwtModule],
+  exports: [
+    UsuariosService,
+    MembresiasService,
+    JwtModule,
+    UsuariosRepository,
+    SocioDashboardService,
+  ],
 })
 export class UsuariosModule {}

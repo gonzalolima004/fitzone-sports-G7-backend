@@ -6,9 +6,12 @@ import { MantenimientoController } from './controllers/mantenimiento.controller'
 
 // Servicios
 import { CanchasService } from './services/canchas.service';
+import { CanchasDisponibilidadService } from './services/canchas-disponibilidad.service';
 import { ReservasCanchasService } from './services/reservas-canchas.service';
 import { MantenimientoService } from './services/mantenimiento.service';
 import { PrecioContextService } from './services/precio-context.service';
+import { CotizacionCacheService } from './services/cotizacion-cache.service';
+import { CanchasRealtimeService } from './services/canchas-realtime.service';
 
 // Repositorios
 import { CanchasRepository } from './repositories/canchas.repository';
@@ -28,16 +31,25 @@ import { SedesModule } from '../M0-sedes/sedes.module';
   ],
   providers: [
     CanchasService,
+    CanchasDisponibilidadService,
     ReservasCanchasService,
     MantenimientoService,
     PrecioContextService,
+    CotizacionCacheService,
+    CanchasRealtimeService,
     CanchasRepository,
     ReservasCanchasRepository,
     PrecioEstandarStrategy,
     DescuentoSocioStrategy,
     HorarioPicoStrategy,
   ],
-  exports: [CanchasService, ReservasCanchasService, MantenimientoService],
+  exports: [
+    CanchasService,
+    CanchasDisponibilidadService,
+    ReservasCanchasService,
+    MantenimientoService,
+    CanchasRealtimeService,
+  ],
   imports: [SedesModule],
 })
 export class CanchasModule {}

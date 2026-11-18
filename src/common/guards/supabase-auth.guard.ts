@@ -4,12 +4,11 @@ import {
   Injectable,
   UnauthorizedException,
   ForbiddenException,
-  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { SupabaseService } from '../supabase/supabase.service';
 import type { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
-import { UsuariosService } from '../../modules/M1-usuarios/services/usuarios.service';
+import { UsuariosRepository } from '../../modules/M1-usuarios/repositories/usuarios.repository';
 
 type AuthenticatedRequest = {
   headers: {
@@ -22,7 +21,7 @@ type AuthenticatedRequest = {
 export class SupabaseAuthGuard implements CanActivate {
   constructor(
     private readonly supabaseService: SupabaseService,
-    private readonly usuariosService: UsuariosService,
+    private readonly usuariosRepository: UsuariosRepository,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -42,7 +41,6 @@ export class SupabaseAuthGuard implements CanActivate {
       throw new UnauthorizedException('Formato de autenticacion invalido');
     }
 
-    // 1. Intentar validar como JWT local emitido por AuthService (FitZone)
     try {
       const payload = this.jwtService.verify<{
         sub: number | string;
@@ -53,21 +51,20 @@ export class SupabaseAuthGuard implements CanActivate {
 
       if (payload && payload.sub) {
         const roles =
-          payload.roles ?? (payload.rol ? [payload.rol] : ['socio']);
+          payload.roles ?? (payload.rol ? [payload.rol] : ['externo']);
         request.user = {
           id_usuario: Number(payload.sub),
           supabase_user_id: String(payload.sub),
           email: payload.email ?? '',
-          rol: payload.rol ?? roles[0] ?? 'socio',
-          roles: roles,
+          rol: payload.rol ?? roles[0] ?? 'externo',
+          roles,
         };
         return true;
       }
     } catch {
-      // Si no es un JWT emitido localmente, procedemos a validar con Supabase Auth
+      // No es JWT local; continuamos con Supabase Auth
     }
 
-    // 2. Fallback: Validar con Supabase Auth
     const { user, error } = await this.supabaseService.getUser(token);
 
     if (error || !user) {
@@ -80,17 +77,9 @@ export class SupabaseAuthGuard implements CanActivate {
       );
     }
 
-    const usuarioFitZone = await this.usuariosService
-      .findEntityByEmail(user.email)
-      .catch((error: unknown) => {
-        if (error instanceof NotFoundException) {
-          throw new ForbiddenException(
-            'Usuario autenticado sin cuenta asociada a FitZone',
-          );
-        }
-
-        throw error;
-      });
+    const usuarioFitZone = await this.usuariosRepository.findAuthProfileByEmail(
+      user.email,
+    );
 
     if (!usuarioFitZone) {
       throw new ForbiddenException(
@@ -102,12 +91,27 @@ export class SupabaseAuthGuard implements CanActivate {
       usuarioFitZone.usuario_rol?.map((ur) => ur.rol?.nombre).filter(Boolean) ??
       [];
 
+    const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+    const googleAvatarUrl =
+      typeof metadata.avatar_url === 'string' && metadata.avatar_url.trim()
+        ? metadata.avatar_url.trim()
+        : typeof metadata.picture === 'string' && metadata.picture.trim()
+          ? metadata.picture.trim()
+          : null;
+
     request.user = {
       id_usuario: usuarioFitZone.id_usuario,
       supabase_user_id: user.id,
       email: user.email,
-      rol: userRoles[0] ?? 'socio',
-      roles: userRoles.length > 0 ? userRoles : ['socio'],
+      rol: userRoles[0] ?? 'externo',
+      roles: userRoles.length > 0 ? userRoles : ['externo'],
+      dni: usuarioFitZone.dni,
+      nombre: usuarioFitZone.nombre,
+      apellido: usuarioFitZone.apellido,
+      telefono: usuarioFitZone.telefono,
+      foto_url: usuarioFitZone.foto_url ?? googleAvatarUrl,
+      id_sede: usuarioFitZone.id_sede,
+      sede: usuarioFitZone.sede,
     };
 
     return true;

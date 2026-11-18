@@ -58,6 +58,15 @@ export class VerificarMembresiaResponseDto {
 
   @Expose()
   @ApiProperty({
+    example: false,
+    description:
+      'Indica si el socio suspendió su membresía (conserva beneficios hasta fecha_vencimiento y no se le generará un nuevo pago pendiente)',
+    required: false,
+  })
+  suspendida?: boolean;
+
+  @Expose()
+  @ApiProperty({
     example: 'Socio activo habilitado para acceso multi-sede y beneficios.',
     description: 'Mensaje explicativo del estado de permisos del socio',
   })

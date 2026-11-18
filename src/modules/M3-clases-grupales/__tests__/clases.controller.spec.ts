@@ -81,6 +81,18 @@ describe('ClasesController', () => {
     expect(result).toEqual([mockClase]);
   });
 
+  it('GET /clases con incluir_inactivas debe llamar a service con booleano true', async () => {
+    mockClasesService.obtenerClasesPorSede.mockResolvedValue([mockClase]);
+
+    await controller.obtenerClasesPorSede(1, undefined, 'true');
+
+    expect(mockClasesService.obtenerClasesPorSede).toHaveBeenCalledWith(
+      1,
+      undefined,
+      true,
+    );
+  });
+
   it('GET /clases/:id debe llamar a service.obtenerClasePorId', async () => {
     mockClasesService.obtenerClasePorId.mockResolvedValue(mockClase);
 

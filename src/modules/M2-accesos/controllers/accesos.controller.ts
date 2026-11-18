@@ -7,7 +7,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  //UseGuards,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,14 +20,15 @@ import { AccesosService } from '../services/accesos.service';
 
 import { ValidarIngresoDto } from '../dto/validar-ingreso.dto';
 import { AccesoResponseDto } from '../dto/acceso-response.dto';
-//import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
+import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 
 import { RegistrarEgresoDto } from '../dto/registrar-egreso.dto';
 import { EgresoResponseDto } from '../dto/egreso-response.dto';
 import { AforoStatusResponseDto } from '../dto/aforo-status-response.dto';
+import { SincronizarAccesoOfflineDto } from '../dto/sincronizar-acceso-offline.dto';
 @ApiTags('Control de Acceso')
 @ApiBearerAuth()
-//@UseGuards(SupabaseAuthGuard)
+@UseGuards(SupabaseAuthGuard)
 @Controller('accesos')
 export class AccesosController {
   constructor(private readonly accesosService: AccesosService) {}
@@ -107,5 +108,32 @@ export class AccesosController {
     @Param('id_sede', ParseIntPipe) idSede: number,
   ): Promise<AforoStatusResponseDto> {
     return this.accesosService.obtenerEstadoAforo(idSede);
+  }
+
+  @Get('perfil/:id')
+  @ApiOperation({
+    summary: 'Obtener perfil, foto y estado de membresía del socio',
+    description:
+      'Retorna los datos del socio, su foto de perfil y si su membresía se encuentra activa o en mora.',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'ID del usuario' })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil del socio obtenido exitosamente.',
+  })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado.' })
+  async obtenerPerfilSocio(@Param('id', ParseIntPipe) idUsuario: number) {
+    return this.accesosService.obtenerPerfilSocio(idUsuario);
+  }
+
+  @Post('sincronizar-offline')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Sincronizar evento de acceso/egreso registrado offline',
+    description:
+      'Permite volcar los registros pendientes almacenados en la cola local de la terminal.',
+  })
+  async sincronizarOffline(@Body() dto: SincronizarAccesoOfflineDto) {
+    return this.accesosService.sincronizarAccesoOffline(dto);
   }
 }
