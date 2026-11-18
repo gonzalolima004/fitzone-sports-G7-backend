@@ -1,7 +1,7 @@
 # ==============================================================================
 # Etapa 1: Builder
 # ==============================================================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Instalar OpenSSL requerido por el motor de Prisma en distribuciones Alpine
 RUN apk add --no-cache openssl
@@ -23,7 +23,7 @@ RUN npm run build
 # ==============================================================================
 # Etapa 2: Production (Runtime)
 # ==============================================================================
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 # Instalar OpenSSL requerido en runtime por el motor de Prisma
 RUN apk add --no-cache openssl
