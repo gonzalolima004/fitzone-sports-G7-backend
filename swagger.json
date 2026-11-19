@@ -1,0 +1,5549 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": { "200": { "description": "" } },
+        "tags": ["App"]
+      }
+    },
+    "/usuarios": {
+      "post": {
+        "operationId": "UsuariosController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateUsuarioDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Usuario creado exitosamente." }
+        },
+        "summary": "Crear un nuevo usuario",
+        "tags": ["Usuarios"]
+      },
+      "get": {
+        "operationId": "UsuariosController_findAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "includeDeactivated",
+            "required": false,
+            "in": "query",
+            "schema": { "type": "boolean" }
+          },
+          {
+            "name": "id_sede",
+            "required": false,
+            "in": "query",
+            "description": "ID opcional de la sede para filtrar la lista",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "id_usuario_estado",
+            "required": false,
+            "in": "query",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de usuarios obtenida correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/UsuarioResponseDto" }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener lista de usuarios (con filtro opcional por sede)",
+        "tags": ["Usuarios"]
+      }
+    },
+    "/usuarios/{id}": {
+      "get": {
+        "operationId": "UsuariosController_findById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario obtenido correctamente.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UsuarioResponseDto" }
+              }
+            }
+          },
+          "404": { "description": "Usuario no encontrado." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener usuario por ID",
+        "tags": ["Usuarios"]
+      },
+      "patch": {
+        "operationId": "UsuariosController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ActualizarUsuarioDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Usuario actualizado correctamente." },
+          "400": {
+            "description": "Intento de modificar campos protegidos (DNI, email o roles)."
+          },
+          "403": {
+            "description": "No autorizado para modificar otro usuario."
+          },
+          "404": { "description": "Usuario no encontrado." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Actualizar datos permitidos del perfil de usuario",
+        "tags": ["Usuarios"]
+      },
+      "delete": {
+        "operationId": "UsuariosController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Usuario eliminado correctamente." },
+          "404": { "description": "Usuario no encontrado." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Eliminar usuario (Soft Delete)",
+        "tags": ["Usuarios"]
+      }
+    },
+    "/planes": {
+      "post": {
+        "operationId": "PlanesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CrearPlanDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Plan creado exitosamente." },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Crear un nuevo plan (Solo gerente)",
+        "tags": ["Planes"]
+      },
+      "get": {
+        "operationId": "PlanesController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Lista de planes obtenida correctamente." }
+        },
+        "summary": "Obtener lista de planes",
+        "tags": ["Planes"]
+      }
+    },
+    "/planes/{id}": {
+      "get": {
+        "operationId": "PlanesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Plan obtenido correctamente." },
+          "404": { "description": "Plan no encontrado." }
+        },
+        "summary": "Obtener plan por ID",
+        "tags": ["Planes"]
+      },
+      "patch": {
+        "operationId": "PlanesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ActualizarPlanDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Plan actualizado correctamente." },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Plan no encontrado." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Actualizar plan (Solo gerente)",
+        "tags": ["Planes"]
+      },
+      "delete": {
+        "operationId": "PlanesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Plan eliminado correctamente." },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Plan no encontrado." },
+          "409": {
+            "description": "El plan tiene membresías asociadas y no se puede eliminar."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Eliminar plan (Solo gerente)",
+        "tags": ["Planes"]
+      }
+    },
+    "/membresias": {
+      "post": {
+        "operationId": "MembresiasController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateMembresiaDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Membresía creada exitosamente." },
+          "400": { "description": "Datos inválidos." },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Usuario o plan no encontrados." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Crear una nueva membresía (Solo gerente)",
+        "tags": ["Membresías"]
+      },
+      "get": {
+        "operationId": "MembresiasController_findAll",
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "required": false,
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "id_membresia_estado",
+            "required": false,
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "id_membresia_plan",
+            "required": false,
+            "in": "query",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listado de membresías obtenido correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MembresiaResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener listado general de membresías con filtros opcionales (Solo gerente)",
+        "tags": ["Membresías"]
+      }
+    },
+    "/membresias/mi-membresia/suspender": {
+      "patch": {
+        "operationId": "MembresiasController_suspenderMiMembresia",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Membresía suspendida correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembresiaResponseDto"
+                }
+              }
+            }
+          },
+          "401": { "description": "No autorizado." },
+          "404": {
+            "description": "El usuario no tiene una membresía activa vigente."
+          },
+          "409": {
+            "description": "La membresía ya está suspendida o no tiene pago aprobado."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Suspender la membresía propia: mantiene beneficios hasta fecha_fin y no genera nuevo pago pendiente (no reversible)",
+        "tags": ["Membresías"]
+      }
+    },
+    "/membresias/usuario/{id_usuario}": {
+      "get": {
+        "operationId": "MembresiasController_findByUsuarioId",
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "required": true,
+            "in": "path",
+            "description": "ID del usuario",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de membresías obtenido correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MembresiaResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Usuario no encontrado." }
+        },
+        "summary": "Obtener historial completo de membresías de un usuario",
+        "tags": ["Membresías"]
+      }
+    },
+    "/membresias/usuario/{id_usuario}/activa": {
+      "get": {
+        "operationId": "MembresiasController_findActiveByUsuarioId",
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "required": true,
+            "in": "path",
+            "description": "ID del usuario",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Membresía activa obtenida correctamente (o null si no posee).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembresiaResponseDto"
+                }
+              }
+            }
+          },
+          "404": { "description": "Usuario no encontrado." }
+        },
+        "summary": "Obtener la membresía activa vigente de un usuario",
+        "tags": ["Membresías"]
+      }
+    },
+    "/membresias/usuario/{id_usuario}/verificar": {
+      "get": {
+        "operationId": "MembresiasController_verificarEstadoMembresia",
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "required": true,
+            "in": "path",
+            "description": "ID del usuario a verificar",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado de membresía verificado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificarMembresiaResponseDto"
+                }
+              }
+            }
+          },
+          "404": { "description": "Usuario no encontrado." }
+        },
+        "summary": "Verificar estado de membresía multi-sede y regla de mora",
+        "tags": ["Membresías"]
+      }
+    },
+    "/membresias/estados": {
+      "get": {
+        "operationId": "MembresiasController_findAllEstados",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Estados de membresía obtenidos correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/MembresiaEstadoDto" }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Obtener el catálogo de estados de membresía",
+        "tags": ["Membresías"]
+      }
+    },
+    "/membresias/{id}": {
+      "get": {
+        "operationId": "MembresiasController_findById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la membresía",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Membresía obtenida correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembresiaResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Membresía no encontrada." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener detalle de una membresía por ID (Solo gerente)",
+        "tags": ["Membresías"]
+      },
+      "patch": {
+        "operationId": "MembresiasController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la membresía",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarMembresiaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Membresía actualizada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembresiaResponseDto"
+                }
+              }
+            }
+          },
+          "400": { "description": "Datos inválidos." },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Membresía no encontrada." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Modificar la fecha de vencimiento o la renovación automática (Solo gerente)",
+        "tags": ["Membresías"]
+      },
+      "delete": {
+        "operationId": "MembresiasController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la membresía",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Membresía eliminada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembresiaResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Membresía no encontrada." },
+          "409": {
+            "description": "La membresía tiene pagos registrados: se suspende en lugar de eliminarse."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Eliminar una membresía sin pagos registrados (Solo gerente)",
+        "tags": ["Membresías"]
+      }
+    },
+    "/membresias/{id}/estado": {
+      "patch": {
+        "operationId": "MembresiasController_updateEstado",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la membresía",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarMembresiaEstadoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado de la membresía actualizado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembresiaResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Membresía o Estado no encontrado." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Cambiar el estado de una membresía (Activa, Vencida, Suspendida) (Solo gerente)",
+        "tags": ["Membresías"]
+      }
+    },
+    "/usuarios/{id}/foto": {
+      "post": {
+        "operationId": "UploadFotoController_uploadFoto",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID del usuario",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "foto": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Archivo de imagen de la foto de perfil (JPG, PNG o WEBP, máx 2MB)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Foto de perfil actualizada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadFotoResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No autorizado para modificar la foto de otro usuario."
+          },
+          "404": { "description": "Usuario no encontrado" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Subir foto de perfil del usuario autenticado",
+        "tags": ["Usuarios - Foto de Perfil"]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginDto" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "" } },
+        "summary": "Iniciar sesión y obtener token JWT",
+        "tags": ["Auth"]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "AuthController_verifyProfile",
+        "parameters": [],
+        "responses": { "200": { "description": "" } },
+        "security": [{ "bearer": [] }],
+        "summary": "Verificar si el perfil interno existe",
+        "tags": ["Auth"]
+      }
+    },
+    "/usuarios/me/dashboard": {
+      "get": {
+        "description": "Devuelve el resumen de actividades del socio autenticado, estado de su membresía y próximas reservas confirmadas.",
+        "operationId": "SocioDashboardController_obtenerDashboard",
+        "parameters": [
+          {
+            "name": "id_sede",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar el dashboard por ID de sede",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumen del dashboard obtenido exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocioDashboardResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol socio." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener métricas, membresía y próximas reservas para el Dashboard del Socio",
+        "tags": ["Socio - Dashboard e Historial"]
+      }
+    },
+    "/usuarios/me/historial": {
+      "get": {
+        "description": "Recupera las actividades pasadas y futuras del socio ordenadas de más reciente a más antigua. Permite paginación y filtro por tipo (todas, canchas, clases).",
+        "operationId": "SocioDashboardController_obtenerHistorial",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Número de página para paginación (inicia en 1)",
+            "schema": { "default": 1, "example": 1, "type": "number" }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Cantidad de elementos por página",
+            "schema": { "default": 10, "example": 10, "type": "number" }
+          },
+          {
+            "name": "tipo",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar por tipo de actividad",
+            "schema": {
+              "default": "todas",
+              "example": "todas",
+              "type": "string",
+              "enum": ["todas", "canchas", "clases"]
+            }
+          },
+          {
+            "name": "id_sede",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar por ID de sede",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de reservas obtenido correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistorialResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": {
+            "description": "Acceso denegado: se requiere rol socio o externo."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener historial unificado de reservas de canchas y clases grupales",
+        "tags": ["Socio - Dashboard e Historial"]
+      }
+    },
+    "/access/qr/generate": {
+      "get": {
+        "description": "Genera un token QR dinámico basado en JWT y TOTP para usuarios autenticados. Actualiza automáticamente la propiedad qr_url del perfil del usuario.",
+        "operationId": "QrController_generarQr",
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "required": true,
+            "in": "query",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token QR generado y qr_url actualizada exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrDinamicoResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No autorizado. El token de autenticación está ausente, manipulado o expirado."
+          },
+          "403": {
+            "description": "No se puede generar el código QR: El usuario no cuenta con una membresía activa o se encuentra en mora."
+          },
+          "500": {
+            "description": "Error interno del servidor durante la generación del token o guardado de perfil."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Generar código QR dinámico temporal (60s)",
+        "tags": ["Control de Acceso"]
+      }
+    },
+    "/accesos/validar-ingreso": {
+      "post": {
+        "description": "Valida la firma y vigencia del token QR, confirma que la membresía del socio esté activa y registra el ingreso físico en la sede.",
+        "operationId": "AccesosController_validarIngreso",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ValidarIngresoDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Acceso autorizado y registrado con éxito.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AccesoResponseDto" }
+              }
+            }
+          },
+          "400": { "description": "Token QR inválido o expirado." },
+          "403": {
+            "description": "Acceso denegado debido a membresía vencida o estado en mora."
+          },
+          "409": {
+            "description": "Conflicto por anti-doble ingreso: El usuario registra un ingreso activo sin egreso."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Validar token QR e ingresar a la sede",
+        "tags": ["Control de Acceso"]
+      }
+    },
+    "/accesos/registrar-egreso": {
+      "post": {
+        "description": "Busca la entrada activa del usuario en la sede, estampa la fecha/hora de salida y retorna la confirmación del egreso.",
+        "operationId": "AccesosController_registrarEgreso",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegistrarEgresoDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Egreso registrado correctamente y aforo liberado.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EgresoResponseDto" }
+              }
+            }
+          },
+          "400": {
+            "description": "La sede del egreso no coincide con la sede donde ingresó el socio."
+          },
+          "404": {
+            "description": "No se encontró un ingreso activo previo para el usuario."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Registrar salida física de socio y calcular permanencia",
+        "tags": ["Control de Acceso"]
+      }
+    },
+    "/accesos/aforo/{id_sede}": {
+      "get": {
+        "operationId": "AccesosController_obtenerAforo",
+        "parameters": [
+          {
+            "name": "id_sede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado del aforo obtenido exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AforoStatusResponseDto"
+                }
+              }
+            }
+          },
+          "404": { "description": "Sede no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener estado del aforo actual de una sede",
+        "tags": ["Control de Acceso"]
+      }
+    },
+    "/accesos/perfil/{id}": {
+      "get": {
+        "description": "Retorna los datos del socio, su foto de perfil y si su membresía se encuentra activa o en mora.",
+        "operationId": "AccesosController_obtenerPerfilSocio",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID del usuario",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Perfil del socio obtenido exitosamente." },
+          "404": { "description": "Usuario no encontrado." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener perfil, foto y estado de membresía del socio",
+        "tags": ["Control de Acceso"]
+      }
+    },
+    "/accesos/sincronizar-offline": {
+      "post": {
+        "description": "Permite volcar los registros pendientes almacenados en la cola local de la terminal.",
+        "operationId": "AccesosController_sincronizarOffline",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SincronizarAccesoOfflineDto"
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "" } },
+        "security": [{ "bearer": [] }],
+        "summary": "Sincronizar evento de acceso/egreso registrado offline",
+        "tags": ["Control de Acceso"]
+      }
+    },
+    "/clases": {
+      "post": {
+        "operationId": "ClasesController_crearClase",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateClaseDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "La clase fue creada exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClaseResponseDto" }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Crear una nueva clase grupal (Solo gerente)",
+        "tags": ["Clases Grupales"]
+      },
+      "get": {
+        "description": "Si se especifica la fecha (YYYY-MM-DD), devuelve la agenda con ocupación real, cupos y estado.",
+        "operationId": "ClasesController_obtenerClasesPorSede",
+        "parameters": [
+          {
+            "name": "id_sede",
+            "required": true,
+            "in": "query",
+            "description": "ID de la sede para filtrar las clases activas",
+            "schema": { "example": 1, "type": "number" }
+          },
+          {
+            "name": "fecha",
+            "required": false,
+            "in": "query",
+            "description": "Fecha en formato YYYY-MM-DD para calcular ocupación y agenda",
+            "schema": { "example": "2026-10-12", "type": "string" }
+          },
+          {
+            "name": "incluir_inactivas",
+            "required": false,
+            "in": "query",
+            "description": "Permite al gerente visualizar también clases dadas de baja lógica o inactivas",
+            "schema": { "example": false, "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de clases o agenda detallada con ocupación para la fecha especificada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClaseAgendaResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Obtener catálogo de clases por sede o agenda con ocupación por fecha",
+        "tags": ["Clases Grupales"]
+      }
+    },
+    "/clases/{id}": {
+      "get": {
+        "operationId": "ClasesController_obtenerClasePorId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID único de la clase grupal",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle completo de la clase.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClaseResponseDto" }
+              }
+            }
+          },
+          "404": { "description": "Clase no encontrada." }
+        },
+        "summary": "Obtener detalle de una clase específica",
+        "tags": ["Clases Grupales"]
+      },
+      "patch": {
+        "operationId": "ClasesController_actualizarClase",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID único de la clase a actualizar",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateClaseDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "La clase fue actualizada exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClaseResponseDto" }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Clase no encontrada." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Actualizar parcialmente datos o cupos de una clase (Solo gerente)",
+        "tags": ["Clases Grupales"]
+      },
+      "put": {
+        "operationId": "ClasesController_reemplazarClase",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID único de la clase a reemplazar",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateClaseDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "La clase fue reemplazada exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClaseResponseDto" }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Clase no encontrada." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Reemplazar totalmente los datos de una clase (Solo gerente)",
+        "tags": ["Clases Grupales"]
+      },
+      "delete": {
+        "operationId": "ClasesController_eliminarClase",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID único de la clase a dar de baja",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La clase fue dada de baja lógicamente y sus reservas futuras confirmadas fueron canceladas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EliminarClaseResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Clase no encontrada." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Baja lógica de una clase grupal y cancelación preventiva de reservas futuras (Solo gerente)",
+        "tags": ["Clases Grupales"]
+      }
+    },
+    "/reservas-clases/mis-reservas": {
+      "get": {
+        "description": "Permite filtrar opcionalmente por fecha (formato YYYY-MM-DD)",
+        "operationId": "ReservasClasesController_obtenerMisReservas",
+        "parameters": [
+          {
+            "name": "fecha",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar reservas por fecha en formato YYYY-MM-DD",
+            "schema": { "example": "2026-10-12", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de reservas del usuario autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MiReservaClaseResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol socio." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Consultar las reservas de clases del usuario autenticado",
+        "tags": ["Reservas de Clases Grupales"]
+      }
+    },
+    "/reservas-clases": {
+      "post": {
+        "operationId": "ReservasClasesController_crearReserva",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CrearReservaClaseDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reserva confirmada exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaClaseResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol socio." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Reservar una clase grupal (hasta 48h antes)",
+        "tags": ["Reservas de Clases Grupales"]
+      }
+    },
+    "/reservas-clases/{id}": {
+      "delete": {
+        "description": "Cancela una reserva confirmada. Se permite cancelación hasta 2 horas antes de la clase; con 2 horas o menos no se permite la cancelación (RF-07).",
+        "operationId": "ReservasClasesController_cancelarReserva",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reserva cancelada exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelarReservaResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No se puede cancelar con 2 horas o menos de anticipación (RF-07), o si la clase ya comenzó o no está confirmada."
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": {
+            "description": "No tienes permiso para cancelar esta reserva."
+          },
+          "404": { "description": "La reserva no existe." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Cancelar una reserva de clase",
+        "tags": ["Reservas de Clases Grupales"]
+      }
+    },
+    "/lista-espera/mis-inscripciones": {
+      "get": {
+        "description": "Permite filtrar opcionalmente por fecha (formato YYYY-MM-DD)",
+        "operationId": "ListaEsperaController_obtenerMisInscripciones",
+        "parameters": [
+          {
+            "name": "fecha",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar por fecha en formato YYYY-MM-DD",
+            "schema": { "example": "2026-10-12", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de inscripciones activas en lista de espera del usuario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MiInscripcionListaEsperaResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol socio." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Consultar las inscripciones activas en lista de espera del usuario autenticado",
+        "tags": ["Lista de Espera"]
+      }
+    },
+    "/lista-espera/inscribir": {
+      "post": {
+        "operationId": "ListaEsperaController_inscribir",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InscribirListaEsperaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inscripto correctamente a la lista de espera"
+          },
+          "400": {
+            "description": "La clase aún tiene cupos o ya estás inscripto"
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol socio." },
+          "404": { "description": "Clase no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Inscribirse en lista de espera de una clase agotada",
+        "tags": ["Lista de Espera"]
+      }
+    },
+    "/canchas/{id}/mantenimiento": {
+      "post": {
+        "operationId": "MantenimientoController_programarMantenimiento",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CrearMantenimientoDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MantenimientoResponseDto"
+                }
+              }
+            }
+          },
+          "401": { "description": "No autorizado / Token inválido." },
+          "403": {
+            "description": "Prohibido / Requiere rol gerente o recepcionista."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Programar mantenimiento inhabilitando turnos futuros (Solo personal)",
+        "tags": ["Mantenimiento de Canchas"]
+      }
+    },
+    "/canchas/mantenimientos": {
+      "get": {
+        "operationId": "MantenimientoController_listarMantenimientos",
+        "parameters": [
+          {
+            "name": "sedeId",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar mantenimientos por ID de sede",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "canchaId",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar mantenimientos por ID de cancha",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "fechaInicio",
+            "required": false,
+            "in": "query",
+            "description": "Fecha de inicio del rango (ISO 8601 o YYYY-MM-DD)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "fechaFin",
+            "required": false,
+            "in": "query",
+            "description": "Fecha de fin del rango (ISO 8601 o YYYY-MM-DD)",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de mantenimientos obtenida exitosamente."
+          },
+          "401": { "description": "No autorizado / Token inválido." },
+          "403": {
+            "description": "Prohibido / Requiere rol gerente o recepcionista."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Listar mantenimientos de canchas con filtros opcionales (Solo personal)",
+        "tags": ["Mantenimiento de Canchas"]
+      }
+    },
+    "/canchas": {
+      "post": {
+        "operationId": "CanchasController_crear",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CrearCanchaDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Cancha creada exitosamente." },
+          "401": { "description": "No autorizado / Token inválido." },
+          "403": { "description": "Prohibido / Requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Dar de alta una nueva cancha (Solo gerente)",
+        "tags": ["Canchas Deportivas"]
+      },
+      "get": {
+        "operationId": "CanchasController_listar",
+        "parameters": [
+          {
+            "name": "sedeId",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar canchas por ID de sede",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": { "200": { "description": "" } },
+        "summary": "Listar todas las canchas activas con sus relaciones con filtro opcional de sede",
+        "tags": ["Canchas Deportivas"]
+      }
+    },
+    "/canchas/tipos": {
+      "get": {
+        "operationId": "CanchasController_listarTipos",
+        "parameters": [
+          {
+            "name": "inactivos",
+            "required": false,
+            "in": "query",
+            "description": "Indica si se deben incluir los tipos de cancha inactivos",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Tipos de cancha obtenidos correctamente." }
+        },
+        "summary": "Listar todos los tipos de deportes disponibles",
+        "tags": ["Canchas Deportivas"]
+      },
+      "post": {
+        "operationId": "CanchasController_crearTipo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CrearTipoCanchaDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Tipo de cancha creado exitosamente." },
+          "401": { "description": "No autorizado / Token inválido." },
+          "403": { "description": "Prohibido / Requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Crear un nuevo tipo de cancha (Solo gerente)",
+        "tags": ["Canchas Deportivas"]
+      }
+    },
+    "/canchas/tipos/{id}": {
+      "patch": {
+        "operationId": "CanchasController_actualizarTipo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarTipoCanchaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Tipo de cancha actualizado correctamente." },
+          "401": { "description": "No autorizado / Token inválido." },
+          "403": { "description": "Prohibido / Requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Actualizar un tipo de cancha existente (Solo gerente)",
+        "tags": ["Canchas Deportivas"]
+      },
+      "delete": {
+        "operationId": "CanchasController_eliminarTipo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tipo de cancha dado de baja correctamente."
+          },
+          "401": { "description": "No autorizado / Token inválido." },
+          "403": { "description": "Prohibido / Requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Realizar un borrado lógico del tipo de cancha verificando que no posea canchas activas (Solo gerente)",
+        "tags": ["Canchas Deportivas"]
+      }
+    },
+    "/canchas/disponibilidad": {
+      "get": {
+        "operationId": "CanchasController_obtenerDisponibilidadPorSede",
+        "parameters": [
+          {
+            "name": "sedeId",
+            "required": true,
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "fecha",
+            "required": true,
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "tipoId",
+            "required": true,
+            "in": "query",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": { "200": { "description": "" } },
+        "summary": "Consultar grilla horaria de todas las canchas de una sede",
+        "tags": ["Canchas Deportivas"]
+      }
+    },
+    "/canchas/cotizar": {
+      "get": {
+        "operationId": "CanchasController_cotizar",
+        "parameters": [
+          {
+            "name": "canchaId",
+            "required": true,
+            "in": "query",
+            "description": "ID de la cancha a cotizar",
+            "schema": { "example": 1, "type": "number" }
+          },
+          {
+            "name": "fecha",
+            "required": true,
+            "in": "query",
+            "description": "Fecha del turno a cotizar (Formato YYYY-MM-DD)",
+            "schema": { "example": "2026-11-15", "type": "string" }
+          },
+          {
+            "name": "hora",
+            "required": true,
+            "in": "query",
+            "description": "Hora de inicio del turno (Formato HH:mm ej: 19:00)",
+            "schema": { "example": "19:00", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cotización calculada exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CotizacionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetros inválidos o formato incorrecto de fecha/hora (RFC 9457)."
+          },
+          "401": {
+            "description": "No autorizado / Token de autenticación ausente o inválido."
+          },
+          "404": {
+            "description": "Cancha inactiva/inexistente o usuario no encontrado (RFC 9457)."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Cotizar el costo de un turno de cancha validando horario pico y descuento de socio en misma ciudad",
+        "tags": ["Canchas Deportivas"]
+      }
+    },
+    "/canchas/{id}": {
+      "get": {
+        "operationId": "CanchasController_obtener",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": { "200": { "description": "" } },
+        "summary": "Obtener el detalle de una cancha específica",
+        "tags": ["Canchas Deportivas"]
+      },
+      "patch": {
+        "operationId": "CanchasController_actualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ActualizarCanchaDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Cancha actualizada correctamente." },
+          "401": { "description": "No autorizado / Token inválido." },
+          "403": { "description": "Prohibido / Requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Actualizar datos parciales de una cancha (Solo gerente)",
+        "tags": ["Canchas Deportivas"]
+      },
+      "delete": {
+        "operationId": "CanchasController_eliminar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Cancha dada de baja correctamente." },
+          "401": { "description": "No autorizado / Token inválido." },
+          "403": { "description": "Prohibido / Requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Realizar un borrado lógico de la cancha (Solo gerente)",
+        "tags": ["Canchas Deportivas"]
+      }
+    },
+    "/canchas/{id}/disponibilidad": {
+      "get": {
+        "operationId": "CanchasController_obtenerDisponibilidad",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "fecha",
+            "required": true,
+            "in": "query",
+            "description": "Fecha para consultar disponibilidad (YYYY-MM-DD)",
+            "schema": { "example": "2026-10-15", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DisponibilidadSlotResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Consultar grilla horaria de disponibilidad",
+        "tags": ["Canchas Deportivas"]
+      }
+    },
+    "/reservas-canchas": {
+      "post": {
+        "operationId": "ReservasCanchasController_crearReserva",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CrearReservaCanchaDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaCanchaResponseDto"
+                }
+              }
+            }
+          },
+          "401": { "description": "No autorizado / Token inválido." },
+          "403": {
+            "description": "Prohibido / Rol no autorizado para reservar canchas."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Crear una reserva de cancha garantizando concurrencia",
+        "tags": ["Reservas de Canchas"]
+      }
+    },
+    "/reservas-canchas/{id}": {
+      "get": {
+        "operationId": "ReservasCanchasController_obtenerReserva",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "No autorizado / Token inválido." },
+          "403": {
+            "description": "Prohibido / No autorizado para acceder a reservas de otro usuario."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener detalle de una reserva por ID",
+        "tags": ["Reservas de Canchas"]
+      }
+    },
+    "/ciudades": {
+      "get": {
+        "operationId": "CiudadController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Lista de ciudades obtenida correctamente" },
+          "429": {
+            "description": "Demasiadas consultas seguidas desde la misma IP."
+          }
+        },
+        "summary": "Obtener todas las ciudades activas (público, con límite de consultas)",
+        "tags": ["Ciudades"]
+      },
+      "post": {
+        "operationId": "CiudadController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateCiudadDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Ciudad creada correctamente" },
+          "400": { "description": "Los datos enviados no son válidos" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Crear una nueva ciudad (Solo gerente)",
+        "tags": ["Ciudades"]
+      }
+    },
+    "/ciudades/{id}": {
+      "get": {
+        "operationId": "CiudadController_findById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la ciudad",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Ciudad obtenida correctamente" },
+          "400": { "description": "El ID proporcionado no es válido" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "404": { "description": "Ciudad no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener una ciudad por su ID",
+        "tags": ["Ciudades"]
+      },
+      "patch": {
+        "operationId": "CiudadController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la ciudad",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateCiudadDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Ciudad actualizada correctamente" },
+          "400": { "description": "Los datos enviados no son válidos" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Ciudad no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Actualizar datos de la ciudad (Solo gerente)",
+        "tags": ["Ciudades"]
+      },
+      "delete": {
+        "operationId": "CiudadController_logicalDelete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la ciudad",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Eliminacion logica realizada exitosamente" },
+          "400": { "description": "ID de la ciudad invalido" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Ciudad no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Eliminar lógicamente una ciudad (Solo gerente)",
+        "tags": ["Ciudades"]
+      }
+    },
+    "/sedes": {
+      "get": {
+        "operationId": "SedeController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Lista de sedes obtenida correctamente" },
+          "429": {
+            "description": "Demasiadas consultas seguidas desde la misma IP."
+          }
+        },
+        "summary": "Obtener todas las sedes activas (público, con límite de consultas)",
+        "tags": ["Sedes"]
+      },
+      "post": {
+        "operationId": "SedeController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateSedeDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Sede creada correctamente" },
+          "400": { "description": "Los datos enviados no son válidos" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "La ciudad especificada no existe" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Crear una nueva sede (Solo gerente)",
+        "tags": ["Sedes"]
+      }
+    },
+    "/sedes/{id}": {
+      "get": {
+        "operationId": "SedeController_findById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Sede obtenida correctamente" },
+          "400": { "description": "El ID proporcionado no es válido" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "404": { "description": "Sede no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener una sede por su ID",
+        "tags": ["Sedes"]
+      },
+      "patch": {
+        "operationId": "SedeController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateSedeDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Sede actualizada correctamente" },
+          "400": { "description": "Los datos enviados no son válidos" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Sede o ciudad especificada no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Actualizar datos de la sede (Solo gerente)",
+        "tags": ["Sedes"]
+      },
+      "delete": {
+        "operationId": "SedeController_logicalDelete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Eliminacion logica realizada exitosamente" },
+          "400": { "description": "ID de la sede invalido" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Sede no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Eliminar lógicamente una sede (Solo gerente)",
+        "tags": ["Sedes"]
+      }
+    },
+    "/sedes/{id}/horario-operativo": {
+      "get": {
+        "operationId": "SedeController_getHorarioOperativo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "fecha",
+            "required": true,
+            "in": "query",
+            "description": "Fecha a consultar en formato YYYY-MM-DD",
+            "schema": { "example": "2026-10-13", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Horario operativo obtenido correctamente. Si la sede no tiene horario cargado para ese día, figura cerrada."
+          },
+          "400": {
+            "description": "La fecha no tiene formato YYYY-MM-DD o no existe"
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "404": { "description": "Sede no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener horario operativo de una sede para una fecha",
+        "tags": ["Sedes"]
+      }
+    },
+    "/calendario": {
+      "get": {
+        "operationId": "CalendarioController_findAll",
+        "parameters": [
+          {
+            "name": "desde",
+            "required": false,
+            "in": "query",
+            "schema": { "example": "2026-01-01", "type": "string" }
+          },
+          {
+            "name": "hasta",
+            "required": false,
+            "in": "query",
+            "schema": { "example": "2026-12-31", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fechas ordenadas, opcionalmente filtradas por rango",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarioResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Rango de fechas inválido" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Listar las fechas del calendario general (Solo gerente)",
+        "tags": ["Calendario"]
+      },
+      "post": {
+        "operationId": "CalendarioController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateCalendarioDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarioResponseDto"
+                }
+              }
+            }
+          },
+          "400": { "description": "Datos inválidos" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "409": { "description": "La fecha ya está cargada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Agregar una fecha o feriado al calendario (Solo gerente)",
+        "tags": ["Calendario"]
+      }
+    },
+    "/calendario/{id}": {
+      "get": {
+        "operationId": "CalendarioController_findById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la fecha",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarioResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Fecha no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener una fecha del calendario (Solo gerente)",
+        "tags": ["Calendario"]
+      },
+      "patch": {
+        "operationId": "CalendarioController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la fecha",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateCalendarioDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarioResponseDto"
+                }
+              }
+            }
+          },
+          "400": { "description": "Datos inválidos o sin cambios" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Fecha no encontrada" },
+          "409": { "description": "La nueva fecha ya está cargada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Modificar una fecha del calendario (Solo gerente)",
+        "tags": ["Calendario"]
+      },
+      "delete": {
+        "operationId": "CalendarioController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la fecha",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarioResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Fecha no encontrada" },
+          "409": {
+            "description": "La fecha tiene excepciones cargadas en alguna sede"
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Eliminar una fecha del calendario (Solo gerente)",
+        "tags": ["Calendario"]
+      }
+    },
+    "/sedes/{idSede}/calendario": {
+      "get": {
+        "operationId": "CalendarioSedeController_findAll",
+        "parameters": [
+          {
+            "name": "idSede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "desde",
+            "required": false,
+            "in": "query",
+            "schema": { "example": "2026-01-01", "type": "string" }
+          },
+          {
+            "name": "hasta",
+            "required": false,
+            "in": "query",
+            "schema": { "example": "2026-12-31", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excepciones en orden cronológico, con su fecha del calendario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarioSedeResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Rango de fechas inválido" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Listar las excepciones de calendario de una sede (Solo gerente)",
+        "tags": ["Calendario"]
+      },
+      "post": {
+        "operationId": "CalendarioSedeController_create",
+        "parameters": [
+          {
+            "name": "idSede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCalendarioSedeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarioSedeResponseDto"
+                }
+              }
+            }
+          },
+          "400": { "description": "Datos u horario inválidos" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "La sede no existe" },
+          "409": { "description": "La sede ya tiene una excepción esa fecha" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Cargar un cierre o un horario especial para una fecha (Solo gerente)",
+        "tags": ["Calendario"]
+      }
+    },
+    "/sedes/{idSede}/calendario/{id}": {
+      "get": {
+        "operationId": "CalendarioSedeController_findById",
+        "parameters": [
+          {
+            "name": "idSede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la excepción",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarioSedeResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Excepción no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener una excepción de la sede (Solo gerente)",
+        "tags": ["Calendario"]
+      },
+      "patch": {
+        "operationId": "CalendarioSedeController_update",
+        "parameters": [
+          {
+            "name": "idSede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la excepción",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCalendarioSedeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarioSedeResponseDto"
+                }
+              }
+            }
+          },
+          "400": { "description": "Datos u horario inválidos, o sin cambios" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Excepción no encontrada" },
+          "409": {
+            "description": "La sede ya tiene una excepción en la nueva fecha"
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Modificar una excepción de la sede (Solo gerente)",
+        "tags": ["Calendario"]
+      },
+      "delete": {
+        "operationId": "CalendarioSedeController_remove",
+        "parameters": [
+          {
+            "name": "idSede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID de la excepción",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarioSedeResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Excepción no encontrada" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Eliminar una excepción de la sede (Solo gerente)",
+        "tags": ["Calendario"]
+      }
+    },
+    "/sedes/{idSede}/horarios": {
+      "get": {
+        "operationId": "SedeHorarioController_findAll",
+        "parameters": [
+          {
+            "name": "idSede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Un registro por día cargado, de domingo a sábado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SedeHorarioResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Listar el horario semanal de una sede (Solo gerente)",
+        "tags": ["Horarios de sede"]
+      },
+      "post": {
+        "operationId": "SedeHorarioController_create",
+        "parameters": [
+          {
+            "name": "idSede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateSedeHorarioDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SedeHorarioResponseDto"
+                }
+              }
+            }
+          },
+          "400": { "description": "Datos u horario inválidos" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "La sede no existe" },
+          "409": { "description": "La sede ya tiene un horario para ese día" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Cargar el horario de un día de la semana (Solo gerente)",
+        "tags": ["Horarios de sede"]
+      }
+    },
+    "/sedes/{idSede}/horarios/{id}": {
+      "get": {
+        "operationId": "SedeHorarioController_findById",
+        "parameters": [
+          {
+            "name": "idSede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID del horario",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SedeHorarioResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Horario no encontrado" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener el horario de un día (Solo gerente)",
+        "tags": ["Horarios de sede"]
+      },
+      "patch": {
+        "operationId": "SedeHorarioController_update",
+        "parameters": [
+          {
+            "name": "idSede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID del horario",
+            "schema": { "type": "number" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateSedeHorarioDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SedeHorarioResponseDto"
+                }
+              }
+            }
+          },
+          "400": { "description": "Datos u horario inválidos, o sin cambios" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Horario no encontrado" },
+          "409": {
+            "description": "La sede ya tiene un horario para el nuevo día"
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Modificar el horario de un día (Solo gerente)",
+        "tags": ["Horarios de sede"]
+      },
+      "delete": {
+        "operationId": "SedeHorarioController_remove",
+        "parameters": [
+          {
+            "name": "idSede",
+            "required": true,
+            "in": "path",
+            "description": "ID de la sede",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID del horario",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SedeHorarioResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." },
+          "404": { "description": "Horario no encontrado" }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Eliminar el horario de un día (Solo gerente)",
+        "tags": ["Horarios de sede"]
+      }
+    },
+    "/pagos/iniciar-pago": {
+      "post": {
+        "description": "Genera una preferencia en Mercado Pago Checkout Pro para abonar una membresía o reserva de cancha y persiste la intención en estado Pendiente sin almacenar datos de tarjeta (RF-13, RNF-02).",
+        "operationId": "PagosController_iniciarPago",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/IniciarPagoDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Preferencia creada exitosamente. Redirigir al usuario a initPoint o sandboxInitPoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenciaPagoResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos de pago inválidos o violación de concepto único (se debe asociar exactamente una reserva de cancha o una membresía)."
+          },
+          "401": {
+            "description": "No autorizado. El token de autenticación está ausente o es inválido."
+          },
+          "404": {
+            "description": "La reserva de cancha o membresía especificada no existe en el sistema."
+          },
+          "500": {
+            "description": "Error interno al comunicarse con los servidores de Mercado Pago o registrar la transacción."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Crear preferencia de pago en Mercado Pago y registrar intención",
+        "tags": ["Pagos y Facturación"]
+      }
+    },
+    "/pagos/mis-pagos": {
+      "get": {
+        "description": "Obtiene el listado cronológico de todos los pagos realizados por el usuario en sesión (canchas y membresías).",
+        "operationId": "PagosController_obtenerMisPagos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Historial de pagos obtenido exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PagoDetalleResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. El token de autenticación está ausente o es inválido."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Consultar historial de pagos del usuario autenticado",
+        "tags": ["Pagos y Facturación"]
+      }
+    },
+    "/pagos/pendientes": {
+      "get": {
+        "description": "Lista la membresía vencida o no activa (si no fue renovada) y las reservas de cancha futuras sin pago aprobado, listas para iniciar su pago.",
+        "operationId": "PagosController_obtenerPendientes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Conceptos pendientes obtenidos exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PagoPendienteResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. El token de autenticación está ausente o es inválido."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Consultar conceptos pendientes de pago del usuario autenticado",
+        "tags": ["Pagos y Facturación"]
+      }
+    },
+    "/pagos/{id}": {
+      "get": {
+        "description": "Retorna el detalle completo de un pago específico, su estado en la pasarela de pagos y acceso al comprobante PDF.",
+        "operationId": "PagosController_obtenerDetalle",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Identificador único numérico del pago a consultar",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle del pago obtenido exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagoDetalleResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificador de pago inválido (debe ser numérico entero)."
+          },
+          "401": {
+            "description": "No autorizado. El token de autenticación está ausente o es inválido."
+          },
+          "403": {
+            "description": "Acceso denegado a este comprobante o pago."
+          },
+          "404": {
+            "description": "El pago especificado no existe en el sistema."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Consultar detalle y trazabilidad de un pago por ID",
+        "tags": ["Pagos y Facturación"]
+      }
+    },
+    "/pagos/webhook": {
+      "post": {
+        "description": "Endpoint público sin autenticación que procesa los eventos de pago de Mercado Pago Checkout Pro y confirma transacciones en tiempo real de forma atómica e idempotente (RF-13).",
+        "operationId": "WebhooksController_recibirWebhook",
+        "parameters": [
+          {
+            "name": "x-signature",
+            "required": true,
+            "in": "header",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "x-request-id",
+            "required": true,
+            "in": "header",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MercadoPagoWebhookDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notificación recibida y procesada correctamente por el backend.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WebhookResponseDto" }
+              }
+            }
+          }
+        },
+        "summary": "Recibir notificaciones Webhook e IPN de Mercado Pago",
+        "tags": ["Pagos y Facturación"]
+      }
+    },
+    "/pagos/{id}/comprobante": {
+      "get": {
+        "description": "Genera on-the-fly en memoria el comprobante oficial en formato PDF con stream binario inline y asegura la persistencia de comprobante_url en la base de datos (RF-14, RNF-02).",
+        "operationId": "ComprobantesController_descargarComprobante",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Identificador único del pago a emitir comprobante",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archivo binario PDF retornado con cabeceras Content-Type: application/pdf y Content-Disposition: inline para visualización e impresión inmediata."
+          },
+          "400": {
+            "description": "Identificador de pago inválido (debe ser numérico entero)."
+          },
+          "401": {
+            "description": "No autorizado. El token de autenticación está ausente o es inválido."
+          },
+          "403": {
+            "description": "El pago no pertenece al usuario autenticado."
+          },
+          "404": {
+            "description": "El pago especificado no existe en el sistema."
+          }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener comprobante/factura en formato PDF para visualización e impresión directa",
+        "tags": ["Pagos y Facturación"]
+      }
+    },
+    "/reportes/ingresos": {
+      "get": {
+        "operationId": "ReportesController_obtenerIngresos",
+        "parameters": [
+          {
+            "name": "fecha_desde",
+            "required": true,
+            "in": "query",
+            "description": "Fecha inicial del reporte",
+            "schema": { "example": "2026-09-01", "type": "string" }
+          },
+          {
+            "name": "fecha_hasta",
+            "required": true,
+            "in": "query",
+            "description": "Fecha final del reporte",
+            "schema": { "example": "2026-09-30", "type": "string" }
+          },
+          {
+            "name": "id_sede",
+            "required": false,
+            "in": "query",
+            "description": "ID de la sede a filtrar",
+            "schema": { "example": 1, "type": "number" }
+          },
+          {
+            "name": "concepto",
+            "required": false,
+            "in": "query",
+            "description": "Concepto de ingreso a filtrar",
+            "schema": {
+              "example": "membresia",
+              "type": "string",
+              "enum": ["cancha", "membresia"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reportes de ingresos generados correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReporteIngresosResponseDto"
+                }
+              }
+            }
+          },
+          "400": { "description": "Rango de fechas invalido" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener reporte consolidado de ingresos (Solo gerente)",
+        "tags": ["Reportes"]
+      }
+    },
+    "/reportes/ocupacion": {
+      "get": {
+        "operationId": "ReportesController_obtenerMetricasOcupacion",
+        "parameters": [
+          {
+            "name": "fecha_desde",
+            "required": true,
+            "in": "query",
+            "description": "Fecha inicial del reporte",
+            "schema": { "example": "2026-09-01", "type": "string" }
+          },
+          {
+            "name": "fecha_hasta",
+            "required": true,
+            "in": "query",
+            "description": "Fecha final del reporte",
+            "schema": { "example": "2026-09-30", "type": "string" }
+          },
+          {
+            "name": "id_sede",
+            "required": false,
+            "in": "query",
+            "description": "ID de la sede a filtrar",
+            "schema": { "example": 1, "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Métricas de ocupación generadas correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReporteOcupacionResponseDto"
+                }
+              }
+            }
+          },
+          "400": { "description": "Rango de fechas inválido" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener métricas de ocupación por sede (Solo gerente)",
+        "tags": ["Reportes"]
+      }
+    },
+    "/reportes/socios-activos": {
+      "get": {
+        "operationId": "ReportesController_obtenerSociosActivos",
+        "parameters": [
+          {
+            "name": "fecha",
+            "required": false,
+            "in": "query",
+            "description": "Fecha en la que se cuentan los socios activos (YYYY-MM-DD). Si no se envía, se usa la fecha de hoy en Argentina.",
+            "schema": { "example": "2026-11-18", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Socios activos contados correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReporteSociosActivosResponseDto"
+                }
+              }
+            }
+          },
+          "400": { "description": "Fecha inválida" },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener los socios con membresía activa y vigente, en total y por sede (Solo gerente)",
+        "tags": ["Reportes"]
+      }
+    },
+    "/reportes/aforo": {
+      "get": {
+        "operationId": "ReportesController_obtenerAforo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Aforo de las sedes obtenido correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReporteAforoResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado. Token no proporcionado o inválido."
+          },
+          "403": { "description": "Acceso denegado: se requiere rol gerente." }
+        },
+        "security": [{ "bearer": [] }],
+        "summary": "Obtener el aforo actual y máximo de todas las sedes activas (Solo gerente)",
+        "tags": ["Reportes"]
+      }
+    }
+  },
+  "info": {
+    "title": "FitZone API",
+    "description": "API del sistema FitZone Sports",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "CreateUsuarioDto": {
+        "type": "object",
+        "properties": {
+          "dni": {
+            "type": "string",
+            "example": "43434343",
+            "description": "DNI del usuario"
+          },
+          "email": {
+            "type": "string",
+            "example": "juan.perez@fitzone.com",
+            "description": "Correo electrónico del usuario"
+          },
+          "contrasenia": {
+            "type": "string",
+            "example": "Password123",
+            "description": "Contraseña del usuario (Opcional si la gestiona Supabase)"
+          },
+          "nombre": {
+            "type": "string",
+            "example": "Juan",
+            "description": "Nombre del usuario"
+          },
+          "apellido": {
+            "type": "string",
+            "example": "Perez",
+            "description": "Apellido del usuario"
+          },
+          "telefono": {
+            "type": "string",
+            "example": "+5493454859676",
+            "description": "Teléfono del usuario"
+          },
+          "foto_url": {
+            "type": "string",
+            "example": "https://example.com/foto.jpg",
+            "description": "URL de la foto del usuario (Opcional)"
+          },
+          "id_sede": {
+            "type": "number",
+            "example": "1",
+            "description": "ID de la sede del usuario"
+          },
+          "roles": {
+            "example": [1, 2],
+            "description": "IDs de los roles del usuario",
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "id_usuario_estado": {
+            "type": "number",
+            "example": 1,
+            "description": "Estado del usuario (1: Activo, 3: Suspendido)"
+          }
+        },
+        "required": [
+          "dni",
+          "email",
+          "nombre",
+          "apellido",
+          "telefono",
+          "id_sede"
+        ]
+      },
+      "UsuarioResponseDto": {
+        "type": "object",
+        "properties": {
+          "membresia": { "type": "object", "description": "Membresia" }
+        },
+        "required": ["membresia"]
+      },
+      "ActualizarUsuarioDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "example": "Juan",
+            "description": "Nombre del usuario"
+          },
+          "apellido": {
+            "type": "string",
+            "example": "Perez",
+            "description": "Apellido del usuario"
+          },
+          "telefono": {
+            "type": "string",
+            "example": "+5493454859676",
+            "description": "Teléfono del usuario"
+          },
+          "foto_url": {
+            "type": "string",
+            "example": "https://example.com/foto.jpg",
+            "description": "URL de la foto del usuario (Opcional)"
+          },
+          "id_sede": {
+            "type": "number",
+            "example": "1",
+            "description": "ID de la sede del usuario"
+          },
+          "id_usuario_estado": {
+            "type": "number",
+            "example": 1,
+            "description": "Estado del usuario (1: Activo, 3: Suspendido)"
+          }
+        }
+      },
+      "CrearPlanDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "example": "Plan Mensual",
+            "description": "Nombre comercial del plan de membresía"
+          },
+          "duracion_dias": {
+            "type": "number",
+            "example": 30,
+            "description": "Duración de la membresía en días"
+          },
+          "precio": {
+            "type": "number",
+            "example": 25000,
+            "description": "Precio base del plan de membresía"
+          }
+        },
+        "required": ["nombre", "duracion_dias", "precio"]
+      },
+      "ActualizarPlanDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "example": "Plan Mensual",
+            "description": "Nombre comercial del plan de membresía"
+          },
+          "duracion_dias": {
+            "type": "number",
+            "example": 30,
+            "description": "Duración de la membresía en días"
+          },
+          "precio": {
+            "type": "number",
+            "example": 25000,
+            "description": "Precio base del plan de membresía"
+          }
+        }
+      },
+      "CreateMembresiaDto": {
+        "type": "object",
+        "properties": {
+          "fecha_inicio": {
+            "type": "string",
+            "example": "2024-01-01",
+            "description": "Fecha de inicio de la membresía"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "example": "2025-01-01",
+            "description": "Fecha de fin de la membresía. Si no se envía, se calcula según la duración del plan."
+          },
+          "renovacion_automatica": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si la membresía se renovará automáticamente al finalizar",
+            "default": false
+          },
+          "id_usuario": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del usuario al que se le asigna la membresía"
+          },
+          "id_membresia_plan": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del plan de membresía a contratar"
+          },
+          "id_membresia_estado": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del estado de la membresía",
+            "default": 1
+          }
+        },
+        "required": ["fecha_inicio", "id_usuario", "id_membresia_plan"]
+      },
+      "MembresiaPlanResumenDto": {
+        "type": "object",
+        "properties": {
+          "id_membresia_plan": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del plan de membresía"
+          },
+          "nombre": {
+            "type": "string",
+            "example": "Plan Mensual",
+            "description": "Nombre del plan"
+          },
+          "duracion_dias": {
+            "type": "number",
+            "example": 30,
+            "description": "Duración del plan en días"
+          },
+          "precio": {
+            "type": "number",
+            "example": 25000,
+            "description": "Precio del plan"
+          }
+        },
+        "required": ["id_membresia_plan", "nombre", "duracion_dias", "precio"]
+      },
+      "MembresiaEstadoDto": {
+        "type": "object",
+        "properties": {
+          "id_membresia_estado": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del estado de membresía"
+          },
+          "descripcion": {
+            "type": "string",
+            "example": "Activa",
+            "description": "Nombre del estado"
+          }
+        },
+        "required": ["id_membresia_estado", "descripcion"]
+      },
+      "MembresiaSocioDto": {
+        "type": "object",
+        "properties": {
+          "id_usuario": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del usuario"
+          },
+          "nombre": {
+            "type": "string",
+            "example": "Sofía",
+            "description": "Nombre del socio"
+          },
+          "apellido": {
+            "type": "string",
+            "example": "Gómez",
+            "description": "Apellido del socio"
+          },
+          "dni": {
+            "type": "string",
+            "example": "30111222",
+            "description": "DNI del socio"
+          },
+          "email": {
+            "type": "string",
+            "example": "sofia@mail.com",
+            "description": "Email del socio"
+          }
+        },
+        "required": ["id_usuario", "nombre", "apellido", "dni", "email"]
+      },
+      "MembresiaResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_membresia": {
+            "type": "number",
+            "example": 1,
+            "description": "ID de la membresía"
+          },
+          "fecha_inicio": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2024-01-01",
+            "description": "Fecha de inicio de la membresía"
+          },
+          "fecha_fin": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2025-01-01",
+            "description": "Fecha de fin de la membresía"
+          },
+          "renovacion_automatica": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si la membresía se renovará automáticamente al finalizar"
+          },
+          "id_usuario": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del usuario al que se le asigna la membresía"
+          },
+          "id_membresia_plan": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del plan de membresía"
+          },
+          "id_membresia_estado": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del estado de la membresía"
+          },
+          "membresia_plan": {
+            "$ref": "#/components/schemas/MembresiaPlanResumenDto"
+          },
+          "membresia_estado": {
+            "$ref": "#/components/schemas/MembresiaEstadoDto"
+          },
+          "usuario": { "$ref": "#/components/schemas/MembresiaSocioDto" }
+        },
+        "required": [
+          "id_membresia",
+          "fecha_inicio",
+          "fecha_fin",
+          "renovacion_automatica",
+          "id_usuario",
+          "id_membresia_plan",
+          "id_membresia_estado"
+        ]
+      },
+      "VerificarMembresiaResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_usuario": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del usuario verificado"
+          },
+          "esSocioActivo": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si el socio cuenta con una membresía activa vigente"
+          },
+          "enMora": {
+            "type": "boolean",
+            "example": false,
+            "description": "Indica si el socio se encuentra en mora / cuota vencida"
+          },
+          "id_sede_origen": {
+            "type": "number",
+            "example": 1,
+            "description": "ID de la sede de origen del usuario"
+          },
+          "fecha_inicio": {
+            "type": "object",
+            "example": "2026-09-25T00:00:00.000Z",
+            "description": "Fecha de inicio de la membresía activa o última registrada",
+            "nullable": true
+          },
+          "fecha_vencimiento": {
+            "type": "object",
+            "example": "2026-10-25T00:00:00.000Z",
+            "description": "Fecha de vencimiento de la membresía activa o última registrada",
+            "nullable": true
+          },
+          "nombre_plan": {
+            "type": "object",
+            "example": "Plan Mensual",
+            "description": "Nombre del plan contratado (opcional)"
+          },
+          "suspendida": {
+            "type": "boolean",
+            "example": false,
+            "description": "Indica si el socio suspendió su membresía (conserva beneficios hasta fecha_vencimiento y no se le generará un nuevo pago pendiente)"
+          },
+          "mensaje": {
+            "type": "string",
+            "example": "Socio activo habilitado para acceso multi-sede y beneficios.",
+            "description": "Mensaje explicativo del estado de permisos del socio"
+          }
+        },
+        "required": [
+          "id_usuario",
+          "esSocioActivo",
+          "enMora",
+          "id_sede_origen",
+          "fecha_vencimiento",
+          "mensaje"
+        ]
+      },
+      "ActualizarMembresiaDto": {
+        "type": "object",
+        "properties": {
+          "fecha_fin": {
+            "type": "string",
+            "example": "2026-12-31",
+            "description": "Nueva fecha de vencimiento (YYYY-MM-DD)"
+          },
+          "renovacion_automatica": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si la membresía se renueva automáticamente"
+          }
+        }
+      },
+      "ActualizarMembresiaEstadoDto": {
+        "type": "object",
+        "properties": {
+          "fecha_inicio": {
+            "type": "string",
+            "example": "2024-01-01",
+            "description": "Fecha de inicio de la membresía"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "example": "2025-01-01",
+            "description": "Fecha de fin de la membresía. Si no se envía, se calcula según la duración del plan."
+          },
+          "renovacion_automatica": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si la membresía se renovará automáticamente al finalizar",
+            "default": false
+          },
+          "id_usuario": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del usuario al que se le asigna la membresía"
+          },
+          "id_membresia_plan": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del plan de membresía a contratar"
+          },
+          "id_membresia_estado": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del estado de la membresía",
+            "default": 1
+          }
+        }
+      },
+      "UploadFotoResponseDto": {
+        "type": "object",
+        "properties": {
+          "foto_url": {
+            "type": "string",
+            "example": "https://xyz.supabase.co/storage/v1/object/public/fitzonepublic/avatars/usuario-1-1726700000.jpg",
+            "description": "URL pública de la foto de perfil almacenada en Supabase Storage"
+          },
+          "mensaje": {
+            "type": "string",
+            "example": "Foto de perfil subida correctamente",
+            "description": "Mensaje de respuesta"
+          }
+        },
+        "required": ["foto_url", "mensaje"]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "example": "matias@fitzone.com" },
+          "password": { "type": "string", "example": "matias123" }
+        },
+        "required": ["email", "password"]
+      },
+      "MembresiaResumenDto": {
+        "type": "object",
+        "properties": {
+          "id_membresia": {
+            "type": "number",
+            "description": "ID de la membresía",
+            "example": 5
+          },
+          "plan": {
+            "type": "string",
+            "description": "Nombre del plan de membresía",
+            "example": "Pase Libre Black"
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado actual de la membresía",
+            "example": "Activa"
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "description": "Fecha de inicio de vigencia",
+            "example": "2026-11-01"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "description": "Fecha de vencimiento",
+            "example": "2026-12-01"
+          },
+          "dias_restantes": {
+            "type": "number",
+            "description": "Días restantes de membresía",
+            "example": 17
+          },
+          "renovacion_automatica": {
+            "type": "boolean",
+            "description": "Si tiene habilitada la renovación automática",
+            "example": true
+          }
+        },
+        "required": [
+          "id_membresia",
+          "plan",
+          "estado",
+          "fecha_inicio",
+          "fecha_fin",
+          "dias_restantes",
+          "renovacion_automatica"
+        ]
+      },
+      "TotalesActividadesDto": {
+        "type": "object",
+        "properties": {
+          "total_canchas": {
+            "type": "number",
+            "description": "Total histórico de reservas de canchas",
+            "example": 14
+          },
+          "total_clases": {
+            "type": "number",
+            "description": "Total histórico de inscripciones a clases grupales",
+            "example": 8
+          },
+          "total_actividades": {
+            "type": "number",
+            "description": "Total global combinado de actividades",
+            "example": 22
+          },
+          "proximas_confirmadas": {
+            "type": "number",
+            "description": "Cantidad de reservas futuras confirmadas",
+            "example": 3
+          }
+        },
+        "required": [
+          "total_canchas",
+          "total_clases",
+          "total_actividades",
+          "proximas_confirmadas"
+        ]
+      },
+      "SedeHistorialDto": {
+        "type": "object",
+        "properties": {
+          "id_sede": {
+            "type": "number",
+            "description": "ID de la sede",
+            "example": 1
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre de la sede",
+            "example": "Sede Central"
+          },
+          "direccion": {
+            "type": "string",
+            "description": "Dirección física de la sede",
+            "example": "Av. Corrientes 1234"
+          }
+        },
+        "required": ["id_sede", "nombre"]
+      },
+      "ItemHistorialDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador único compuesto o ID de la reserva",
+            "example": "cancha-12"
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de actividad realizada",
+            "enum": ["cancha", "clase"],
+            "example": "cancha"
+          },
+          "titulo": {
+            "type": "string",
+            "description": "Título o nombre de la actividad",
+            "example": "Cancha de Pádel 1"
+          },
+          "subtitulo": {
+            "type": "string",
+            "description": "Subtítulo o detalle adicional (ej. Profesor o Tipo de cancha)",
+            "example": "Césped Sintético"
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "description": "Fecha y hora de inicio de la reserva",
+            "example": "2026-11-20T18:00:00.000Z"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "description": "Fecha y hora de fin de la reserva",
+            "example": "2026-11-20T19:30:00.000Z"
+          },
+          "fecha_creacion": {
+            "type": "object",
+            "description": "Fecha y hora en que se realizó la reserva (null en reservas anteriores al registro de este dato)",
+            "example": "2026-11-17T21:30:00.000Z",
+            "nullable": true
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado actual de la reserva",
+            "example": "Confirmada"
+          },
+          "sede": {
+            "description": "Información de la sede donde se realiza la actividad",
+            "allOf": [{ "$ref": "#/components/schemas/SedeHistorialDto" }]
+          },
+          "precio": {
+            "type": "number",
+            "description": "Precio o costo de la reserva si aplica",
+            "example": 4500.5
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "titulo",
+          "fecha_inicio",
+          "fecha_fin",
+          "estado",
+          "sede"
+        ]
+      },
+      "SocioDashboardResponseDto": {
+        "type": "object",
+        "properties": {
+          "membresia": {
+            "description": "Resumen del estado de la membresía activa del socio (o null si no tiene)",
+            "nullable": true,
+            "type": "object",
+            "allOf": [{ "$ref": "#/components/schemas/MembresiaResumenDto" }]
+          },
+          "totales": {
+            "description": "Estadísticas y totales de actividad del socio",
+            "allOf": [{ "$ref": "#/components/schemas/TotalesActividadesDto" }]
+          },
+          "proximas_actividades": {
+            "description": "Próximas actividades programadas ordenadas cronológicamente",
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ItemHistorialDto" }
+          }
+        },
+        "required": ["membresia", "totales", "proximas_actividades"]
+      },
+      "PaginacionMetaDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "description": "Total de registros encontrados",
+            "example": 25
+          },
+          "page": {
+            "type": "number",
+            "description": "Página actual",
+            "example": 1
+          },
+          "limit": {
+            "type": "number",
+            "description": "Cantidad de elementos por página",
+            "example": 10
+          },
+          "total_paginas": {
+            "type": "number",
+            "description": "Total de páginas calculadas",
+            "example": 3
+          }
+        },
+        "required": ["total", "page", "limit", "total_paginas"]
+      },
+      "HistorialResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Lista paginada de actividades en el historial",
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ItemHistorialDto" }
+          },
+          "meta": {
+            "description": "Metadatos de paginación",
+            "allOf": [{ "$ref": "#/components/schemas/PaginacionMetaDto" }]
+          }
+        },
+        "required": ["items", "meta"]
+      },
+      "QrDinamicoResponseDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token efímero/TOTP firmado correspondiente al usuario",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OCIsImV4cCI6MTY3MjU4OTYwMH0"
+          },
+          "expiraEnSegundos": {
+            "type": "number",
+            "description": "Tiempo de validez restante del token en segundos",
+            "example": 60,
+            "default": 60
+          },
+          "fechaGeneracion": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Fecha y hora exactas en que se generó el token",
+            "example": "2026-09-17T15:00:00.000Z"
+          }
+        },
+        "required": ["token", "expiraEnSegundos", "fechaGeneracion"]
+      },
+      "ValidarIngresoDto": {
+        "type": "object",
+        "properties": {
+          "qrToken": {
+            "type": "string",
+            "description": "Token efímero del código QR dinámico (TOTP)",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "dni": {
+            "type": "string",
+            "description": "Número de DNI del socio para validación manual",
+            "example": "38456789"
+          },
+          "id_sede": {
+            "type": "number",
+            "description": "Identificador único de la sede donde se intenta el ingreso",
+            "example": 1
+          }
+        },
+        "required": ["id_sede"]
+      },
+      "AccesoResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_registro_acceso": {
+            "type": "number",
+            "description": "ID del registro de acceso generado"
+          },
+          "nombreUsuario": {
+            "type": "string",
+            "description": "Nombre completo del usuario"
+          },
+          "accesoPermitido": {
+            "type": "boolean",
+            "description": "Indica si el acceso fue autorizado o denegado"
+          },
+          "fechaIngreso": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Fecha y hora exacta del registro de ingreso"
+          },
+          "mensaje": { "type": "string", "description": "Mensaje indicativo" }
+        },
+        "required": [
+          "id_registro_acceso",
+          "nombreUsuario",
+          "accesoPermitido",
+          "fechaIngreso",
+          "mensaje"
+        ]
+      },
+      "RegistrarEgresoDto": {
+        "type": "object",
+        "properties": {
+          "qrToken": {
+            "type": "string",
+            "description": "Token QR dinámico del socio que registra su salida física",
+            "example": "7.179199573.3d696a27f6dfa960"
+          },
+          "dni": {
+            "type": "string",
+            "description": "Número de DNI del socio para el registro de egreso manual",
+            "example": "38456789"
+          },
+          "id_sede": {
+            "type": "number",
+            "description": "ID de la sede donde se encuentra el torniquete de egreso",
+            "example": 1
+          },
+          "fecha_egreso": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Fecha y hora de egreso en formato ISO 8601 (opcional). Si se omite, se utiliza la fecha/hora actual del sistema.",
+            "example": "2026-09-26T18:30:00.000Z"
+          }
+        },
+        "required": ["id_sede", "fecha_egreso"]
+      },
+      "EgresoResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_registro_acceso": {
+            "type": "number",
+            "example": 105,
+            "description": "ID del registro de acceso cerrado"
+          },
+          "id_usuario": {
+            "type": "number",
+            "example": 42,
+            "description": "ID del usuario"
+          },
+          "id_sede": {
+            "type": "number",
+            "example": 1,
+            "description": "ID de la sede"
+          },
+          "fechaIngreso": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-09-26T18:00:00.000Z",
+            "description": "Fecha y hora de ingreso"
+          },
+          "fechaEgreso": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-09-26T19:30:00.000Z",
+            "description": "Fecha y hora de egreso"
+          },
+          "mensaje": {
+            "type": "string",
+            "example": "Egreso registrado con éxito.",
+            "description": "Mensaje descriptivo del resultado"
+          }
+        },
+        "required": [
+          "id_registro_acceso",
+          "id_usuario",
+          "id_sede",
+          "fechaIngreso",
+          "fechaEgreso",
+          "mensaje"
+        ]
+      },
+      "AforoStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "idSede": {
+            "type": "number",
+            "example": 1,
+            "description": "ID de la sede"
+          },
+          "aforoActual": {
+            "type": "number",
+            "example": 45,
+            "description": "Cantidad actual de personas en la sede"
+          },
+          "aforoMaximo": {
+            "type": "number",
+            "example": 100,
+            "description": "Capacidad máxima permitida de la sede"
+          }
+        },
+        "required": ["idSede", "aforoActual", "aforoMaximo"]
+      },
+      "SincronizarAccesoOfflineDto": {
+        "type": "object",
+        "properties": {
+          "id_usuario": {
+            "type": "number",
+            "description": "ID del usuario socio extraído del QR",
+            "example": 25
+          },
+          "id_sede": {
+            "type": "number",
+            "description": "ID de la sede donde ocurrió el acceso",
+            "example": 1
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de operación offline",
+            "example": "INGRESO"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Marca de tiempo histórica en que ocurrió el evento offline",
+            "example": "2026-11-09T00:24:30.249Z"
+          }
+        },
+        "required": ["id_usuario", "id_sede", "tipo", "timestamp"]
+      },
+      "CreateClaseDto": {
+        "type": "object",
+        "properties": {
+          "id_sede": {
+            "type": "number",
+            "description": "ID de la sede donde se dictará la clase",
+            "example": 1
+          },
+          "capacidad_maxima": {
+            "type": "number",
+            "description": "Capacidad máxima de participantes para la clase",
+            "example": 20,
+            "minimum": 1
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre descriptivo de la clase",
+            "example": "Spinning Funcional",
+            "maxLength": 100
+          },
+          "descripcion": {
+            "type": "object",
+            "description": "Descripción detallada de la clase",
+            "example": "Clase de spinning de alta intensidad combinada con ejercicios funcionales.",
+            "maxLength": 255
+          },
+          "profesor": {
+            "type": "string",
+            "description": "Nombre del profesor o instructor a cargo",
+            "example": "Martín González",
+            "maxLength": 100
+          },
+          "sala": {
+            "type": "string",
+            "description": "Sala o espacio asignado para la clase",
+            "example": "Sala 1 - Ciclismo",
+            "maxLength": 100
+          },
+          "horario_inicio": {
+            "type": "string",
+            "description": "Horario habitual de inicio (formato HH:mm)",
+            "example": "18:00",
+            "maxLength": 10
+          },
+          "horario_fin": {
+            "type": "string",
+            "description": "Horario habitual de fin (formato HH:mm)",
+            "example": "19:00",
+            "maxLength": 10
+          },
+          "dias_semana": {
+            "description": "Días de la semana en los que se dicta la clase (0 = Domingo, 1 = Lunes, ..., 6 = Sábado)",
+            "example": [1, 3, 5],
+            "type": "array",
+            "items": { "type": "number" }
+          },
+          "fecha": {
+            "type": "string",
+            "description": "Fecha puntual de la clase en formato YYYY-MM-DD (para clases de única edición o eventos especiales)",
+            "example": "2026-10-25"
+          },
+          "activo": {
+            "type": "boolean",
+            "description": "Indica si la clase está activa para recibir reservas",
+            "example": true,
+            "default": true
+          }
+        },
+        "required": ["id_sede", "capacidad_maxima", "nombre"]
+      },
+      "ClaseResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_clase": {
+            "type": "number",
+            "description": "Identificador único de la clase grupal",
+            "example": 10
+          },
+          "id_sede": {
+            "type": "number",
+            "description": "ID de la sede donde se dicta la clase",
+            "example": 1
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre descriptivo de la clase",
+            "example": "Spinning Funcional"
+          },
+          "descripcion": {
+            "type": "object",
+            "description": "Descripción detallada de la clase",
+            "example": "Clase de spinning de alta intensidad combinada con ejercicios funcionales."
+          },
+          "capacidad_maxima": {
+            "type": "number",
+            "description": "Capacidad máxima de participantes",
+            "example": 20
+          },
+          "profesor": {
+            "type": "object",
+            "description": "Nombre del profesor o instructor asignado",
+            "example": "Martín González"
+          },
+          "sala": {
+            "type": "object",
+            "description": "Sala o espacio asignado",
+            "example": "Sala 1 - Ciclismo"
+          },
+          "horario_inicio": {
+            "type": "string",
+            "description": "Horario habitual de inicio en formato HH:mm",
+            "example": "18:00"
+          },
+          "horario_fin": {
+            "type": "string",
+            "description": "Horario habitual de fin en formato HH:mm",
+            "example": "19:00"
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "description": "Fecha y hora calculada de inicio en formato ISO 8601 estricto",
+            "example": "2026-10-20T21:00:00.000Z"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "description": "Fecha y hora calculada de fin en formato ISO 8601 estricto",
+            "example": "2026-10-20T22:00:00.000Z"
+          },
+          "dias_semana": {
+            "description": "Días de la semana en los que se dicta la clase (0 = Domingo, 1 = Lunes, ..., 6 = Sábado)",
+            "example": [1, 3, 5],
+            "type": "array",
+            "items": { "type": "number" }
+          },
+          "fecha": {
+            "type": "object",
+            "description": "Fecha puntual de la clase en formato YYYY-MM-DD (para clases de única edición o eventos especiales)",
+            "example": "2026-10-25"
+          },
+          "activo": {
+            "type": "boolean",
+            "description": "Indica si la clase está activa",
+            "example": true
+          }
+        },
+        "required": [
+          "id_clase",
+          "id_sede",
+          "nombre",
+          "capacidad_maxima",
+          "horario_inicio",
+          "horario_fin",
+          "fecha_inicio",
+          "fecha_fin",
+          "dias_semana",
+          "activo"
+        ]
+      },
+      "ClaseAgendaResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_clase": {
+            "type": "number",
+            "description": "Identificador único de la clase grupal",
+            "example": 1
+          },
+          "id_sede": {
+            "type": "number",
+            "description": "ID de la sede donde se dicta la clase",
+            "example": 1
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre descriptivo de la clase",
+            "example": "Spinning Avanzado"
+          },
+          "descripcion": {
+            "type": "object",
+            "description": "Descripción detallada de la clase",
+            "example": "Clase de ciclismo indoor de alta intensidad."
+          },
+          "profesor": {
+            "type": "object",
+            "description": "Nombre del profesor o instructor asignado",
+            "example": "Martín González"
+          },
+          "sala": {
+            "type": "object",
+            "description": "Sala o espacio asignado",
+            "example": "Sala 1 - Ciclismo"
+          },
+          "horario_inicio": {
+            "type": "string",
+            "description": "Horario de inicio en formato HH:mm",
+            "example": "18:00"
+          },
+          "horario_fin": {
+            "type": "string",
+            "description": "Horario de fin en formato HH:mm",
+            "example": "19:00"
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "description": "Fecha y hora de inicio de la clase en formato ISO",
+            "example": "2026-10-12T18:00:00.000Z"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "description": "Fecha y hora de fin de la clase en formato ISO",
+            "example": "2026-10-12T19:00:00.000Z"
+          },
+          "capacidad_maxima": {
+            "type": "number",
+            "description": "Capacidad máxima de participantes",
+            "example": 20
+          },
+          "cupos_ocupados": {
+            "type": "number",
+            "description": "Cantidad de cupos actualmente ocupados (reservas confirmadas)",
+            "example": 5
+          },
+          "cupos_disponibles": {
+            "type": "number",
+            "description": "Cantidad de cupos aún disponibles para reservar",
+            "example": 15
+          },
+          "en_espera": {
+            "type": "number",
+            "description": "Cantidad de socios actualmente en lista de espera",
+            "example": 0
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado de disponibilidad de la clase para ese horario",
+            "example": "DISPONIBLE",
+            "enum": ["DISPONIBLE", "COMPLETO"]
+          },
+          "dias_semana": {
+            "description": "Días de la semana en los que se dicta la clase (0 = Domingo, 1 = Lunes, ..., 6 = Sábado)",
+            "example": [1, 3, 5],
+            "type": "array",
+            "items": { "type": "number" }
+          },
+          "fecha": {
+            "type": "object",
+            "description": "Fecha puntual de la clase en formato YYYY-MM-DD (para clases de única edición o eventos especiales)",
+            "example": "2026-10-25"
+          },
+          "activo": {
+            "type": "boolean",
+            "description": "Indica si la clase está activa",
+            "example": true
+          }
+        },
+        "required": [
+          "id_clase",
+          "id_sede",
+          "nombre",
+          "horario_inicio",
+          "horario_fin",
+          "fecha_inicio",
+          "fecha_fin",
+          "capacidad_maxima",
+          "cupos_ocupados",
+          "cupos_disponibles",
+          "en_espera",
+          "estado",
+          "dias_semana",
+          "activo"
+        ]
+      },
+      "UpdateClaseDto": {
+        "type": "object",
+        "properties": {
+          "id_sede": {
+            "type": "number",
+            "description": "ID de la sede donde se dictará la clase",
+            "example": 1
+          },
+          "capacidad_maxima": {
+            "type": "number",
+            "description": "Capacidad máxima de participantes para la clase",
+            "example": 20,
+            "minimum": 1
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre descriptivo de la clase",
+            "example": "Spinning Funcional",
+            "maxLength": 100
+          },
+          "descripcion": {
+            "type": "object",
+            "description": "Descripción detallada de la clase",
+            "example": "Clase de spinning de alta intensidad combinada con ejercicios funcionales.",
+            "maxLength": 255
+          },
+          "profesor": {
+            "type": "string",
+            "description": "Nombre del profesor o instructor a cargo",
+            "example": "Martín González",
+            "maxLength": 100
+          },
+          "sala": {
+            "type": "string",
+            "description": "Sala o espacio asignado para la clase",
+            "example": "Sala 1 - Ciclismo",
+            "maxLength": 100
+          },
+          "horario_inicio": {
+            "type": "string",
+            "description": "Horario habitual de inicio (formato HH:mm)",
+            "example": "18:00",
+            "maxLength": 10
+          },
+          "horario_fin": {
+            "type": "string",
+            "description": "Horario habitual de fin (formato HH:mm)",
+            "example": "19:00",
+            "maxLength": 10
+          },
+          "dias_semana": {
+            "description": "Días de la semana en los que se dicta la clase (0 = Domingo, 1 = Lunes, ..., 6 = Sábado)",
+            "example": [1, 3, 5],
+            "type": "array",
+            "items": { "type": "number" }
+          },
+          "fecha": {
+            "type": "string",
+            "description": "Fecha puntual de la clase en formato YYYY-MM-DD (para clases de única edición o eventos especiales)",
+            "example": "2026-10-25"
+          },
+          "activo": {
+            "type": "boolean",
+            "description": "Indica si la clase está activa para recibir reservas",
+            "example": true,
+            "default": true
+          }
+        }
+      },
+      "EliminarClaseResponseDto": {
+        "type": "object",
+        "properties": {
+          "mensaje": {
+            "type": "string",
+            "description": "Mensaje descriptivo del resultado de la baja lógica",
+            "example": "Clase dada de baja exitosamente."
+          },
+          "id_clase": {
+            "type": "number",
+            "description": "Identificador único de la clase dada de baja",
+            "example": 10
+          },
+          "activo": {
+            "type": "boolean",
+            "description": "Estado activo de la clase tras la baja lógica",
+            "example": false
+          },
+          "reservas_canceladas": {
+            "type": "number",
+            "description": "Cantidad de reservas futuras confirmadas canceladas preventivamente",
+            "example": 2
+          }
+        },
+        "required": ["mensaje", "id_clase", "activo", "reservas_canceladas"]
+      },
+      "MiReservaClaseResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_clase_reserva": {
+            "type": "number",
+            "description": "ID único de la reserva de clase",
+            "example": 15
+          },
+          "id_clase": {
+            "type": "number",
+            "description": "ID de la clase reservada",
+            "example": 2
+          },
+          "id_usuario": {
+            "type": "number",
+            "description": "ID del usuario titular de la reserva",
+            "example": 8
+          },
+          "fecha_inicio": {
+            "type": "object",
+            "description": "Fecha y hora de inicio de la reserva",
+            "example": "2026-10-12T18:30:00.000Z"
+          },
+          "fecha_fin": {
+            "type": "object",
+            "description": "Fecha y hora de fin de la reserva",
+            "example": "2026-10-12T19:30:00.000Z"
+          },
+          "id_clase_reserva_estado": {
+            "type": "number",
+            "description": "ID del estado de la reserva (1 = Confirmada, etc.)",
+            "example": 1
+          },
+          "estado": {
+            "type": "string",
+            "description": "Descripción del estado de la reserva",
+            "example": "CONFIRMADA"
+          },
+          "nombre_clase": {
+            "type": "string",
+            "description": "Nombre de la clase reservada",
+            "example": "Spinning Funcional"
+          }
+        },
+        "required": [
+          "id_clase_reserva",
+          "id_clase",
+          "id_usuario",
+          "fecha_inicio",
+          "fecha_fin",
+          "id_clase_reserva_estado",
+          "estado"
+        ]
+      },
+      "CrearReservaClaseDto": {
+        "type": "object",
+        "properties": {
+          "id_clase": {
+            "type": "number",
+            "description": "ID de la clase a reservar",
+            "example": 1
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "description": "Fecha y hora de inicio de la reserva",
+            "example": "2026-09-22T10:00:00Z"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "description": "Fecha y hora de fin de la reserva",
+            "example": "2026-09-22T11:00:00Z"
+          }
+        },
+        "required": ["id_clase", "fecha_inicio", "fecha_fin"]
+      },
+      "ReservaClaseResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_clase_reserva": {
+            "type": "number",
+            "description": "ID único de la reserva de clase",
+            "example": 1
+          },
+          "id_clase": {
+            "type": "number",
+            "description": "ID de la clase reservada",
+            "example": 1
+          },
+          "id_usuario": {
+            "type": "number",
+            "description": "ID del usuario titular de la reserva",
+            "example": 1
+          },
+          "id_clase_reserva_estado": {
+            "type": "number",
+            "description": "ID del estado de la reserva (ej: 1 = Confirmada, 2 = Cancelada)",
+            "example": 1
+          },
+          "fecha_inicio": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Fecha y hora de inicio de la reserva",
+            "example": "2026-09-22T10:00:00Z"
+          },
+          "fecha_fin": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Fecha y hora de fin de la reserva",
+            "example": "2026-09-22T11:00:00Z"
+          }
+        },
+        "required": [
+          "id_clase_reserva",
+          "id_clase",
+          "id_usuario",
+          "id_clase_reserva_estado",
+          "fecha_inicio",
+          "fecha_fin"
+        ]
+      },
+      "CancelarReservaResponseDto": {
+        "type": "object",
+        "properties": {
+          "mensaje": {
+            "type": "string",
+            "description": "Mensaje descriptivo sobre el resultado de la cancelación",
+            "example": "Reserva cancelada exitosamente."
+          },
+          "reserva": {
+            "description": "Datos actualizados de la reserva que fue cancelada",
+            "allOf": [
+              { "$ref": "#/components/schemas/ReservaClaseResponseDto" }
+            ]
+          },
+          "cupo_reasignado": {
+            "type": "boolean",
+            "description": "Indica si el cupo liberado fue reasignado a un socio en lista de espera",
+            "example": true
+          }
+        },
+        "required": ["mensaje", "reserva"]
+      },
+      "MiInscripcionListaEsperaResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_clase_lista_espera": {
+            "type": "number",
+            "description": "ID único de la inscripción en lista de espera",
+            "example": 4
+          },
+          "id_clase": {
+            "type": "number",
+            "description": "ID de la clase grupal",
+            "example": 3
+          },
+          "id_usuario": {
+            "type": "number",
+            "description": "ID del usuario inscripto",
+            "example": 8
+          },
+          "fecha_inicio": {
+            "type": "object",
+            "description": "Fecha y hora de inicio de la clase reservada",
+            "example": "2026-10-12T20:00:00.000Z"
+          },
+          "fecha_fin": {
+            "type": "object",
+            "description": "Fecha y hora de fin de la clase reservada",
+            "example": "2026-10-12T21:00:00.000Z"
+          },
+          "orden_en_cola": {
+            "type": "number",
+            "description": "Posición actual en la cola de espera (1 = primero en la fila)",
+            "example": 2
+          },
+          "id_clase_lista_espera_estado": {
+            "type": "number",
+            "description": "ID del estado de la inscripción en lista de espera",
+            "example": 1
+          },
+          "estado": {
+            "type": "string",
+            "description": "Descripción del estado de la inscripción",
+            "example": "EN_ESPERA"
+          },
+          "nombre_clase": {
+            "type": "string",
+            "description": "Nombre descriptivo de la clase grupal",
+            "example": "Crossfit Funcional"
+          }
+        },
+        "required": [
+          "id_clase_lista_espera",
+          "id_clase",
+          "id_usuario",
+          "fecha_inicio",
+          "fecha_fin",
+          "orden_en_cola",
+          "id_clase_lista_espera_estado",
+          "estado"
+        ]
+      },
+      "InscribirListaEsperaDto": {
+        "type": "object",
+        "properties": {
+          "id_clase": {
+            "type": "number",
+            "description": "ID de la clase a la cual anotarse en lista de espera",
+            "example": 1
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "description": "Fecha y hora de inicio de la clase (formato ISO)",
+            "example": "2026-10-12T18:30:00.000Z"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "description": "Fecha y hora de fin de la clase (formato ISO)",
+            "example": "2026-10-12T19:30:00.000Z"
+          }
+        },
+        "required": ["id_clase", "fecha_inicio", "fecha_fin"]
+      },
+      "CrearMantenimientoDto": {
+        "type": "object",
+        "properties": {
+          "fecha_inicio": {
+            "type": "string",
+            "example": "2026-10-20T08:00:00Z",
+            "description": "Fecha y hora de inicio del mantenimiento"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "example": "2026-10-20T12:00:00Z",
+            "description": "Fecha y hora de fin del mantenimiento"
+          },
+          "motivo": {
+            "type": "string",
+            "example": "Reparación de red e iluminación",
+            "description": "Motivo del mantenimiento"
+          }
+        },
+        "required": ["fecha_inicio", "fecha_fin"]
+      },
+      "MantenimientoResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_cancha_mantenimiento": { "type": "number", "example": 1 },
+          "id_cancha": { "type": "number", "example": 1 },
+          "fecha_inicio": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-20T08:00:00Z"
+          },
+          "fecha_fin": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-20T12:00:00Z"
+          },
+          "motivo": {
+            "type": "string",
+            "example": "Reparación de red e iluminación"
+          }
+        },
+        "required": [
+          "id_cancha_mantenimiento",
+          "id_cancha",
+          "fecha_inicio",
+          "fecha_fin"
+        ]
+      },
+      "CrearCanchaDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "example": "Cancha 1 - Césped Sintético",
+            "description": "Nombre identificador de la cancha"
+          },
+          "costo_base": {
+            "type": "number",
+            "example": 5000.5,
+            "description": "Costo base por hora de la cancha"
+          },
+          "id_cancha_tipo": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del tipo de cancha (ej: Fútbol 5, Paddle)"
+          },
+          "id_sede": {
+            "type": "number",
+            "example": 3,
+            "description": "ID de la sede a la que pertenece"
+          },
+          "disponible": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si la cancha está disponible para reservas"
+          }
+        },
+        "required": ["nombre", "costo_base", "id_cancha_tipo", "id_sede"]
+      },
+      "CrearTipoCanchaDto": {
+        "type": "object",
+        "properties": {
+          "descripcion": {
+            "type": "string",
+            "example": "Pádel",
+            "description": "Nombre o descripción de la disciplina o tipo de cancha"
+          }
+        },
+        "required": ["descripcion"]
+      },
+      "ActualizarTipoCanchaDto": {
+        "type": "object",
+        "properties": {
+          "descripcion": {
+            "type": "string",
+            "example": "Pádel",
+            "description": "Nombre o descripción de la disciplina o tipo de cancha"
+          },
+          "activo": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si el tipo de cancha está activo (permite reactivar o dar de baja)"
+          }
+        }
+      },
+      "CotizacionResponseDto": {
+        "type": "object",
+        "properties": {
+          "costo_base": {
+            "type": "number",
+            "example": 12000,
+            "description": "Tarifa base de la cancha consultada"
+          },
+          "descuento_porcentaje": {
+            "type": "number",
+            "example": 15,
+            "description": "Porcentaje de descuento de socio aplicado (15 o 0)"
+          },
+          "monto_descuento": {
+            "type": "number",
+            "example": 1800,
+            "description": "Monto monetario de descuento aplicado"
+          },
+          "es_horario_pico": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si el turno inicia en horario pico (19:00 a 21:00 hs)"
+          },
+          "monto_recargo_pico": {
+            "type": "number",
+            "example": 2400,
+            "description": "Monto monetario de recargo por horario pico (+20%)"
+          },
+          "precio_final": {
+            "type": "number",
+            "example": 12600,
+            "description": "Precio final calculado (costo_base - monto_descuento + monto_recargo_pico)"
+          },
+          "es_socio": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si el usuario tiene rol de socio"
+          },
+          "aplica_descuento_socio": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si aplica efectivamente el descuento de socio"
+          },
+          "motivo_sin_descuento": {
+            "type": "string",
+            "example": null,
+            "nullable": true,
+            "enum": ["OTRA_CIUDAD", "SIN_MEMBRESIA", "ROL_EXTERNO", null],
+            "description": "Motivo por el cual no aplica el descuento de socio (null si aplica)"
+          }
+        },
+        "required": [
+          "costo_base",
+          "descuento_porcentaje",
+          "monto_descuento",
+          "es_horario_pico",
+          "monto_recargo_pico",
+          "precio_final",
+          "es_socio",
+          "aplica_descuento_socio",
+          "motivo_sin_descuento"
+        ]
+      },
+      "ActualizarCanchaDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "example": "Cancha 1 - Césped Sintético",
+            "description": "Nombre identificador de la cancha"
+          },
+          "costo_base": {
+            "type": "number",
+            "example": 5000.5,
+            "description": "Costo base por hora de la cancha"
+          },
+          "id_cancha_tipo": {
+            "type": "number",
+            "example": 1,
+            "description": "ID del tipo de cancha (ej: Fútbol 5, Paddle)"
+          },
+          "id_sede": {
+            "type": "number",
+            "example": 3,
+            "description": "ID de la sede a la que pertenece"
+          },
+          "disponible": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indica si la cancha está disponible para reservas"
+          }
+        }
+      },
+      "DisponibilidadSlotResponseDto": {
+        "type": "object",
+        "properties": {
+          "horaInicio": { "type": "string", "example": "08:00" },
+          "horaFin": { "type": "string", "example": "09:00" },
+          "estado": {
+            "type": "string",
+            "enum": ["DISPONIBLE", "RESERVADO", "MANTENIMIENTO"],
+            "example": "DISPONIBLE"
+          }
+        },
+        "required": ["horaInicio", "horaFin", "estado"]
+      },
+      "CrearReservaCanchaDto": {
+        "type": "object",
+        "properties": {
+          "id_cancha": {
+            "type": "number",
+            "example": 1,
+            "description": "ID de la cancha a reservar"
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "example": "2026-10-15T10:00:00Z",
+            "description": "Fecha y hora de inicio"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "example": "2026-10-15T11:00:00Z",
+            "description": "Fecha y hora de fin"
+          }
+        },
+        "required": ["id_cancha", "fecha_inicio", "fecha_fin"]
+      },
+      "ReservaCanchaResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_cancha_reserva": { "type": "number", "example": 1 },
+          "id_cancha": { "type": "number", "example": 1 },
+          "fecha_inicio": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-15T10:00:00Z"
+          },
+          "fecha_fin": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-10-15T11:00:00Z"
+          },
+          "precio_congelado": { "type": "number", "example": 4250 },
+          "descuento_porcentaje": { "type": "number", "example": 15 },
+          "es_horario_pico": { "type": "boolean", "example": false }
+        },
+        "required": [
+          "id_cancha_reserva",
+          "id_cancha",
+          "fecha_inicio",
+          "fecha_fin",
+          "precio_congelado",
+          "descuento_porcentaje",
+          "es_horario_pico"
+        ]
+      },
+      "CreateCiudadDto": { "type": "object", "properties": {} },
+      "UpdateCiudadDto": { "type": "object", "properties": {} },
+      "CreateSedeDto": { "type": "object", "properties": {} },
+      "UpdateSedeDto": { "type": "object", "properties": {} },
+      "CalendarioResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_calendario": { "type": "number", "example": 1 },
+          "fecha": {
+            "type": "string",
+            "example": "2026-12-25",
+            "description": "Formato YYYY-MM-DD"
+          },
+          "descripcion": {
+            "type": "string",
+            "example": "Navidad",
+            "nullable": true
+          },
+          "es_feriado": { "type": "boolean", "example": true },
+          "es_dia_habil": { "type": "boolean", "example": false }
+        },
+        "required": [
+          "id_calendario",
+          "fecha",
+          "descripcion",
+          "es_feriado",
+          "es_dia_habil"
+        ]
+      },
+      "CreateCalendarioDto": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "example": "2026-12-25",
+            "description": "Fecha en formato YYYY-MM-DD"
+          },
+          "descripcion": {
+            "type": "string",
+            "example": "Navidad",
+            "maxLength": 100
+          },
+          "es_feriado": {
+            "type": "boolean",
+            "example": true,
+            "description": "Feriado nacional o para todas las sedes. Por defecto false."
+          },
+          "es_dia_habil": {
+            "type": "boolean",
+            "example": false,
+            "description": "Por defecto true. Si se marca como feriado y no se indica, queda en false."
+          }
+        },
+        "required": ["fecha"]
+      },
+      "UpdateCalendarioDto": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "example": "2026-12-25",
+            "description": "Fecha en formato YYYY-MM-DD"
+          },
+          "descripcion": {
+            "type": "string",
+            "example": "Navidad",
+            "maxLength": 100
+          },
+          "es_feriado": {
+            "type": "boolean",
+            "example": true,
+            "description": "Feriado nacional o para todas las sedes. Por defecto false."
+          },
+          "es_dia_habil": {
+            "type": "boolean",
+            "example": false,
+            "description": "Por defecto true. Si se marca como feriado y no se indica, queda en false."
+          }
+        }
+      },
+      "CalendarioSedeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_calendario_sede": { "type": "number", "example": 1 },
+          "id_sede": { "type": "number", "example": 1 },
+          "id_calendario": { "type": "number", "example": 3 },
+          "fecha": {
+            "type": "string",
+            "example": "2026-12-24",
+            "description": "Formato YYYY-MM-DD"
+          },
+          "cerrado": { "type": "boolean", "example": false },
+          "hora_apertura": {
+            "type": "string",
+            "example": "09:00",
+            "nullable": true
+          },
+          "hora_cierre": {
+            "type": "string",
+            "example": "13:00",
+            "nullable": true
+          },
+          "motivo": {
+            "type": "string",
+            "example": "Horario reducido por Nochebuena",
+            "nullable": true
+          },
+          "calendario": {
+            "description": "Fecha del calendario general (por ejemplo, si es feriado)",
+            "allOf": [{ "$ref": "#/components/schemas/CalendarioResponseDto" }]
+          }
+        },
+        "required": [
+          "id_calendario_sede",
+          "id_sede",
+          "id_calendario",
+          "fecha",
+          "cerrado",
+          "hora_apertura",
+          "hora_cierre",
+          "motivo",
+          "calendario"
+        ]
+      },
+      "CreateCalendarioSedeDto": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "example": "2026-12-24",
+            "description": "Formato YYYY-MM-DD"
+          },
+          "cerrado": {
+            "type": "boolean",
+            "example": false,
+            "description": "true: la sede cierra todo el día (por defecto). false: abre con el horario especial indicado. Si se envían horas sin este campo, se toma como apertura con horario especial."
+          },
+          "hora_apertura": {
+            "type": "string",
+            "example": "09:00",
+            "description": "Formato HH:mm"
+          },
+          "hora_cierre": {
+            "type": "string",
+            "example": "13:00",
+            "description": "Formato HH:mm"
+          },
+          "motivo": {
+            "type": "string",
+            "example": "Horario reducido por Nochebuena",
+            "maxLength": 255
+          }
+        },
+        "required": ["fecha"]
+      },
+      "UpdateCalendarioSedeDto": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "example": "2026-12-24",
+            "description": "Formato YYYY-MM-DD"
+          },
+          "cerrado": {
+            "type": "boolean",
+            "example": false,
+            "description": "true: la sede cierra todo el día (por defecto). false: abre con el horario especial indicado. Si se envían horas sin este campo, se toma como apertura con horario especial."
+          },
+          "hora_apertura": {
+            "type": "string",
+            "example": "09:00",
+            "description": "Formato HH:mm"
+          },
+          "hora_cierre": {
+            "type": "string",
+            "example": "13:00",
+            "description": "Formato HH:mm"
+          },
+          "motivo": {
+            "type": "string",
+            "example": "Horario reducido por Nochebuena",
+            "maxLength": 255
+          }
+        }
+      },
+      "SedeHorarioResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_sede_horario": { "type": "number", "example": 1 },
+          "id_sede": { "type": "number", "example": 1 },
+          "dia_semana": {
+            "type": "number",
+            "example": 1,
+            "description": "0 domingo, 1 lunes … 6 sábado"
+          },
+          "hora_apertura": { "type": "string", "example": "07:00" },
+          "hora_cierre": { "type": "string", "example": "23:00" },
+          "abierto": { "type": "boolean", "example": true }
+        },
+        "required": [
+          "id_sede_horario",
+          "id_sede",
+          "dia_semana",
+          "hora_apertura",
+          "hora_cierre",
+          "abierto"
+        ]
+      },
+      "CreateSedeHorarioDto": {
+        "type": "object",
+        "properties": {
+          "dia_semana": {
+            "type": "number",
+            "example": 1,
+            "description": "Día de la semana: 0 domingo, 1 lunes … 6 sábado"
+          },
+          "hora_apertura": {
+            "type": "string",
+            "example": "07:00",
+            "description": "Formato HH:mm. Obligatoria si la sede abre ese día."
+          },
+          "hora_cierre": {
+            "type": "string",
+            "example": "23:00",
+            "description": "Formato HH:mm. Obligatoria si la sede abre ese día."
+          },
+          "abierto": {
+            "type": "boolean",
+            "example": true,
+            "description": "Por defecto true. Si es false, la sede no abre ese día."
+          }
+        },
+        "required": ["dia_semana"]
+      },
+      "UpdateSedeHorarioDto": {
+        "type": "object",
+        "properties": {
+          "dia_semana": {
+            "type": "number",
+            "example": 1,
+            "description": "Día de la semana: 0 domingo, 1 lunes … 6 sábado"
+          },
+          "hora_apertura": {
+            "type": "string",
+            "example": "07:00",
+            "description": "Formato HH:mm. Obligatoria si la sede abre ese día."
+          },
+          "hora_cierre": {
+            "type": "string",
+            "example": "23:00",
+            "description": "Formato HH:mm. Obligatoria si la sede abre ese día."
+          },
+          "abierto": {
+            "type": "boolean",
+            "example": true,
+            "description": "Por defecto true. Si es false, la sede no abre ese día."
+          }
+        }
+      },
+      "IniciarPagoDto": {
+        "type": "object",
+        "properties": {
+          "monto": {
+            "type": "number",
+            "description": "Monto total a abonar en la pasarela de pagos (opcional si se especifica un plan)",
+            "example": 40000
+          },
+          "titulo": {
+            "type": "string",
+            "description": "Título o descripción del concepto a pagar",
+            "example": "Suscripción - Plan Mensual"
+          },
+          "id_cancha_reserva": {
+            "type": "number",
+            "description": "ID de la reserva de cancha asociada (requerido si no se especifica plan o membresía)",
+            "example": 10
+          },
+          "id_membresia_plan": {
+            "type": "number",
+            "description": "ID del plan de membresía a contratar o renovar (recomendado)",
+            "example": 1
+          },
+          "id_membresia": {
+            "type": "number",
+            "description": "ID de la membresía asociada (uso para renovación directa de membresía existente)",
+            "example": 5
+          },
+          "email_pagador": {
+            "type": "string",
+            "description": "Correo electrónico del pagador para precarga en Mercado Pago Checkout Pro",
+            "example": "socio@fitzone.com"
+          }
+        },
+        "required": ["titulo"]
+      },
+      "PreferenciaPagoResponseDto": {
+        "type": "object",
+        "properties": {
+          "preferenceId": {
+            "type": "string",
+            "description": "Identificador único de la preferencia generada en Mercado Pago",
+            "example": "111111111-abcdef12-3456-7890-abcd-ef1234567890"
+          },
+          "initPoint": {
+            "type": "string",
+            "description": "URL oficial de redirección para completar el pago en Mercado Pago Checkout Pro (Producción)",
+            "example": "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=111111111-abcdef12-3456-7890-abcd-ef1234567890"
+          },
+          "sandboxInitPoint": {
+            "type": "string",
+            "description": "URL de pruebas para Checkout Pro en el entorno Sandbox de Mercado Pago",
+            "example": "https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=111111111-abcdef12-3456-7890-abcd-ef1234567890"
+          },
+          "id_pago": {
+            "type": "number",
+            "description": "Identificador del registro de intención de pago generado en FitZone",
+            "example": 1
+          }
+        },
+        "required": ["preferenceId", "initPoint", "sandboxInitPoint"]
+      },
+      "PagoConceptoDto": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de servicio o entidad abonada",
+            "enum": ["cancha", "membresia", "general"],
+            "example": "cancha"
+          },
+          "id_referencia": {
+            "type": "object",
+            "description": "Identificador único del recurso referenciado (id_cancha_reserva o id_membresia)",
+            "example": 4,
+            "nullable": true
+          },
+          "titulo": {
+            "type": "string",
+            "description": "Denominación sintética del servicio abonado",
+            "example": "Reserva Cancha Pádel 1"
+          },
+          "detalle": {
+            "type": "string",
+            "description": "Detalle contextual ampliado (ej. sede, horario de reserva o período de vigencia de membresía)",
+            "example": "Sede Central - Horario: 26/09/2026 18:00 a 19:00 hs"
+          },
+          "duracion_dias": {
+            "type": "number",
+            "description": "Duración en días del plan en caso de membresía",
+            "example": 30,
+            "nullable": true
+          }
+        },
+        "required": ["tipo", "titulo", "detalle"]
+      },
+      "PagoDetalleResponseDto": {
+        "type": "object",
+        "properties": {
+          "id_pago": {
+            "type": "number",
+            "description": "Identificador único numérico del registro de pago",
+            "example": 101
+          },
+          "monto": {
+            "type": "number",
+            "description": "Monto total abonado en Pesos Argentinos (ARS)",
+            "example": 15000
+          },
+          "fecha_pago": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Fecha y hora en que se registró el pago en la plataforma",
+            "example": "2026-09-26T14:30:00.000Z"
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado actual del pago en el sistema (Pendiente, Aprobado, Rechazado)",
+            "example": "Aprobado"
+          },
+          "token_transaccion": {
+            "type": "object",
+            "description": "Identificador o token de transacción certificado por Mercado Pago",
+            "example": "1234567890",
+            "nullable": true
+          },
+          "comprobante_url": {
+            "type": "object",
+            "description": "Ruta relativa del endpoint para visualización e impresión directa del comprobante PDF (RF-14)",
+            "example": "/pagos/101/comprobante",
+            "nullable": true
+          },
+          "concepto": {
+            "description": "Detalle del concepto o servicio deportivo asociado al pago",
+            "allOf": [{ "$ref": "#/components/schemas/PagoConceptoDto" }]
+          }
+        },
+        "required": ["id_pago", "monto", "fecha_pago", "estado", "concepto"]
+      },
+      "PagoPendienteResponseDto": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de concepto pendiente de pago",
+            "enum": ["cancha", "membresia"],
+            "example": "cancha"
+          },
+          "id_referencia": {
+            "type": "number",
+            "description": "Identificador del recurso a abonar (id_cancha_reserva o id_membresia)",
+            "example": 4
+          },
+          "titulo": {
+            "type": "string",
+            "description": "Denominación sintética del concepto a abonar",
+            "example": "Reserva Cancha Pádel 1"
+          },
+          "detalle": {
+            "type": "string",
+            "description": "Detalle contextual (sede, horario o vigencia)",
+            "example": "Sede Central - Horario: 26/09/2026 18:00 a 19:00 hs"
+          },
+          "monto": {
+            "type": "number",
+            "description": "Monto a abonar en Pesos Argentinos (ARS)",
+            "example": 15000
+          },
+          "duracion_dias": {
+            "type": "number",
+            "description": "Duración en días del plan en caso de membresía",
+            "example": 30
+          }
+        },
+        "required": ["tipo", "id_referencia", "titulo", "detalle", "monto"]
+      },
+      "MercadoPagoWebhookDataDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador del recurso en los servidores de Mercado Pago",
+            "example": "12345678901"
+          }
+        },
+        "required": ["id"]
+      },
+      "MercadoPagoWebhookDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Acción que detonó la notificación (ej. payment.created, payment.updated)",
+            "example": "payment.updated"
+          },
+          "api_version": {
+            "type": "string",
+            "description": "Versión de la API de Mercado Pago del webhook",
+            "example": "v1"
+          },
+          "data": {
+            "description": "Contenedor con el identificador del recurso afectado",
+            "allOf": [
+              { "$ref": "#/components/schemas/MercadoPagoWebhookDataDto" }
+            ]
+          },
+          "date_created": {
+            "type": "string",
+            "description": "Fecha y hora de generación de la notificación (formato ISO 8601)",
+            "example": "2026-09-24T12:00:00Z"
+          },
+          "id": {
+            "type": "object",
+            "description": "Identificador del evento o recurso provisto en la raíz del payload",
+            "example": "12345678901"
+          },
+          "live_mode": {
+            "type": "boolean",
+            "description": "Indica si la notificación corresponde al entorno productivo (true) o sandbox (false)",
+            "example": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de evento notificado (ej. payment, plan, subscription)",
+            "example": "payment"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Tópico de la notificación IPN de Mercado Pago (compatibilidad con notificaciones clásicas)",
+            "example": "payment"
+          },
+          "user_id": {
+            "type": "object",
+            "description": "Identificador del usuario / cuenta de Mercado Pago asociada a la integración",
+            "example": "123456789"
+          }
+        }
+      },
+      "WebhookResponseDto": {
+        "type": "object",
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "description": "Indica si la notificación fue recibida y aceptada correctamente",
+            "example": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Estado del procesamiento del evento (ej. processed, ignored, error)",
+            "example": "processed"
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje descriptivo opcional sobre el resultado del procesamiento",
+            "example": "Notificación de pago procesada exitosamente"
+          }
+        },
+        "required": ["received", "status"]
+      },
+      "IngresoPorSedeDto": {
+        "type": "object",
+        "properties": {
+          "id_sede": {
+            "type": "number",
+            "example": 1,
+            "description": "ID de la sede"
+          },
+          "nombre_sede": {
+            "type": "string",
+            "example": "Sede Centro",
+            "description": "Nombre de la sede"
+          },
+          "total_ingresos": {
+            "type": "number",
+            "example": 100000,
+            "description": "Total de ingresos de la sede"
+          }
+        },
+        "required": ["id_sede", "nombre_sede", "total_ingresos"]
+      },
+      "ReporteIngresosResponseDto": {
+        "type": "object",
+        "properties": {
+          "fecha_desde": {
+            "type": "string",
+            "example": "2026-09-01",
+            "description": "Fecha inicial del reporte"
+          },
+          "fecha_hasta": {
+            "type": "string",
+            "example": "2026-09-30",
+            "description": "Fecha final del reporte"
+          },
+          "total_ingresos": {
+            "type": "number",
+            "example": 200000,
+            "description": "Total consolidado de ingresos"
+          },
+          "sedes": {
+            "description": "Ingresos agrupados por sede",
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/IngresoPorSedeDto" }
+          }
+        },
+        "required": ["fecha_desde", "fecha_hasta", "total_ingresos", "sedes"]
+      },
+      "MetricaOcupacionPorSedeDto": {
+        "type": "object",
+        "properties": {
+          "id_sede": {
+            "type": "number",
+            "example": 1,
+            "description": "ID de la sede"
+          },
+          "nombre_sede": {
+            "type": "string",
+            "example": "Sede Centro",
+            "description": "Nombre de la sede"
+          },
+          "total_asistencias": {
+            "type": "number",
+            "example": 150,
+            "description": "Cantidad total de asistencias registradas"
+          },
+          "total_reservas_canchas": {
+            "type": "number",
+            "example": 45,
+            "description": "Cantidad total de reservas de canchas"
+          },
+          "total_reservas_clases": {
+            "type": "number",
+            "example": 80,
+            "description": "Cantidad total de reservas en clases grupales"
+          }
+        },
+        "required": [
+          "id_sede",
+          "nombre_sede",
+          "total_asistencias",
+          "total_reservas_canchas",
+          "total_reservas_clases"
+        ]
+      },
+      "ReporteOcupacionResponseDto": {
+        "type": "object",
+        "properties": {
+          "fecha_desde": {
+            "type": "string",
+            "example": "2026-09-01",
+            "description": "Fecha inicial del reporte"
+          },
+          "fecha_hasta": {
+            "type": "string",
+            "example": "2026-09-30",
+            "description": "Fecha final del reporte"
+          },
+          "sedes": {
+            "description": "Métricas de ocupación agrupadas por sede",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricaOcupacionPorSedeDto"
+            }
+          }
+        },
+        "required": ["fecha_desde", "fecha_hasta", "sedes"]
+      },
+      "SociosActivosPorSedeDto": {
+        "type": "object",
+        "properties": {
+          "id_sede": {
+            "type": "number",
+            "example": 1,
+            "description": "ID de la sede"
+          },
+          "nombre_sede": {
+            "type": "string",
+            "example": "Sede Centro",
+            "description": "Nombre de la sede"
+          },
+          "socios_activos": {
+            "type": "number",
+            "example": 120,
+            "description": "Socios de la sede con una membresía activa y vigente"
+          }
+        },
+        "required": ["id_sede", "nombre_sede", "socios_activos"]
+      },
+      "ReporteSociosActivosResponseDto": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "example": "2026-11-18",
+            "description": "Fecha en la que se contaron los socios activos"
+          },
+          "total_socios_activos": {
+            "type": "number",
+            "example": 350,
+            "description": "Socios activos de toda la cadena"
+          },
+          "sedes": {
+            "description": "Socios activos por sede de origen (solo sedes con socios)",
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SociosActivosPorSedeDto" }
+          }
+        },
+        "required": ["fecha", "total_socios_activos", "sedes"]
+      },
+      "AforoPorSedeDto": {
+        "type": "object",
+        "properties": {
+          "id_sede": {
+            "type": "number",
+            "example": 1,
+            "description": "ID de la sede"
+          },
+          "nombre_sede": {
+            "type": "string",
+            "example": "Sede Centro",
+            "description": "Nombre de la sede"
+          },
+          "aforo_actual": {
+            "type": "number",
+            "example": 45,
+            "description": "Personas que ingresaron y todavía no registraron el egreso"
+          },
+          "aforo_maximo": {
+            "type": "number",
+            "example": 100,
+            "description": "Aforo máximo de la sede"
+          }
+        },
+        "required": ["id_sede", "nombre_sede", "aforo_actual", "aforo_maximo"]
+      },
+      "ReporteAforoResponseDto": {
+        "type": "object",
+        "properties": {
+          "total_aforo_actual": {
+            "type": "number",
+            "example": 151,
+            "description": "Personas dentro de todas las sedes activas"
+          },
+          "total_aforo_maximo": {
+            "type": "number",
+            "example": 230,
+            "description": "Suma del aforo máximo de las sedes activas"
+          },
+          "sedes": {
+            "description": "Aforo actual y máximo de cada sede activa",
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AforoPorSedeDto" }
+          }
+        },
+        "required": ["total_aforo_actual", "total_aforo_maximo", "sedes"]
+      }
+    }
+  }
+}
