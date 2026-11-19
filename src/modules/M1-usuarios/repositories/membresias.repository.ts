@@ -83,6 +83,15 @@ export class MembresiasRepository {
   }
 
   /**
+   * Cantidad de membresías asociadas a un plan determinado.
+   */
+  async countMembresiasByPlan(id_membresia_plan: number): Promise<number> {
+    return await this.prisma.membresia.count({
+      where: { id_membresia_plan },
+    });
+  }
+
+  /**
    * Obtiene la lista de estados de membresía
    */
   async findAllEstados() {

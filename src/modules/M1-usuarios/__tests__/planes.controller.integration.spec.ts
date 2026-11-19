@@ -165,8 +165,60 @@ describe('Planes de membresía (integración): permisos de escritura', () => {
       ).not.toContain(temporal.id_membresia_plan);
     });
 
-    it.todo(
-      'debería responder 409 al eliminar un plan con membresías asociadas (hoy la FK lo rechaza con 500; pendiente en PlanesService)',
-    );
+    it('responde 409 al intentar eliminar un plan con membresías asociadas y 404 si el plan no existe', async () => {
+      const prisma = contexto.base.prisma;
+      const ciudad = await prisma.ciudad.create({
+        data: { nombre: 'Paraná' },
+      });
+      const sede = await prisma.sede.create({
+        data: {
+          nombre: 'Sede Test Plan',
+          direccion: 'Av. Test 100',
+          aforo_maximo: 50,
+          id_ciudad: ciudad.id_ciudad,
+        },
+      });
+      const estadoUsuario = await prisma.usuarioEstado.create({
+        data: { descripcion: 'Activo' },
+      });
+      const usuario = await prisma.usuario.create({
+        data: {
+          dni: '40111222',
+          email: 'socio.plan@test.local',
+          password: 'x',
+          nombre: 'Socio',
+          apellido: 'Test',
+          id_sede: sede.id_sede,
+          id_usuario_estado: estadoUsuario.id_usuario_estado,
+        },
+      });
+      const estadoMembresia = await prisma.membresiaEstado.create({
+        data: { descripcion: 'Activa' },
+      });
+      await prisma.membresia.create({
+        data: {
+          id_usuario: usuario.id_usuario,
+          id_membresia_plan: idMensual,
+          id_membresia_estado: estadoMembresia.id_membresia_estado,
+          fecha_inicio: new Date('2026-10-01T00:00:00.000Z'),
+          fecha_fin: new Date('2026-11-01T00:00:00.000Z'),
+        },
+      });
+
+      await request(servidor())
+        .delete(`/planes/${idMensual}`)
+        .set('Authorization', bearer('gerente'))
+        .expect(409);
+
+      const sigueExistiendo = await prisma.membresiaPlan.findUnique({
+        where: { id_membresia_plan: idMensual },
+      });
+      expect(sigueExistiendo).not.toBeNull();
+
+      await request(servidor())
+        .delete('/planes/999999')
+        .set('Authorization', bearer('gerente'))
+        .expect(404);
+    });
   });
 });
