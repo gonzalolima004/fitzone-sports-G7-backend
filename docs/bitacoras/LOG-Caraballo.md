@@ -428,3 +428,20 @@
   - `c6dacd9` `docs(adr):  formato y creacion`
 
 ---
+
+#### 18/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Corrección de tests unitarios sensibles a zona horaria UTC en M3 (`lista-espera.service.spec.ts` y `reservas-clases.service.spec.ts`) usando `getUTCDay()`.
+  - Ampliación de la suite de pruebas unitarias (black-box y tipado estricto) en M5 Pagos, M1 Usuarios/Membresías/Storage, M2 Accesos/QR, M3 Repositorios, M4 Canchas, Guards comunes y `SupabaseService`, elevando la cobertura global (`47/47` suites y `425/425` tests pasando, `0 todo`).
+  - Validación en `PlanesService.remove` (`countMembresiasByPlan` en `MembresiasRepository`) para responder `404` si el plan no existe y `409 Conflict` si tiene membresías asociadas, reemplazando el `it.todo` pendiente en `planes.controller.integration.spec.ts` por su test de integración real.
+- **Decisiones:** Priorizar cobertura genuina sobre reglas de negocio, seguridad y casos borde en lugar de excluir archivos de métricas o agregar tests triviales.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `019764c` `tests: incluir tests relevantes donde faltaba`
+  - `b822152` `feat(M1): conflicto al eliminar plan con membresias asociadas`
+  - `b712a96` `tests(M1): tests para control de eliminar plan con membresias`
+
+---
