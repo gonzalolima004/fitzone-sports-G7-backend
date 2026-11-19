@@ -505,3 +505,19 @@ Verificación: 3 suites y 45 pruebas aprobadas en M6 (22 nuevas); suite completa
 - `9730772` test(reportes): agregar pruebas de socios activos y aforo por sede
 
 ---
+
+### 2026-11-18 · 0,5 h
+
+**Actividad**
+Revisé con Angelina Vialle los ADR del backend que estandarizó para la entrega (PR #110) y actualicé la entrada del 23/10 de esta bitácora, que citaba mi ADR-018 de reportes.
+
+**Decisión**
+Acordé sacar el ADR-018 de reportes: lo central ya está en el [ADR-005](../adr/005-utilizar-prisma-como-orm.md) (Prisma) y el [ADR-014](../adr/014-aplicar-patron-repository-para-acceso-a-datos.md) (Repository), y el número 018 pasó a la estrategia de pruebas. Lo que decidía, sumar los ingresos en memoria y hasta qué volumen sirve, queda registrado en la entrada del 23/10.
+
+**Problema o bloqueo**
+Mergeé el PR #111 en `main` en lugar de `dev`, porque GitHub propone `main` como base. Lo resuelvo llevando la misma rama a `dev` en otro PR, para que las dos ramas tengan la misma bitácora.
+
+**Commits**
+- `1f07506` docs(log): actualizar la referencia al adr de reportes
+
+---
