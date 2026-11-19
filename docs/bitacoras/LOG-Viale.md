@@ -1,277 +1,322 @@
-#### 23/08/2026
-
-#### Angelina Vialle y Marcos Caraballo | Rol: Desarrolladores Backend
-
-- **Actividades:**
-  - Identificación de las entidades principales del sistema.
-  - Diseño en conjunto del diagrama de entidad-relación de la base de datos.
-- **Decisiones:** Usar Draw.io para armar el diagrama porque es visual, gratuito y nos permite editar o exportar facilmente.
-  Utilizar tablas en lugar de enumeraciones para roles, tipos y estados. Añadir tabla ciudad para asociarla a sedes, para poder evitar que un socio use libremente las sedes de otras ciudades, sin afectar las de su misma ciudad.
-- **Dificultades:** La tabla de pagos apuntaba alternativamente a membresías o canchas, lo cual generaba un antipatrón. Se resolvió separando la lógica de pago por módulo para permitir agregar nuevas entidades financieras a futuro.
-- **Commits:** ----
+# Bitácora
+Vialle, Angelina María — Rol: Desarrolladora Backend / Tech Lead / Diseñadora de Arquitectura / QA
 
 ---
 
-#### 24/08/2026 - 05/09/2026
+## Sprint 1 — Unidad I / II: Modelado de datos y arquitectura
+Semana del 2026-08-17
 
-#### Marcos Caraballo, Angelina Vialle, Facundo Agüero, Matías Sillen | Roles: Diseñadores de arquitectura
+### 2026-08-23 · <horas> h
 
-- **Actividades:** Reunión de equipo para modelar el sistema completo en Visual Paradigm (Contexto C1, Contenedores C2 y Componentes C3).
-- **Decisiones:**
-  - Adoptar Supabase como contenedor para resolver base de datos PostgreSQL, storage de comprobantes y notificaciones en tiempo real.
-  - Separar el frontend en una SPA (Vue.js) y un contenedor de contenido estático (Nginx).
-  - Diseñar el backend (NestJS) estructurado en módulos claros: canchas, pagos con webhooks de Mercado Pago, accesos y clases grupales con lista de espera.
-- **Dificultades:** Definir cómo interactúa el cliente web tanto con la API de NestJS como con los servicios en tiempo real de Supabase.
+**Actividad**
+Identifiqué junto a Marcos Caraballo las entidades principales del sistema y diseñamos en conjunto el diagrama de entidad-relación (DER) de la base de datos.
 
----
+**Decisión**
+Utilicé Draw.io para armar el diagrama por ser visual, gratuito y permitir editarlo o exportarlo fácilmente, opté por tablas en lugar de enumeraciones para roles, tipos y estados, y añadí la tabla `ciudad` asociada a `sede` para evitar que un socio use libremente sedes de otras ciudades sin afectar las de su misma ciudad.
 
-#### 01/09/2026 a 06/09/2026
+**Problema o bloqueo**
+La tabla de pagos apuntaba alternativamente a membresías o canchas, lo cual generaba un antipatrón. Lo resolví separando la lógica de pago por módulo para permitir agregar nuevas entidades financieras a futuro.
 
-#### Angelina Vialle y Marcos Caraballo | Rol: Backend Developers
-
-- **Actividades:** Escribir los registros de decisiones (ADRs) para el backend del proyecto.
-- **Decisiones:** ----
-- **Dificultades:** Pensar en todas las decisiones de arquitectura y de implementación que deberían de tenerse en cuenta antes de arrancar el proyecto.
-- **Commits/PRs:** `ADR-backend`
+**Commits**
+Sin commits asociados en esta sesión.
 
 ---
 
-#### 18/09/2026
+## Sprint 2 — Unidad II: Arquitectura y modelado C4
+Semana del 2026-08-24
 
-#### Angelina Vialle | Rol: Desarrolador Backend
+### 2026-08-24 · <horas> h
 
-- **Actividades:** Implementar la generación y validación de tokens QR dinámicos con una vigencia corta (60 segundos) usando JWT y la librería OTPLib, garantizando la seguridad en el acceso de usuarios a las instalaciones.
+**Actividad**
+Participé en la reunión de equipo junto a Marcos Caraballo, Facundo Agüero y Matías Sillen para modelar el sistema completo en Visual Paradigm (Contexto C1, Contenedores C2 y Componentes C3), abarcando el período del 2026-08-24 al 2026-09-05.
 
-- **Decisiones:**
-  - Emplear HMAC SHA-256 para derivar un secreto TOTP determinista único por usuario a partir del secreto principal de la aplicación.
-  - Definir la vigencia del token JWT y del algoritmo TOTP en 60 segundos con una ventana de tolerancia de 5 segundos para prevenir ataques de repetición o desfases de tiempo.
-- **Dificultades:** Ninguna.
-- **Commits:**
-  - ``
+**Decisión**
+Adopté junto al equipo Supabase como contenedor para resolver base de datos PostgreSQL, storage de comprobantes y notificaciones en tiempo real, separé el frontend en una SPA (Vue.js) y un contenedor de contenido estático (Nginx), y definí el backend en NestJS estructurado en módulos claros (canchas, pagos con webhooks de Mercado Pago, accesos y clases grupales con lista de espera).
 
----
+**Problema o bloqueo**
+Definir cómo interactúa el cliente web tanto con la API de NestJS como con los servicios en tiempo real de Supabase.
 
-#### 22/09/2026
-
-#### Angelina Vialle | Rol: Desarrolador Backend
-
-- **Actividades:** Desarrollar el módulo de validación de ingreso por QR y verificación de membresía en tiempo real para autorizar o rechazar ingresos físicos en las sedes,
-
-- **Decisiones:**
-  - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso.
-- **Dificultades:** Ninguna.
-- **Commits:**
-  - `DTOs de Validación y Respuesta de Ingreso`
-  - `Tarea 2.2: Repositorio de Control de Acceso (Patrón Repository)`
-  - `Tarea 2.3: Servicio de Validación Central y Registro de Ingreso`
-  - `Tarea 2.4: Controlador HTTP de Validación de Acceso`
+**Commits**
+Sin commits asociados en esta sesión.
 
 ---
 
-#### 25/09/2026
+## Sprint 3 — Unidad II: Registros de decisión arquitectónica (ADR)
+Semana del 2026-08-31
 
-#### Angelina Vialle | Rol: Desarrolador Backend
+### 2026-09-01 · <horas> h
 
-- **Actividades:** Desarrollar DTO de validacion de reglas de acceso, service y repository de validacion de reglas de acceso
+**Actividad**
+Redacté junto a Marcos Caraballo los registros de decisiones arquitectónicas (ADR) para el backend del proyecto, en el período del 2026-09-01 al 2026-09-06.
 
-- **Decisiones:**
-  - Aplicar transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso.
-- **Dificultades:** Ninguna.
-- **Commits:**
-  - `Tarea 1: DTO Validacion de Reglas de Acceso`
-  - `Tarea 3.2: Consulta de Accesos Activos en Repositorio`
-  - `Tarea 3.3: Aplicación de la Regla RN-01 en el Servicio de Accesos`
-  - `Correcciones`
+**Decisión**
+No se registró una decisión adicional en este apartado más allá de documentar las decisiones del backend en los ADR.
 
----
+**Problema o bloqueo**
+Definir todas las decisiones de arquitectura y de implementación que debían tenerse en cuenta antes de arrancar el proyecto.
 
-#### 27/09/2026
-
-#### Angelina Vialle | Rol: Desarrolador Backend
-
-- **Actividades:** Desarrollar DTOs de solicitud de egreso con validaciones, la logica de actulizacion de agreso con calculo de permanencia en minutos en service y repository. Hacer el endpoint HTTP de registrar egreso
-
-- **Decisiones:**
-  - Diseñar el DTO de solicitud con decoradores de class-validator y class-transformer (@IsInt, @IsPositive, @Type) para transformar y validar los datos de entrada, permitiendo además una marca de fecha opcional (fecha_egreso). Implementar una función de cálculo de minutos de permanencia para obtener la diferencia en minutos entre la entrada y salida.
-- **Dificultades:** Ninguna.
-- **Commits:**
-  - `feat(M2): DTOs de solicitud de egreso`
-  - `feat(M2): Actualizacion de Egreso y Calculo de Permanencia`
-  - `feat(M2): Endpoint HTTP de Egreso`
-  - `feat(M2): Actualizacion log`
+**Commits**
+`13dafe2` ADR-backend
 
 ---
 
-#### 29/09/2026
+## Sprint 4 — Unidad III / M2: Control de acceso y QR dinámico
+Semana del 2026-09-21
 
-#### Angelina Vialle | Rol: Desarrolador Backend
+### 2026-09-21 · <horas> h
 
-- **Actividades:** Desarrollo e integración de la emisión de aforo en tiempo real vía Supabase Realtime Broadcast tras ingresos y egresos. Creación del DTO. Desarrollo de servicio para gestionar los canales dinámicos utilizando Supabase Client. Ampliación de AccesosRepository y AccesosService con la lógica de consulta de aforo actual y capacidad máxima. Implementación del endpoint
+**Actividad**
+Implementé la generación y validación de tokens QR dinámicos con una vigencia corta (60 segundos) usando JWT y la librería OTPLib para garantizar la seguridad en el acceso de usuarios a las instalaciones.
 
-- **Decisiones:**
-  - Desconexión del canal Realtime tras el envio del mensaje para evitar acumulación de suscripciones innecesarias en el servidor NestJS.
-- **Dificultades:** Ninguna.
-- **Commits:**
-  - `feat(M2): DTOs de solicitud de egreso`
-  - `feat(M2): Actualizacion de Egreso y Calculo de Permanencia`
-  - `feat(M2): Endpoint HTTP de Egreso`
-  - `feat(M2): Actualizacion log`
+**Decisión**
+Empleé `HMAC-SHA256` para derivar un secreto TOTP determinista único por usuario a partir del secreto principal de la aplicación y definí la vigencia del token JWT y del algoritmo TOTP en 60 segundos con una ventana de tolerancia de 5 segundos para prevenir ataques de repetición o desfases de tiempo.
 
----
+**Problema o bloqueo**
+Ninguno registrado durante la sesión.
 
-#### 14/10/2026
-
-#### Angelina Vialle | Rol: Backend Developer
-
-- **Actividades:** Arreglos de backend para integrarlo con el frontend.
-- **Decisiones:**
-  - Quitar el id de usuario de los dtos y usar el qr token
-  - La manera de generar el token de qr es más simple
-  - Elimine UserRepository porque no se usaba.
-  - Cambie send por httpSend porque se iba a quedar obsoleto
-- **Dificultades:** Ninguna.
-- **Commits:** `feat(M2-M1): arreglos`
+**Commits**
+`ebfc694` feat(M2): Generación de Código QR Dinámico Temporal
 
 ---
 
-#### 25/10/2026
+## Sprint 4 — Unidad III / M2: Validación de ingreso y membresía
+Semana del 2026-09-21
 
-#### Angelina Vialle | Rol: Desarrolladora Backend || Tech Lead
+### 2026-09-22 · <horas> h
 
-**Actividades:**
+**Actividad**
+Desarrollé el módulo de validación de ingreso por QR y verificación de membresía en tiempo real para autorizar o rechazar ingresos físicos en las sedes, incluyendo DTOs, repositorio, servicio y controlador HTTP.
 
-- **Módulo M1 (Usuarios):**
-  - Ajuste en `CreateUsuarioDto`: tipado estricto y transformación de `id_sede` a número entero (`@Type(() => Number)` e `@IsInt()`), e incorporación del campo opcional `id_usuario_estado` con su validación correspondiente.
-  - Refactorización de `UsuarioResponseDto`: uso de `@Transform` con `class-transformer` para mapear la relación relacional `usuario_rol` de Prisma y exponer los objetos de roles completos (`id_rol` y `nombre`) en vez de solo IDs numéricos, junto con la exposición completa de la información de la `sede`.
-  - Actualización de `UsuariosRepository.findAll`: inclusión de relaciones (`usuario_rol` con detalle de `rol`, `usuario_estado` y `sede`) para recuperar la información completa de los usuarios en una sola consulta.
-  - Mejora en `UsuariosService.actualizarUsuario`: soporte para vincular entidades relacionadas en Prisma mediante `connect` (`sede`, `usuario_estado`) y actualización/reemplazo controlado de roles asociados (`usuario_rol`).
+**Decisión**
+Apliqué transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso.
 
-- **Módulo M2 (Accesos y Aforo Realtime):**
-  - Limpieza de código y estandarización en `AccesosController`, `QrController` y `AccesosService`: remoción de `console.log` de depuración y simplificación de mensajes y descripciones en Swagger y excepciones de conflicto.
-  - Manejo preventivo de excepciones en `AccesosRepository`: adición de bloque `try/catch` con log de error en `obtenerAforoMaximoSede` ante fallos de conexión o lectura en la base de datos.
-  - Disparo de notificación de aforo en tiempo real (`notificarCambioAforo`) tras registrar un ingreso en `AccesosService`.
-  - Reestructuración de `AforoRealtimeService`: estabilización de la emisión vía Supabase Realtime Broadcast mediante suscripción explícita al canal (`channel.subscribe`), envío del evento `aforo_actualizado` una vez confirmado el estado `SUBSCRIBED`, y cierre controlado del canal (`client.removeChannel`) tras un retardo temporizado para evitar conexiones colgadas y fugas de memoria.
+**Problema o bloqueo**
+Ninguno registrado durante la sesión.
 
-**Decisiones:**
-
-- Mapear las relaciones completas de roles y sede directamente en `UsuarioResponseDto` y `UsuariosRepository` para proveer toda la información necesaria al frontend en una única petición sin sobrecargar la red con consultas adicionales.
-- Utilizar conexiones explícitas (`connect`) y reemplazo transaccional en la actualización de roles en `UsuariosService` para preservar la integridad referencial en Prisma.
-- Sincronizar el canal de Supabase Realtime esperando el evento de confirmación de suscripción antes de emitir el broadcast y liberarlo con un retardo controlado (500 ms) para asegurar la entrega efectiva del mensaje sin dejar suscripciones activas en memoria.
-
-**Dificultades:**
-
-- Asegurar la entrega confiable de los eventos Realtime de Supabase sin dejar suscripciones activas ni conexiones huérfanas en el backend de NestJS; resuelto controlando la suscripción y el cierre temporizado del canal.
-- Compatibilizar la estructura relacional de `usuario_rol` de Prisma con el formato de roles consumido por el frontend en `UsuarioResponseDto`.
-
-**Commits:**
-
-- `feat(M1): Cambios para obtener los usuarios con sus respectivos datos, actualizar datos de usuario y crear usuarios`
-- `feat(M2): quitar console.log, mensajes, mejora de obtener aforo`
-- `feat(M2): arreglos en aforo realtime para que funcione correctamente`
-- `docs(log): actualizar bitacora`
+**Commits**
+`bd893f4` DTOs de Validación y Respuesta de Ingreso
+`88f96c5` Tarea 2.2: Repositorio de Control de Acceso (Patrón Repository)
+`ef74ee6` Tarea 2.3: Servicio de Validación Central y Registro de Ingreso
+`c2cea55` Tarea 2.4: Controlador HTTP de Validación de Acceso
 
 ---
 
-#### 30/10/2026
+## Sprint 5 — Unidad III / M2: Reglas de acceso y RN-01
+Semana del 2026-09-21
 
-#### Angelina Vialle | Rol: Desarrolladora Backend
+### 2026-09-26 · <horas> h
 
-- **Actividades:**
-  - **Flexibilización de identificación en ingresos y egresos:** Actualización de `ValidarIngresoDto` y `RegistrarEgresoDto` para hacer opcional `qrToken` y habilitar el campo `dni` (validado como numérico con `@Matches(/^\d+$/)` y `@IsOptional()`), permitiendo el registro tanto por QR dinámico como por ingreso manual de DNI.
-  - **Búsqueda por DNI en repositorio:** Implementación de `buscarUsuarioPorDni` en `AccesosRepository` para consultar socios en la base de datos vía `prisma.usuario.findUnique`, con soporte para clientes transaccionales.
-  - **Unificación de resolución de identidad:** Creación del método privado auxiliar `resolverIdUsuario` en `AccesosService` para centralizar la validación: resolución y existencia de usuario por DNI (`NotFoundException` 404 si no existe) o validación de vigencia del token efímero QR (`BadRequestException` 400 si expiró o está manipulado).
-  - **Refactorización de flujos de torniquete:** Adaptación de `validarYRegistrarIngreso` y `registrarEgreso` en `AccesosService` para utilizar la resolución unificada de identidad, manteniendo intactas las reglas de membresía activa, anti-doble ingreso y transacción atómica.
-  - **Estandarización de excepciones y Swagger:** Migración de `UnauthorizedException` (401) a `BadRequestException` (400) en `QrService.validarTokenEfimero`, `extraerIdDeToken` y los decoradores `@ApiResponse` de `AccesosController` y `QrController`, alineando los errores de formato o expiración de QR con las convenciones HTTP de validación de carga útil.
-- **Decisiones:**
-  - Centralizar la lógica de obtención del socio en `resolverIdUsuario` para evitar duplicar código entre los métodos de ingreso y egreso, asegurando un punto único de validación para ambos métodos de entrada (QR vs. DNI).
-  - Validar el formato numérico del DNI directamente a nivel de DTO mediante expresión regular para rechazar peticiones mal formadas antes de consultar la base de datos.
-  - Utilizar `BadRequestException` (400) en lugar de `UnauthorizedException` (401) para fallos de validación o expiración del token QR, reservando el 401 estrictamente para la autenticación de la sesión del usuario contra la API.
-- **Dificultades:** Ninguna.
-- **Commits:**
-  - `feat(M2): correccion de excepciones y codigos de estado`
-  - `feat(M2): adicion de dni en dto de egreso e ingreso`
-  - `feat(M2): funcion para buscar usuario por dni`
-  - `feat(M2): correcion de excepciones y metodo para buscar por dni o token`
-  - `fix(M2): arreglo tipo de excepcion`
-  - `docs(log): actualizacion de bitacora`
+**Actividad**
+Desarrollé el DTO de validación de reglas de acceso, el servicio y el repositorio correspondientes, incluyendo la consulta de accesos activos y la aplicación de la regla RN-01.
+
+**Decisión**
+Apliqué transacciones atómicas para prevenir condiciones de carrera y validar el anti-doble ingreso.
+
+**Problema o bloqueo**
+Ninguno registrado durante la sesión.
+
+**Commits**
+`0e32206` Tarea 1: DTO Validacion de Reglas de Acceso
+`06f3757` Tarea 3.2: Consulta de Accesos Activos en Repositorio
+`30ea0cab` Tarea 3.3: Aplicación de la Regla RN-01 en el Servicio de Accesos
+`2023ea3` Correcciones
+`741c26a` Actualizacion log
 
 ---
 
-#### 10/11/2026
+## Sprint 5 — Unidad III / M2: Registro de egreso y permanencia
+Semana del 2026-09-21
 
-#### Angelina Vialle | Rol: Desarrolladora Backend
+### 2026-09-27 · <horas> h
 
-- **Actividades:**
-  - **Ampliación de identidad en autenticación (`common`):** Extensión de la interfaz `AuthenticatedUser` y actualización de `SupabaseAuthGuard` para inyectar `dni` y `nombre` directamente en el objeto de usuario de la sesión (`req.user`), facilitando su consumo en controladores sin requerir consultas adicionales a la base de datos.
-  - **Inclusión de sedes, ciudades y estado de membresía en M1:** Actualización de `defaultIncludes` y `findAll` en `UsuariosRepository` para incluir las relaciones anidadas `sede.ciudad` y `membresia.membresia_estado`. Exposición de estos datos en `UsuarioResponseDto` y exportación de `UsuariosRepository` en `UsuariosModule` para su integración en otros módulos.
-  - **Soporte y DTO para accesos offline en M2:** Creación de `SincronizarAccesoOfflineDto` con validaciones estrictas (`id_usuario`, `id_sede`, `tipo: 'INGRESO' | 'EGRESO'` y marca de tiempo histórica `timestamp`) para permitir que terminales de torniquete registren eventos localmente ante cortes de conectividad.
-  - **Consulta de sede con ciudad en repositorio de accesos:** Implementación de `buscarSedePorId` en `AccesosRepository` con carga de relación de ciudad (`include: { ciudad: true }`), habilitando la validación cruzada geográfica en torniquete.
-  - **Robustecimiento y firma de QR dinámico:** Refactorización de `QrService.generarFirma` y `validarTokenEfimero` para incorporar la ciudad del socio dentro del token efímero (`id_usuario.timestamp.id_ciudad.firma`). Integración con `MembresiasService.verificarMembresia` para bloquear con `ForbiddenException` (403) la generación de credenciales a socios en mora o sin membresía activa.
-  - **Validación multi-sede y sincronización offline en servicio de accesos:** Adaptación de `validarYRegistrarIngreso` para verificar que la sede de destino pertenezca a la misma ciudad de registro del socio (`BadRequestException` 400 en caso contrario). Implementación de `sincronizarAccesoOffline` para procesar en lote eventos postergados respetando las reglas de estado de socio, mora, anti-doble ingreso y emisión de aforo en tiempo real.
-  - **Endpoint de perfil de socio para visualización en credencial:** Implementación del método `obtenerPerfilSocio` en `AccesosService` y publicación del endpoint `GET /accesos/perfil/:id` en `AccesosController`, retornando datos consolidados del socio (ID, nombre, DNI, foto de perfil y estado de membresía 'ACTIVO'/'INACTIVO') para el renderizado del pase digital en el frontend.
-  - **Publicación de endpoints y protección con Guards:** Activación de `@UseGuards(SupabaseAuthGuard)` en `QrController` y `AccesosController`, e incorporación del endpoint `POST /accesos/sincronizar-offline` con documentación OpenAPI/Swagger completa.
-- **Decisiones:**
-  - Incluir el `id_ciudad` dentro del token QR firmado con HMAC-SHA256 para permitir validaciones geográficas rápidas y locales tanto en línea como en contingencias offline.
-  - Diseñar el endpoint `GET /accesos/perfil/:id` unificando la información del usuario con el cálculo dinámico de su estado de membresía ('ACTIVO'/'INACTIVO'), evitando que el frontend tenga que realizar múltiples peticiones para renderizar la credencial con su foto y estado.
-  - Implementar la sincronización offline con validación idempotente (omisión de errores fatales si el socio ya registraba ingreso activo previo) para no interrumpir el volcado de la cola de eventos al restaurarse la conexión del torniquete.
-- **Dificultades:** para guaradr los qr que se hacen offline no se puede tener en cuenta el timepo de expiracion.
-- **Commits:**
-  - `feat(common): adicion atributos dni y nombre a guards de supabase e interface de user`
-  - `feat(M1): adicion membresias y sedes y exports usuariosRepository`
-  - `feat(M2): dto para acceso offline`
-  - `feat(2): buscarSedePorId que incluye ciudad`
-  - `feat(M2): cambio manera de generarse firma  y token qr`
-  - `feat(M2): cambio metodo extraer id usuario y ciudad de token, adicion de metodo para acceso offline`
-  - `feat(M2): sincronizacion offline, obtener perfil e importacion de modulo usuario`
-  - `docs(log): actualizacion de bitacora`
-    `
+**Actividad**
+Desarrollé los DTOs de solicitud de egreso con validaciones, la lógica de actualización de egreso con cálculo de permanencia en minutos en el servicio y repositorio, y el endpoint HTTP de registrar egreso.
+
+**Decisión**
+Diseñé el DTO de solicitud con decoradores de `class-validator` y `class-transformer` (`@IsInt`, `@IsPositive`, `@Type`) admitiendo una fecha opcional (`fecha_egreso`) e implementé una función de cálculo de minutos de permanencia entre la entrada y la salida.
+
+**Problema o bloqueo**
+Ninguno registrado durante la sesión.
+
+**Commits**
+`09aecac` feat(M2): DTOs de solicitud de egreso
+`01ebf19` feat(M2): Actualizacion de Egreso y Calculo de Permanencia
+`32e4493` feat(M2): Endpoint HTTP de Egreso
+`0e246ad` feat(M2): Actualizacion log
 
 ---
 
-#### 04/11/2026
+## Sprint 5 — Unidad III / M2: Aforo en tiempo real con Supabase Realtime
+Semana del 2026-09-28
 
-#### Angelina María Vialle | Rol: QA Backend
+### 2026-09-29 · <horas> h
 
-- **Actividades:**
-  -Prueba unitaria de acceso.service
--
+**Actividad**
+Desarrollé e integré la emisión de aforo en tiempo real vía Supabase Realtime Broadcast tras ingresos y egresos, creando el DTO, el servicio de canales dinámicos con Supabase Client, la consulta de aforo actual y capacidad máxima en `AccesosRepository` y `AccesosService`, el endpoint GET y el ensamblado del módulo de accesos.
 
--Prueba unitaria de aforo-realtime.service
--
+**Decisión**
+Desconecté el canal Realtime tras el envío del mensaje para evitar la acumulación de suscripciones innecesarias en el servidor NestJS.
 
--Prueba unitaria de qr.service
+**Problema o bloqueo**
+Ninguno registrado durante la sesión.
 
-- **Decisiones:**
-  -Tipar de forma estricta los mocks en Jest utilizando as unknown as DTO/Entity
-- **Dificultades:**
-  -Ninguna
-- **Commits:**
-  -test(M2): test unitario de accesos, aforo y qr
-  -docs(M2): actualizacion bitacora
+**Commits**
+`1ede814` feat(M2): DTOs de solicitud de egreso
+`4ba459f` feat(M2): Archivos de Supabase
+`4cf8166` feat(M2): Servicio de Emisión de Aforo Realtime
+`24e89f3` feat(M2): Disparo de Broadcast tras Ingresos/Egresos y Endpoint GET
+`32c7b31` feat(M2): Ensamblado del Módulo de Accesos
+`d593a5f` feat(M2): Bitacora
+
+---
+
+## Sprint 6 — Unidad IV: Integración con frontend y pruebas M2
+Semana del 2026-10-12
+
+### 2026-10-14 · 3 h
+
+**Actividad**
+Realicé arreglos en el backend para integrarlo con el frontend en los módulos M2 y M1.
+
+**Decisión**
+Quité el ID de usuario de los DTOs para usar el token QR, simplifiqué la generación del token QR, eliminé `UserRepository` porque no se utilizaba y reemplacé `send` por `httpSend` ante su obsolescencia.
+
+**Problema o bloqueo**
+Ninguno registrado durante la sesión.
+
+**Commits**
+`84c139f` feat(M2-M1): arreglos
 
 ---
 
-#### 14/11/2026
+## Sprint 7 — Unidad V: Pruebas unitarias en M2
+Semana del 2026-11-02
 
-#### Angelina Vialle | Rol: Desarrolladora Backend
+### 2026-11-04 · <horas> h
 
-- **Actividades:**
-  - **Paginación y filtros avanzados en gestión de usuarios (M1):** Actualización de `UsuariosController.findAll` y `UsuariosService.findAll` para incorporar paginación configurable (`page` por defecto en 1 y `limit` en 10) con respuesta estructurada que incluye datos (`data: UsuarioResponseDto[]`) y metadatos de control (`meta: { total, page, lastPage }`). Se añadieron filtros opcionales por sede (`id_sede`), estado puntual (`id_usuario_estado`) e inclusión de usuarios dados de baja (`includeDeactivated`), filtrando por defecto solo usuarios activos (`ID_ESTADO_ACTIVO = 1`).
-  - **Consultas optimizadas y conteo en repositorio:** Implementación de `findAllPaginated` en `UsuariosRepository` aplicando `skip`, `take`, ordenamiento descendente (`orderBy: { id_usuario: 'desc' }`) e inclusión de relaciones (`sede`, `usuario_estado`, `usuario_rol.rol`), junto con la adición de `count(where)` para el cálculo dinámico del total de páginas.
-  - **Refactorización de baja lógica y restauración de usuarios:** Modificación de `softDelete` en `UsuariosRepository` para recibir parametrizado el estado desactivado (`ID_ESTADO_DESACTIVADO = 3`) desde el servicio. Creación de `updateStatus` en el repositorio e implementación de `restore(id)` en `UsuariosService` para reactivar usuarios eliminados lógicamente devolviéndolos a estado activo.
-  - **Seguridad y documentación Swagger en usuarios:** Protección de las rutas de `UsuariosController` incorporando `@UseGuards(SupabaseAuthGuard, RolesGuard)` y `@ApiBearerAuth()`, documentando los nuevos parámetros de paginación y filtrado con decoradores `@ApiQuery`.
-  - **Corrección y saneamiento de pruebas unitarias en M2:**
-    - `acceso.service.spec.ts`: Eliminación de directivas de escape de linter, inyección de `UsuariosRepository` en el módulo de pruebas para espiar `findByDni` (alineado a la arquitectura de resolución de socios), y adaptación de los mocks al formato de token QR dinámico de 4 segmentos (`id_usuario.id_ciudad.timestamp.firma`).
-    - `qr.service.spec.ts`: Inyección de `UsuariosService` para la resolución de ciudad de origen y verificación de la estructura del token QR de 4 partes.
-    - Limpieza de espías de Jest mediante `afterEach(() => jest.restoreAllMocks())`.
-- **Decisiones:**
-  - Devolver un objeto con `data` y `meta` en `findAll` para facilitar la renderización de tablas paginadas en el frontend y evitar sobrecarga en la transferencia de datos.
-  - Excluir por defecto a los socios dados de baja a menos que se indique explícitamente `includeDeactivated=true`, manteniendo las vistas administrativas limpias y enfocadas en socios operativos.
-  - Parametrizar los identificadores de estado activo y desactivado como constantes a nivel de servicio (`ID_ESTADO_ACTIVO = 1`, `ID_ESTADO_DESACTIVADO = 3`) en lugar de dejarlos hardcodeados en las consultas del repositorio.
-- **Dificultades:** Ninguna.
-- **Commits:**
-  - `fix(tM2): correcion de test`
-  - `feature(M1): findAll con paginacion  y actualizacion de la manera del softDelete`
-    \-`docs(log): actualizar bitacora`
+**Actividad**
+Implementé las pruebas unitarias de `acceso.service`, `aforo-realtime.service` y `qr.service`.
+
+**Decisión**
+Tipé de forma estricta los mocks en Jest utilizando `as unknown as DTO/Entity`.
+
+**Problema o bloqueo**
+Ninguno registrado durante la sesión.
+
+**Commits**
+`d77f006` test(M2): test unitario de accesos, aforo y qr
+`d8715d5` docs(M2): actualizacion bitacora
 
 ---
+
+## Sprint 6 — Unidad III / IV: Usuarios y aforo realtime
+Semana del 2026-10-19
+
+### 2026-10-25 · <horas> h
+
+**Actividad**
+Ajusté en el módulo M1 `CreateUsuarioDto` (`@Type(() => Number)`, `@IsInt()` y `id_usuario_estado` opcional), refactoricé `UsuarioResponseDto` con `@Transform` para exponer roles y `sede`, actualicé `UsuariosRepository.findAll` y `UsuariosService.actualizarUsuario` con `connect` y actualización de `usuario_rol`. En M2 limpié `console.log`, agregué `try/catch` en `obtenerAforoMaximoSede`, disparé `notificarCambioAforo` tras el ingreso y estabilicé `AforoRealtimeService` esperando `SUBSCRIBED` y cerrando el canal con retardo (`removeChannel`).
+
+**Decisión**
+Mapear las relaciones completas de roles y sede en `UsuarioResponseDto` y `UsuariosRepository` para resolver los datos en una sola consulta, usar `connect` y reemplazo transaccional en `UsuariosService`, y sincronizar la suscripción del canal Realtime con cierre temporizado (500 ms) para evitar fugas de memoria.
+
+**Problema o bloqueo**
+Asegurar la entrega confiable de los eventos Realtime de Supabase sin dejar conexiones huérfanas en NestJS, y compatibilizar la estructura relacional `usuario_rol` de Prisma con el formato consumido por el frontend. Lo resolví controlando el ciclo de vida de la suscripción/cierre del canal y transformando los roles en la respuesta.
+
+**Commits**
+`58516e0` feat(M1): Cambios para obtener los usuarios con sus respectivos datos, actualizar datos de usuario y crear usuarios
+`df8ca03` feat(M2): quitar console.log, mensajes, mejora de obtener aforo
+`3d0641b` feat(M2): arreglos en aforo realtime para que funcione correctamente
+`9f999d2` docs(log): actualizar bitacora
+
+---
+
+## Sprint 6 — Unidad III / IV: Identificación por DNI y excepciones
+Semana del 2026-10-26
+
+### 2026-10-30 · <horas> h
+
+**Actividad**
+Habilite `dni` opcional (`@Matches(/^\d+$/)`) junto con `qrToken` en `ValidarIngresoDto` y `RegistrarEgresoDto`, implementé `buscarUsuarioPorDni` en `AccesosRepository`, centralicé la resolución de identidad en `resolverIdUsuario` dentro de `AccesosService` para `validarYRegistrarIngreso` y `registrarEgreso`, y migré de `UnauthorizedException` (401) a `BadRequestException` (400) en validaciones de QR y decoradores Swagger.
+
+**Decisión**
+Centralicé la búsqueda de socio por DNI o QR en `resolverIdUsuario` para evitar duplicación entre ingreso y egreso, validé el formato numérico del DNI en el DTO antes de consultar la base y reservé el 401 para autenticación de sesión usando `BadRequestException` (400) para tokens inválidos o vencidos.
+
+**Problema o bloqueo**
+Ninguno registrado durante la sesión.
+
+**Commits**
+`9b00dfa` feat(M2): correccion de excepciones y codigos de estado
+`e57e8fc` feat(M2): adicion de dni en dto de egreso e ingreso
+`3cb3d89` feat(M2): funcion para buscar usuario por dni
+`c974a9c` feat(M2): correcion de excepciones y metodo para buscar por dni o token
+`d4ad223` fix(M2): arreglo tipo de excepcion
+`f7000fd` docs(log): actualizacion de bitacora
+
+---
+
+## Sprint 7 — Unidad V: Sincronización offline y perfil de socio
+Semana del 2026-11-09
+
+### 2026-11-10 · <horas> h
+
+**Actividad**
+Amplié `AuthenticatedUser` y `SupabaseAuthGuard` con `dni` y `nombre`, incluí `sede.ciudad` y `membresia.membresia_estado` en `UsuariosRepository` y `UsuarioResponseDto`, creé `SincronizarAccesoOfflineDto`, implementé `buscarSedePorId` con ciudad en `AccesosRepository`, incorporé `id_ciudad` y validación de membresía (`ForbiddenException` 403) en `QrService`, agregué validación de ciudad y `sincronizarAccesoOffline` en `AccesosService`, publiqué `GET /accesos/perfil/:id` y `POST /accesos/sincronizar-offline` protegidos con `SupabaseAuthGuard` y documentados en Swagger.
+
+**Decisión**
+Incluí `id_ciudad` en el token QR firmado con `HMAC-SHA256` para validar alcance geográfico en línea y offline, unifiqué el estado de membresía ('ACTIVO'/'INACTIVO') en `GET /accesos/perfil/:id` para evitar múltiples llamadas desde el frontend, e hice idempotente la sincronización offline ante ingresos activos previos para no cortar el volcado de la cola.
+
+**Problema o bloqueo**
+Para guardar los QR generados offline no se podía tener en cuenta el tiempo de expiración del mismo modo que en línea.
+
+**Commits**
+`57be48b` feat(common): adicion atributos dni y nombre a guards de supabase e interface de user
+`dae5030` feat(M1): adicion membresias y sedes y exports usuariosRepository
+`b9f9577` feat(M2): dto para acceso offline
+`631a45c` feat(2): buscarSedePorId que incluye ciudad
+`4a4caee` feat(M2): cambio manera de generarse firma y token qr
+`e0684fb` feat(M2): cambio metodo extraer id usuario y ciudad de token, adicion de metodo para acceso offline
+`a09761e` feat(M2): sincronizacion offline, obtener perfil e importacion de modulo usuario
+`48dafb9` docs(log): actualizacion de bitacora
+
+---
+
+## Sprint 7 — Unidad V: Paginación en usuarios y saneamiento de tests
+Semana del 2026-11-09
+
+### 2026-11-14 · <horas> h
+
+**Actividad**
+Implementé en M1 la paginación (`page`, `limit`, `data` y `meta`) y filtros (`id_sede`, `id_usuario_estado`, `includeDeactivated`, por defecto `ID_ESTADO_ACTIVO = 1`) en `UsuariosController`, `UsuariosService` y `UsuariosRepository.findAllPaginated` (`count`, `skip`, `take`, `orderBy`), parametrizé `softDelete` (`ID_ESTADO_DESACTIVADO = 3`) y agregué `restore(id)` con guards y `@ApiQuery`. En M2 actualicé `acceso.service.spec.ts` y `qr.service.spec.ts` para el token de 4 segmentos y agregué `afterEach(() => jest.restoreAllMocks())`.
+
+**Decisión**
+Retornar `{ data, meta }` en `findAll` para facilitar tablas paginadas sin sobrecargar la red, excluir por defecto usuarios dados de baja salvo `includeDeactivated=true`, y parametrizar los estados como constantes a nivel de servicio en lugar de dejarlos hardcodeados en el repositorio.
+
+**Problema o bloqueo**
+Ninguno registrado durante la sesión.
+
+**Commits**
+`1555ba5` fix(tM2): correcion de test
+`8052b57` feature(M1): findAll con paginacion y actualizacion de la manera del softDelete
+`3e0f7fb` docs(log): actualizar bitacora
+
+---
+
+## Sprint 8 — Unidad Cierre
+Semana del 2026-11-16
+
+### 2026-11-18 · 4 h
+
+**Actividad**
+Redacté, estandaricé y cerré los Registros de Decisión Arquitectónica (ADR) en `docs/adr/` ajustándolos a la plantilla oficial del Anexo B (incorporando deuda asumida), además de redactar los ADR de estrategia de pruebas con umbral mínimo de cobertura del 80%, contenerización y despliegue, y el nuevo registro que reemplaza la estrategia de concurrencia en reservas de canchas.
+
+**Decisión**
+Adopté despliegue Canary junto con contenerización en Docker Compose (`ADR-019`) para habilitar liberaciones graduales de nuevas versiones con capacidad de reversión inmediata ante fallos críticos.
+
+**Problema o bloqueo**
+Al auditar la documentación contra la rúbrica y los lineamientos de entrega, detecté que varios ADR existentes no cumplían con el formato. Lo resolví reestructurando todos los documentos al formato exigido.
+
+**Commits**
+`c6dacd9` docs(adr): formato y creacion
+`3c3441d` docs(adr): actualizacion bitácora
+`4073d09` fix(adr): arreglo fecha
