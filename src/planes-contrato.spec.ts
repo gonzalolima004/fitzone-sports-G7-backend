@@ -16,6 +16,7 @@ describe('Contrato serializado de planes', () => {
     createPlan: jest.fn().mockResolvedValue(plan),
     updatePlan: jest.fn().mockResolvedValue(plan),
     removePlan: jest.fn().mockResolvedValue(plan),
+    countMembresiasByPlan: jest.fn().mockResolvedValue(0),
   };
   const service = new PlanesService(repo as unknown as MembresiasRepository);
   it('conserva id e id_plan y convierte precio a número al listar', async () => {

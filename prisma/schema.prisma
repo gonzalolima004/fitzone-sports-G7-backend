@@ -152,12 +152,13 @@ model CanchaReserva {
   descuento_porcentaje     Decimal             @db.Decimal(5, 2)
   es_horario_pico          Boolean
   precio_congelado         Decimal             @db.Decimal(10, 2)
-  fecha_creacion           DateTime?           @default(now()) @db.Timestamp(3)
+  fecha_creacion           DateTime?           @default(now())
   cancha                   Cancha              @relation(fields: [id_cancha], references: [id_cancha])
   cancha_reserva_estado    CanchaReservaEstado @relation(fields: [id_cancha_reserva_estado], references: [id_cancha_reserva_estado])
   usuario                  Usuario             @relation(fields: [id_usuario], references: [id_usuario])
   pagos                    Pago[]
 
+  @@unique([id_cancha, fecha_inicio], map: "un_turno_por_hora")
   @@map("cancha_reserva")
 }
 
@@ -196,7 +197,7 @@ model ClaseReserva {
   id_clase_reserva_estado Int
   fecha_inicio            DateTime
   fecha_fin               DateTime
-  fecha_creacion          DateTime?          @default(now()) @db.Timestamp(3)
+  fecha_creacion          DateTime?          @default(now())
   clase                   Clase              @relation(fields: [id_clase], references: [id_clase])
   clase_reserva_estado    ClaseReservaEstado @relation(fields: [id_clase_reserva_estado], references: [id_clase_reserva_estado])
   usuario                 Usuario            @relation(fields: [id_usuario], references: [id_usuario])

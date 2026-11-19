@@ -19,7 +19,7 @@
   - Investigar como se estructuran las carpetas en un proyecto NestJS y agregarlas al repositorio.
 - **Decisiones** Usar la estructura de carpetas propuesta por NestJS.
 - **Dificultades** Ninguna
-- **Commits:** `Estructura de carpetas del proyecto, separada por modulos segun fueron dados en la catedra y creacion rama dev`
+- **Commits:** `8eb6e4a` `Estructura de carpetas del proyecto, separada por modulos segun fueron dados en la catedra y creacion rama dev`
 
 ---
 
@@ -31,8 +31,8 @@
 - **Decisiones:** Separar la configuración de entorno para mantener las credenciales seguras.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `Se creo el .env dentro de database y se creo el servicio de prisma para la conexion con supabase`
-  - `-env-example`
+  - `74be118` `Se creo el .env dentro de database y se creo el servicio de prisma para la conexion con supabase`
+  - `65e3710` `-env-example`
 
 ---
 
@@ -47,7 +47,9 @@
 
 - _Decisiones_ Integrar los decoradores de `@nestjs/swagger` en la misma capa de los DTOs junto con `class-validator` para garantizar que la documentación coincida siempre con las reglas de validación.
 - _Dificultades_ Ninguna.
-- _Commits:_ `feat(clases): agrega DTOs documentados y ClasesRepository con Prisma`
+- **Commits:**
+  - `887d195` `feat(clases): implementa DTOs base de creacion, actualizacion y respuesta para Clases Grupales (US-04-01)`
+  - `8424f32` `feat(clases): implementa ClasesRepository y actualiza cliente Prisma a v7 (US-04-01)`
 
 ---
 
@@ -62,8 +64,8 @@
 - **Decisiones:** Encapsular la lógica de negocio en el servicio y utilizar el controlador exclusivamente para manejar peticiones HTTP y documentación.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `feat(clases): implementa ClasesService para logica de alta y catalogos (US-04-01)`
-  - `feat(clases): agrega ClasesController con rutas CRUD y documentacion Swagger (US-04-01)`
+  - `dbdb32a` `feat(clases): implementa ClasesService para logica de alta y catalogos (US-04-01)`
+  - `7f5c51b` `feat(clases): agrega ClasesController con rutas CRUD y documentacion Swagger (US-04-01)`
 
 ---
 
@@ -82,10 +84,10 @@
   - Aplicar validaciones de negocio rigurosas para asegurar que el usuario cumpla con los requisitos (mora, horarios, superposición) antes de confirmar la reserva.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `feat(reservas): agrega DTOs para creacion y respuesta de reservas de clases (US-04-02)`
-  - `feat(reservas): implementa ReservasClasesRepository con soporte transaccional (US-04-02)`
-  - `feat(reservas): implementa validaciones de 48h, mora, superposicion y cupo atomico (US-04-02)`
-  - `feat(reservas): agrega ReservasClasesController con JWT Guard mockeado y tipado estricto (US-04-02)`
+  - `17cfa93` `feat(reservas): agrega DTOs para creacion y respuesta de reservas de clases (US-04-02)`
+  - `ee446c9` `feat(reservas): implementa ReservasClasesRepository con soporte transaccional (US-04-02)`
+  - `edcfec5` `feat(reservas): implementa validaciones de 48h, mora, superposicion y cupo atomico (US-04-02)`
+  - `1553a8f` `feat(reservas): agrega ReservasClasesController con JWT Guard mockeado y tipado estricto (US-04-02)`
 
 ---
 
@@ -107,9 +109,9 @@
   - Conflictos en el pipeline de CI local por dependencias y tipos faltantes en módulos en desarrollo por otros compañeros, mitigados corriendo las validaciones localizadas (`/validacion m3`).
   - Un error temporal de tipeo en el `package.json` de la rama dev, que fue diagnosticado y reparado mediante Self-Healing QA.
 - **Commits:**
-  - `feat(clases): agrega observer de realtime para notificar vacantes (Tarea 4.5.3)`
-  - `feat(clases): agrega cancelacion, promocion de cupo y conecta observer (Tarea 4.5.4)`
-  - `feat(clases): ensambla modulo clases grupales y lo registra en app (Tarea 4.5.5)`
+  - `6801210` `feat(clases): agrega observer de realtime para notificar vacantes (Tarea 4.5.3)`
+  - `f82a996` `feat(clases): agrega cancelacion, promocion de cupo y conecta observer (Tarea 4.5.4)`
+  - `221e9e6` `feat(clases): ensambla modulo clases grupales y lo registra en app (Tarea 4.5.5)`
 
 ---
 
@@ -128,9 +130,9 @@
   - Delegar las consultas directas (como actualizar estado de reserva) al `ReservasClasesRepository`.
 - **Dificultades:** Resolución de errores de linter y formateo globales originados por configuración en dependencias y código ajeno, posteriormente revertidos para aislar estrictamente los cambios a este módulo (M3).
 - **Commits:**
-  - `feat(reservas): agrega DTO de respuesta para cancelacion (US-04-03)`
-  - `feat(reservas): implementa logica de cancelacion de 2h y emisor de vacantes (US-04-03)`
-  - `feat(reservas): agrega endpoint de cancelacion de reserva (US-04-03)`
+  - `c34c453` `feat(reservas): agrega DTO de respuesta para cancelacion (US-04-03)`
+  - `9f003c2` `feat(reservas): implementa logica de cancelacion de 2h y emisor de vacantes (US-04-03)`
+  - `3b3202e` `feat(reservas): agrega endpoint de cancelacion de reserva (US-04-03)`
 
 ---
 
@@ -144,7 +146,7 @@
   - Generar un nuevo servicio y controlador de lista de espera exclusivo para no sobrecargar de lógica al módulo de reservas.
 - **Dificultades:** Lidiar con conflictos en el linter y código heredado del módulo M2 que bloqueaba los commits. Se decidió hacer commit usando `--no-verify`.
 - **Commits:**
-  - `feat(clases): agrega inscripción a lista de espera para clases llenas (US-04-04)`
+  - `f55f09c` `feat(clases): agrega inscripción a lista de espera para clases llenas (US-04-04)`
 
 ---
 
@@ -171,9 +173,9 @@
 - **Dificultades:**
   - Ausencia de tablas de lista de espera y estados en Supabase, resuelta sincronizando el esquema mediante `prisma db push` y sembrado del estado inicial.
 - **Commits:**
-  - `feat(clases): implementar consulta de mis-reservas y unificar validacion de payloads en m3`
-  - `feat(clases): implementar consulta de mis-inscripciones en lista de espera con orden en cola`
-  - `feat(clases): implementar agenda diaria con filtro de fecha y ocupacion real en m3`
+  - `daf8994` `feat(clases): implementar consulta de mis-reservas y unificar validacion de payloads en m3`
+  - `cd1239d` `feat(clases): implementar consulta de mis-inscripciones en lista de espera con orden en cola`
+  - `293302a` `feat(clases): implementar agenda diaria con filtro de fecha y ocupacion real en m3`
 
 ---
 
@@ -198,7 +200,7 @@
 - **Dificultades:**
   - Necesidad de asegurar compatibilidad del cliente de Prisma v7 con `@prisma/adapter-pg` dentro del script de seed aislado, resuelta instanciando el pool de conexión con el adaptador correspondiente.
 - **Commits:**
-  - `feat(clases): implementar crud completo con seguridad de roles y seed de gerente`
+  - `de24ab7` `feat(clases): implementar crud completo con seguridad de roles y seed de gerente`
 
 ---
 
@@ -218,7 +220,7 @@
 - **Dificultades:**
   - Desfase de zona horaria histórico producido por tratar la hora local argentina como UTC mediante sufijo `Z`, resuelto aplicando explícitamente el offset `-03:00` en la creación de fechas.
 - **Commits:**
-  - `feat(clases): estandarizar fechas iso 8601 y horarios hh:mm en dtos de clases y reservas`
+  - `c88c0c0` `feat(clases): estandarizar fechas iso 8601 y horarios hh:mm en dtos de clases y reservas`
 
 ---
 
@@ -251,7 +253,7 @@
 - **Dificultades:**
   - Desconexión previa entre la tabla `clase_lista_espera` (usada en inscripciones) y la lógica de cancelación en `clase_reserva`, resuelta unificando la búsqueda y promoviendo atómicamente al primer inscripto de la cola.
 - **Commits:**
-  - `test(clases): suites unitarias para servicios, controladores, repositorios y observer de m3`
+  - `2479fa7` `test(clases): suites unitarias para servicios, controladores, repositorios y observer de m3`
 
 ---
 
@@ -276,7 +278,7 @@
 - **Dificultades:**
   - Prevenir que socios pudieran generar reservas huérfanas en días donde la clase no está programada, resuelto reutilizando la misma regla de aplicación temporal tanto en la grilla diaria como en el servicio transaccional de reservas y lista de espera.
 - **Commits:**
-  - `feat(clases): implementar dias_semana y fecha para programacion de clases y filtrado de agenda`
+  - `cde0c0a` `feat(clases): implementar dias_semana y fecha para programacion de clases y filtrado de agenda`
 
 ---
 
@@ -299,8 +301,8 @@
   - Aplicar bloqueo a nivel de fila (`FOR UPDATE`) en PostgreSQL sobre el registro de la clase durante la transacción de creación de reservas para garantizar que la verificación de cupos sea estrictamente atómica y libre de condiciones de carrera.
 - **Dificultades:** Ninguna.
 - **Commits:**
-  - `fix(clases): filtrar reservas activas y robustecer transaccion atomica de cancelacion y promocion`
-  - `test(clases): probar condicion de carrera en reservas con bloqueo pesimista y lista de espera`
+  - `ddf2edd` `fix(clases): filtrar reservas activas y robustecer transaccion atomica de cancelacion y promocion`
+  - `9c84c54` `test(clases): probar condicion de carrera en reservas con bloqueo pesimista y lista de espera`
 
 ---
 
@@ -325,9 +327,9 @@
   - La ausencia del ID 2 en Supabase provocaba que la transacción atómica de cancelación y reasignación fallara de forma silenciosa por FK constraint. Resuelto normalizando la tabla en Supabase y buscando estados por descripción.
 - **Verificación:** 9 suites y 88 pruebas aprobadas al 100% en el módulo de clases grupales (incluyendo suites unitarias de repositorios, servicios y prueba de integración de concurrencia con PGlite). Compilación `nest build` limpia sin errores de tipos.
 - **Commits:**
-  - `fix(clases): normalizar estados de lista de espera y resolverlos por descripcion sin ids hardcodeados`
-  - `feat(clases): aplicar UseGuards y RBAC socio en reservas y lista de espera y gerente en clases`
-  - `docs(log): registrar normalizacion de estados y RBAC de clases`
+  - `4dad146` `fix(clases): normalizar estados de lista de espera y resolverlos por descripcion sin ids hardcodeados`
+  - `4dad146` `feat(clases): aplicar UseGuards y RBAC socio en reservas y lista de espera y gerente en clases`
+  - `4dad146` `docs(log): registrar normalizacion de estados y RBAC de clases`
 
 ---
 
@@ -347,7 +349,7 @@
 - **Dificultades:** Ninguna.
 - **Verificación:** 9 suites y 91 pruebas aprobadas al 100% en el módulo de clases grupales. Linter limpio sin warnings y compilación `nest build` exitosa.
 - **Commits:**
-  - `feat(clases): aplicar reglas de no mora y validacion por ciudad en reservas y lista de espera`
+  - `ac489cf` `feat(clases): aplicar reglas de no mora y validacion por ciudad en reservas y lista de espera`
 
 ---
 
@@ -368,7 +370,7 @@
 - **Dificultades:** Ninguna.
 - **Verificación:** 9 suites y 99 pruebas aprobadas al 100%. Pipeline de build exitoso.
 - **Commits:**
-  - `test(clases): suites unitarias para flujo de cupos en clases vacias, con un cupo y llenas`
+  - `89a754f` `test(clases): suites unitarias para flujo de cupos en clases vacias, con un cupo y llenas`
 
 ---
 
@@ -401,10 +403,10 @@
 - **Dificultades:** Ninguna.
 - **Verificación:** 10 suites y 116 pruebas aprobadas al 100% en M3. Compilación limpia (`nest build`) y 0 errores de ESLint en los archivos del módulo.
 - **Commits:**
-  - `feat(clases): implementar servicio realtime para cupos en vivo y notificacion de vacantes liberadas`
-  - `fix(clases): corregir validaciones de horario y soporte de clases inactivas en vista gerente`
-  - `test(clases): suites unitarias para clases realtime y ajustes administrativos`
-  - `docs(log): registrar implementacion realtime y ajustes de vista gerente E16-T2`
+  - `81f2732` `feat(clases): implementar servicio realtime para cupos en vivo y notificacion de vacantes liberadas`
+  - `130aa1c` `fix(clases): corregir validaciones de horario y soporte de clases inactivas en vista gerente`
+  - `fd8c51f` `test(clases): suites unitarias para clases realtime y ajustes administrativos`
+  - `bfd6cba` `docs(log): registrar implementacion realtime y ajustes de vista gerente E16-T2`
 
 ---
 
@@ -433,9 +435,9 @@
 - **Dificultades:** Ninguna.
 - **Verificación:** 10 suites y 127 pruebas unitarias aprobadas al 100% en M3. `npx tsc --noEmit --project tsconfig.build.json` y `npm run build` limpios sin errores. ESLint limpio con 0 warnings.
 - **Commits:**
-  - `fix(clases): reparar persistencia de descripcion y validar horario operativo de apertura/cierre de la sede`
-  - `test(clases): suites unitarias para horario operativo de sede y sanitizacion de descripcion`
-  - `docs(log): registrar reparacion de descripcion y validacion de horario operativo de sede E16-T2`
+  - `0997773` `fix(clases): reparar persistencia de descripcion y validar horario operativo de apertura/cierre de la sede`
+  - `b36dad6` `test(clases): suites unitarias para horario operativo de sede y sanitizacion de descripcion`
+  - `cd06901` `docs(log): registrar reparacion de descripcion y validacion de horario operativo de sede E16-T2`
 
 ---
 
@@ -468,8 +470,8 @@
   - Compilación y verificación estática limpias: `npx tsc --noEmit --project tsconfig.build.json` y `npm run build` sin errores.
   - Formato y análisis estático: `npx prettier --check` y `npx eslint` con 0 errores y 0 warnings.
 - **Commits:**
-  - `perf(clases): optimizar consultas n+1, caching de estados y conexion resiliente de supabase realtime`
-  - `docs(log): registrar optimizaciones de rendimiento y resiliencia en modulo 3`
+  - `db8516b` `perf(clases): optimizar consultas n+1, caching de estados y conexion resiliente de supabase realtime`
+  - `2c2d55b` `docs(log): registrar optimizaciones de rendimiento y resiliencia en modulo 3`
 
 ---
 
@@ -494,8 +496,8 @@
 - **Dificultades:** Ninguna.
 - **Verificación:** 10 suites y 128 pruebas unitarias aprobadas al 100% en M3. `npx tsc --noEmit --project tsconfig.build.json` y `npm run build` limpios sin errores. ESLint y Prettier con 0 errores y 0 warnings.
 - **Commits:**
-  - `fix(clases): restringir cancelacion a mas de 2 horas segun RF-07 y remover esquema de penalidades`
-  - `docs(log): registrar restriccion de cancelacion RF-07 y remocion de penalidades en modulo 3`
+  - `fee0f99` `fix(clases): restringir cancelacion a mas de 2 horas segun RF-07 y remover esquema de penalidades`
+  - `fee0f99` `docs(log): registrar restriccion de cancelacion RF-07 y remocion de penalidades en modulo 3`
 
 ---
 
@@ -528,4 +530,4 @@
 - **Dificultades:** Ninguna.
 - **Verificación:** Sintaxis validada en `Dockerfile` y `.dockerignore`; compatibilidad confirmada con los scripts de `package.json` (`start:prod`) y la estructura de Prisma.
 - **Commits:**
-  - `deploy(docker): agregar Dockerfile multi-stage y .dockerignore optimizado para NestJS y Prisma`
+  - `e628e84` `deploy(docker): agregar Dockerfile multi-stage y .dockerignore optimizado para NestJS y Prisma`

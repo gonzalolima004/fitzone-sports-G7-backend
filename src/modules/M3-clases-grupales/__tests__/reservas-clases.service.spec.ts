@@ -776,7 +776,7 @@ describe('ReservasClasesService', () => {
     it('crearReserva debe emitir notificarCupoActualizado si el servicio realtime está presente', async () => {
       const fechaInicio = new Date(Date.now() + 24 * 3600000);
       const fechaFin = new Date(fechaInicio.getTime() + 3600000);
-      const diaSemana = fechaInicio.getDay();
+      const diaSemana = fechaInicio.getUTCDay();
 
       const dto: CrearReservaClaseDto = {
         id_clase: 1,

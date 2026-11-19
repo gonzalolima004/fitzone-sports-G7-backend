@@ -335,13 +335,13 @@ Tarea: migración a Prisma ORM, reportes y testing.
 - Migré `obtenerIngresosPorSede` de SQL nativo (`$queryRaw` con `UNION ALL`) a `prisma.pago.findMany`, con filtros tipados y la suma por sede con `Prisma.Decimal`.
 - Migré `obtenerMetricasOcupacionPorSede` a tres `groupBy` en paralelo, con la traducción de canchas y clases a su sede y los nombres de las sedes con actividad.
 - Eliminé el script `test/reportes-ocupacion.sql-check.cjs`, que reemplazan las pruebas de integración.
-- Registré la decisión en el ADR-018.
+- Registré la decisión en un ADR, el 018 de ese momento. El 18/11, de acuerdo con Angelina Vialle, lo sacamos al estandarizar los ADR, porque lo central ya está en el [ADR-005](../adr/005-utilizar-prisma-como-orm.md) (Prisma) y el [ADR-014](../adr/014-aplicar-patron-repository-para-acceso-a-datos.md) (Repository); el número 018 pasó a la estrategia de pruebas.
 
 Verificación: las mismas pruebas pasan con el SQL anterior y con Prisma, ya no queda `$queryRaw` en `M6-reportes`, la suite completa del backend pasa y ESLint no marca errores en los archivos modificados.
 
 **Decisión**
 - Mantuve la firma de los métodos del repositorio: el servicio y el controlador no cambiaron, lo que muestra el beneficio del patrón Repository (ver [ADR-014](../adr/014-aplicar-patron-repository-para-acceso-a-datos.md)).
-- Sumé los ingresos por sede en memoria, porque Prisma no agrupa por campos de tablas relacionadas. Alcanza para los reportes mensuales de la cadena; con millones de pagos por período convendría agregar en la base o precalcular (ver [ADR-018](../adr/018-agregacion-de-reportes-con-prisma-orm.md)).
+- Sumé los ingresos por sede en memoria, porque Prisma no agrupa por campos de tablas relacionadas. Alcanza para los reportes mensuales de la cadena; con millones de pagos por período convendría agregar en la base o precalcular.
 - Resolví en la base los conteos de ocupación con `groupBy` y los combiné por sede en memoria.
 - Hice un commit por consulta migrada y borré el SQL anterior recién cuando las pruebas pasaban.
 
@@ -503,5 +503,21 @@ Verificación: 3 suites y 45 pruebas aprobadas en M6 (22 nuevas); suite completa
 **Commits**
 - `3bb165d` feat(reportes): agregar socios activos y aforo de todas las sedes
 - `9730772` test(reportes): agregar pruebas de socios activos y aforo por sede
+
+---
+
+### 2026-11-18 · 0,5 h
+
+**Actividad**
+Revisé con Angelina Vialle los ADR del backend que estandarizó para la entrega (PR #110) y actualicé la entrada del 23/10 de esta bitácora, que citaba mi ADR-018 de reportes.
+
+**Decisión**
+Acordé sacar el ADR-018 de reportes: lo central ya está en el [ADR-005](../adr/005-utilizar-prisma-como-orm.md) (Prisma) y el [ADR-014](../adr/014-aplicar-patron-repository-para-acceso-a-datos.md) (Repository), y el número 018 pasó a la estrategia de pruebas. Lo que decidía, sumar los ingresos en memoria y hasta qué volumen sirve, queda registrado en la entrada del 23/10.
+
+**Problema o bloqueo**
+Mergeé el PR #111 en `main` en lugar de `dev`, porque GitHub propone `main` como base. Lo resuelvo llevando la misma rama a `dev` en otro PR, para que las dos ramas tengan la misma bitácora.
+
+**Commits**
+- `1f07506` docs(log): actualizar la referencia al adr de reportes
 
 ---

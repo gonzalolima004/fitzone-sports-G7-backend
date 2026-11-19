@@ -105,6 +105,10 @@ export class PlanesController {
     description: 'Acceso denegado: se requiere rol gerente.',
   })
   @ApiResponse({ status: 404, description: 'Plan no encontrado.' })
+  @ApiResponse({
+    status: 409,
+    description: 'El plan tiene membresías asociadas y no se puede eliminar.',
+  })
   remove(@Param('id', ParseIntPipe) id: number): Promise<PlanResponseDto> {
     return this.planesService.remove(id);
   }
