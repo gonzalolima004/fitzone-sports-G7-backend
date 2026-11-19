@@ -192,6 +192,19 @@ export class AccesosService {
           });
         }
 
+        // Verificar que la sede no haya alcanzado su aforo máximo
+        const [aforoActual, aforoMaximo] = await Promise.all([
+          this.accesosRepository.contarAforoActual(dto.id_sede, tx),
+          this.accesosRepository.obtenerAforoMaximoSede(dto.id_sede, tx),
+        ]);
+        if (aforoMaximo !== null && aforoActual >= aforoMaximo) {
+          throw new ConflictException({
+            statusCode: 409,
+            message: `Acceso rechazado: La sede '${sedeDestino.nombre}' ha alcanzado su aforo máximo (${aforoMaximo} personas).`,
+            error: 'Conflict',
+          });
+        }
+
         return this.accesosRepository.crearIngreso(id_usuario, dto.id_sede, tx);
       });
 
