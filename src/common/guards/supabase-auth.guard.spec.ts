@@ -1,4 +1,8 @@
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { SupabaseAuthGuard } from './supabase-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { SupabaseService } from '../supabase/supabase.service';
@@ -167,5 +171,85 @@ describe('SupabaseAuthGuard', () => {
     await expect(guard.canActivate(context)).rejects.toThrow(
       UnauthorizedException,
     );
+  });
+
+  it('debe lanzar UnauthorizedException si Supabase devuelve usuario sin email y ForbiddenException si no existe en FitZone', async () => {
+    (mockJwtService.verify as jest.Mock).mockImplementation(() => {
+      throw new Error('Not local JWT');
+    });
+
+    // Usuario sin email en Supabase
+    (mockSupabaseService.getUser as jest.Mock).mockResolvedValueOnce({
+      user: { id: 'sup-1', email: undefined },
+      error: null,
+    });
+    const { context: ctxNoEmail } = createMockContext('Bearer sup_token');
+    await expect(guard.canActivate(ctxNoEmail)).rejects.toThrow(
+      UnauthorizedException,
+    );
+
+    // Usuario autenticado en Supabase sin cuenta en FitZone -> 403
+    (mockSupabaseService.getUser as jest.Mock).mockResolvedValueOnce({
+      user: { id: 'sup-2', email: 'nuevo@fitzone.com' },
+      error: null,
+    });
+    (
+      mockUsuariosRepository.findAuthProfileByEmail as jest.Mock
+    ).mockResolvedValueOnce(null);
+    const { context: ctxNoAccount } = createMockContext('Bearer sup_token_2');
+    await expect(guard.canActivate(ctxNoAccount)).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('debe usar avatar de Google y rol externo por defecto cuando faltan en FitZone, y soportar payload JWT local parcial', async () => {
+    // JWT local sin rol ni email explícito
+    (mockJwtService.verify as jest.Mock).mockReturnValueOnce({
+      sub: '77',
+    });
+    const { context: ctxLocal, request: reqLocal } =
+      createMockContext('Bearer local_min');
+    expect(await guard.canActivate(ctxLocal)).toBe(true);
+    expect(reqLocal.user).toMatchObject({
+      id_usuario: 77,
+      rol: 'externo',
+      roles: ['externo'],
+      email: '',
+    });
+
+    // Supabase con metadata.picture y usuario_rol vacío
+    (mockJwtService.verify as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('Not local JWT');
+    });
+    (mockSupabaseService.getUser as jest.Mock).mockResolvedValueOnce({
+      user: {
+        id: 'sup-3',
+        email: 'google@fitzone.com',
+        user_metadata: { picture: ' https://img.com/p.png ' },
+      },
+      error: null,
+    });
+    (
+      mockUsuariosRepository.findAuthProfileByEmail as jest.Mock
+    ).mockResolvedValueOnce({
+      id_usuario: 30,
+      dni: '99887766',
+      nombre: 'Ana',
+      apellido: 'Gomez',
+      telefono: null,
+      foto_url: null,
+      id_sede: 1,
+      sede: null,
+      usuario_rol: [],
+    });
+    const { context: ctxGoogle, request: reqGoogle } = createMockContext(
+      'Bearer sup_google_tok',
+    );
+    expect(await guard.canActivate(ctxGoogle)).toBe(true);
+    expect(reqGoogle.user).toMatchObject({
+      rol: 'externo',
+      roles: ['externo'],
+      foto_url: 'https://img.com/p.png',
+    });
   });
 });

@@ -251,6 +251,52 @@ describe('M3 Repositorios (Clases, Reservas, ListaEspera)', () => {
       });
       expect(canceladas).toBe(3);
     });
+
+    it('debe cubrir sanitización de descripción/fecha (null, trim, vacío), incluirInactivas y llamadas sin tx', async () => {
+      mockPrisma.clase.create.mockResolvedValue({ id_clase: 20 });
+      mockPrisma.clase.update.mockResolvedValue({ id_clase: 20 });
+      mockPrisma.clase.findMany.mockResolvedValue([]);
+      mockPrisma.claseReserva.updateMany.mockResolvedValue({ count: 1 });
+
+      // crearClase con descripción null, espacios y fecha null
+      await repo.crearClase({
+        id_sede: 1,
+        nombre: 'Box',
+        capacidad_maxima: 15,
+        descripcion: null,
+        fecha: null as unknown as string,
+      });
+      await repo.crearClase({
+        id_sede: 1,
+        nombre: 'Box',
+        capacidad_maxima: 15,
+        descripcion: '  Clase intensa  ',
+      });
+
+      // actualizarClase con descripción con espacios, null, y fecha válida/null
+      await repo.actualizarClase(20, {
+        descripcion: '  Actualizada  ',
+        fecha: '2026-11-20',
+      });
+      await repo.actualizarClase(20, {
+        descripcion: null,
+        fecha: null as unknown as string,
+      });
+
+      // obtenerClasesPorSede con incluirInactivas = true
+      await repo.obtenerClasesPorSede(1, true);
+      expect(mockPrisma.clase.findMany).toHaveBeenCalledWith({
+        where: { id_sede: 1 },
+      });
+
+      // darDeBajaClase y cancelarReservasFuturas usando this.prisma (sin tx)
+      await repo.darDeBajaClase(20);
+      await repo.cancelarReservasFuturas(20, new Date());
+      expect(mockPrisma.clase.update).toHaveBeenCalledWith({
+        where: { id_clase: 20 },
+        data: { activo: false },
+      });
+    });
   });
 
   describe('ReservasClasesRepository', () => {

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { MembresiasRepository } from '../repositories/membresias.repository';
 import { CrearPlanDto } from '../dto/crear-plan.dto';
@@ -61,6 +65,15 @@ export class PlanesService {
   }
 
   async remove(id: number): Promise<PlanResponseDto> {
+    await this.findOne(id);
+    const membresiasAsociadas =
+      await this.membresiasRepository.countMembresiasByPlan(id);
+    if (membresiasAsociadas > 0) {
+      throw new ConflictException(
+        'El plan tiene membresías asociadas y no se puede eliminar.',
+      );
+    }
+
     const plan = await this.membresiasRepository.removePlan(id);
     return plainToInstance(PlanResponseDto, {
       ...plan,
