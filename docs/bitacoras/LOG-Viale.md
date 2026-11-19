@@ -320,3 +320,22 @@ Al auditar la documentación contra la rúbrica y los lineamientos de entrega, d
 `c6dacd9` docs(adr): formato y creacion
 `3c3441d` docs(adr): actualizacion bitácora
 `4073d09` fix(adr): arreglo fecha
+
+---
+## Sprint 8 — Unidad Cierre
+Semana del 2026-11-16
+
+### 2026-11-19 · 3 h
+
+**Actividad**
+Corregí en el módulo M2 el control de ingreso en accesos para verificar si la sede alcanzó su capacidad máxima antes de autorizar la entrada, y actualicé el formato de la bitácora.
+
+**Decisión**
+Incorporé la validación previa de aforo máximo de la sede en el flujo de ingreso para evitar superar el cupo permitido antes de registrar el acceso.
+
+**Problema o bloqueo**
+El flujo de ingreso no comprobaba previamente si la sede estaba llena antes de permitir el acceso. Lo resolví agregando la verificación de capacidad máxima de la sede en el módulo M2.
+
+**Commits**
+`d532a58` fix(M2): revisar sede llena
+`b9477a1` docs(bitacora): arreglo de formato
