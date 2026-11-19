@@ -80,10 +80,15 @@ export class AccesosRepository {
   }
 
   /**
-   * Cuenta el número de accesos activos en una sede específica
+   * Cuenta el número de accesos activos en una sede específica.
+   * Acepta un cliente transaccional opcional para ejecutarse dentro de $transaction.
    */
-  async contarAforoActual(idSede: number): Promise<number> {
-    return this.prisma.registroAcceso.count({
+  async contarAforoActual(
+    idSede: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number> {
+    const client = tx ?? this.prisma;
+    return client.registroAcceso.count({
       where: {
         id_sede: idSede,
         fecha_egreso: null,
@@ -92,11 +97,16 @@ export class AccesosRepository {
   }
 
   /**
-   * Obtiene el aforo máximo de una sede específica
+   * Obtiene el aforo máximo de una sede específica.
+   * Acepta un cliente transaccional opcional para ejecutarse dentro de $transaction.
    */
-  async obtenerAforoMaximoSede(idSede: number): Promise<number | null> {
+  async obtenerAforoMaximoSede(
+    idSede: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number | null> {
+    const client = tx ?? this.prisma;
     try {
-      const sede = await this.prisma.sede.findUnique({
+      const sede = await client.sede.findUnique({
         where: { id_sede: idSede },
         select: { aforo_maximo: true },
       });
