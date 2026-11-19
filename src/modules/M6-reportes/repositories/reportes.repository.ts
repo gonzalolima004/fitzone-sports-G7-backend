@@ -18,6 +18,19 @@ export type MetricaOcupacionAgrupadaPorSede = {
   total_reservas_clases: number;
 };
 
+export type SociosActivosAgrupadosPorSede = {
+  id_sede: number;
+  nombre_sede: string;
+  socios_activos: number;
+};
+
+export type AforoDeSede = {
+  id_sede: number;
+  nombre_sede: string;
+  aforo_actual: number;
+  aforo_maximo: number;
+};
+
 type SedeDelPago = { id_sede: number; nombre: string };
 
 type ConteosDeOcupacion = Omit<
@@ -234,6 +247,90 @@ export class ReportesRepository {
       id_sede: sede.id_sede,
       nombre_sede: sede.nombre,
       ...(conteosPorSede.get(sede.id_sede) ?? sinConteos()),
+    }));
+  }
+
+  /**
+   * Socios activos en `fecha`, por sede de origen: usuarios con al menos una
+   * membresía en el estado indicado que ya empezó y todavía no venció
+   * (fecha_inicio ≤ fecha ≤ fecha_fin). Cada socio cuenta una vez aunque
+   * tenga más de una membresía activa. Solo devuelve sedes con socios activos.
+   *
+   * El conteo se resuelve en la base con un groupBy por la sede del usuario,
+   * en lugar de traer todos los usuarios y membresías para cruzarlos.
+   */
+  async obtenerSociosActivosPorSede(
+    fecha: Date,
+    estadoMembresiaActiva: string,
+  ): Promise<SociosActivosAgrupadosPorSede[]> {
+    const grupos = await this.prismaService.usuario.groupBy({
+      by: ['id_sede'],
+      where: {
+        membresia: {
+          some: {
+            fecha_inicio: { lte: fecha },
+            fecha_fin: { gte: fecha },
+            membresia_estado: {
+              descripcion: {
+                equals: estadoMembresiaActiva,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          },
+        },
+      },
+      _count: { _all: true },
+    });
+
+    if (grupos.length === 0) {
+      return [];
+    }
+
+    const sociosPorSede = new Map(
+      grupos.map((grupo) => [grupo.id_sede, grupo._count._all]),
+    );
+    const sedes = await this.prismaService.sede.findMany({
+      where: { id_sede: { in: [...sociosPorSede.keys()] } },
+      select: { id_sede: true, nombre: true },
+      orderBy: { id_sede: 'asc' },
+    });
+
+    return sedes.map((sede) => ({
+      id_sede: sede.id_sede,
+      nombre_sede: sede.nombre,
+      socios_activos: sociosPorSede.get(sede.id_sede) ?? 0,
+    }));
+  }
+
+  /**
+   * Aforo actual de cada sede activa: personas que ingresaron y todavía no
+   * registraron el egreso (fecha_egreso nula), la misma regla que usa
+   * GET /accesos/aforo/:id de M2. Resuelve todas las sedes con dos consultas
+   * en paralelo en lugar de dos por sede.
+   */
+  async obtenerAforoPorSede(): Promise<AforoDeSede[]> {
+    const [sedes, personasAdentro] = await Promise.all([
+      this.prismaService.sede.findMany({
+        where: { activo: true },
+        select: { id_sede: true, nombre: true, aforo_maximo: true },
+        orderBy: { id_sede: 'asc' },
+      }),
+      this.prismaService.registroAcceso.groupBy({
+        by: ['id_sede'],
+        where: { fecha_egreso: null },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const personasPorSede = new Map(
+      personasAdentro.map((fila) => [fila.id_sede, fila._count._all]),
+    );
+
+    return sedes.map((sede) => ({
+      id_sede: sede.id_sede,
+      nombre_sede: sede.nombre,
+      aforo_actual: personasPorSede.get(sede.id_sede) ?? 0,
+      aforo_maximo: sede.aforo_maximo,
     }));
   }
 

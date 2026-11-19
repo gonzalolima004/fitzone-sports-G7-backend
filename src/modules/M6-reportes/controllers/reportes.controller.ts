@@ -10,6 +10,9 @@ import { ReporteIngresosResponseDto } from '../dto/reporte-ingresos-response.dto
 import { ReportesService } from '../services/reportes.service';
 import { ConsultaMetricasOcupacionDto } from '../dto/consulta-metricas-ocupacion.dto';
 import { ReporteOcupacionResponseDto } from '../dto/reporte-ocupacion-response.dto';
+import { ConsultaSociosActivosDto } from '../dto/consulta-socios-activos.dto';
+import { ReporteSociosActivosResponseDto } from '../dto/reporte-socios-activos-response.dto';
+import { ReporteAforoResponseDto } from '../dto/reporte-aforo-response.dto';
 import { SupabaseAuthGuard } from '../../../common/guards/supabase-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -66,5 +69,39 @@ export class ReportesController {
     @Query() consulta: ConsultaMetricasOcupacionDto,
   ): Promise<ReporteOcupacionResponseDto> {
     return this.reportesService.obtenerMetricasOcupacion(consulta);
+  }
+
+  @Get('socios-activos')
+  @ApiOperation({
+    summary:
+      'Obtener los socios con membresía activa y vigente, en total y por sede (Solo gerente)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Socios activos contados correctamente',
+    type: ReporteSociosActivosResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Fecha inválida',
+  })
+  async obtenerSociosActivos(
+    @Query() consulta: ConsultaSociosActivosDto,
+  ): Promise<ReporteSociosActivosResponseDto> {
+    return this.reportesService.obtenerSociosActivos(consulta);
+  }
+
+  @Get('aforo')
+  @ApiOperation({
+    summary:
+      'Obtener el aforo actual y máximo de todas las sedes activas (Solo gerente)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Aforo de las sedes obtenido correctamente',
+    type: ReporteAforoResponseDto,
+  })
+  async obtenerAforo(): Promise<ReporteAforoResponseDto> {
+    return this.reportesService.obtenerAforo();
   }
 }

@@ -18,6 +18,17 @@ import { Prisma, PrismaClient } from '@prisma/client';
  *   - Sede 1: 2 asistencias, 0 reservas de canchas confirmadas, 1 reserva de clase
  *   - Sede 2: 1 asistencia, 2 reservas de canchas confirmadas, 1 reserva de clase
  *   - Sede 3: sin actividad (no aparece)
+ *
+ * Socios activos al 2026-10-10 (membresía Activa con
+ * fecha_inicio ≤ fecha ≤ fecha_fin):
+ *   - Sede 1: Ana, que tiene dos membresías activas y cuenta una vez
+ *   - Sede 2: Carla. Bruno no cuenta: su membresía activa venció el 30/09 y
+ *     la otra está suspendida
+ *   - Sede 3: Diego todavía no cuenta: su membresía empieza el 20/10
+ *
+ * Aforo actual (registros de acceso sin egreso): Centro 3, Norte 1 (el
+ * registro con egreso no cuenta) y Sur 0. La sede 4 está dada de baja y no
+ * aparece aunque tenga un registro sin egreso.
  */
 export const PERIODO_REPORTES = {
   fecha_desde: '2026-10-01',
@@ -53,6 +64,25 @@ export const OCUPACION_ESPERADA = [
   },
 ];
 
+export const SOCIOS_ACTIVOS_ESPERADOS = {
+  fecha: '2026-10-10',
+  total: 2,
+  porSede: [
+    { id_sede: 1, nombre_sede: 'Centro', socios_activos: 1 },
+    { id_sede: 2, nombre_sede: 'Norte', socios_activos: 1 },
+  ],
+};
+
+export const AFORO_ESPERADO = {
+  total_aforo_actual: 4,
+  total_aforo_maximo: 300,
+  sedes: [
+    { id_sede: 1, nombre_sede: 'Centro', aforo_actual: 3, aforo_maximo: 100 },
+    { id_sede: 2, nombre_sede: 'Norte', aforo_actual: 1, aforo_maximo: 100 },
+    { id_sede: 3, nombre_sede: 'Sur', aforo_actual: 0, aforo_maximo: 100 },
+  ],
+};
+
 const decimal = (valor: string | number) => new Prisma.Decimal(valor);
 const fecha = (iso: string) => new Date(iso);
 
@@ -84,6 +114,15 @@ export async function sembrarEscenarioReportes(
         aforo_maximo: 100,
         id_ciudad: 1,
       },
+      // Dada de baja: no aparece en el aforo
+      {
+        id_sede: 4,
+        nombre: 'Oeste',
+        direccion: 'Calle 4',
+        aforo_maximo: 50,
+        activo: false,
+        id_ciudad: 1,
+      },
     ],
   });
 
@@ -113,6 +152,26 @@ export async function sembrarEscenarioReportes(
         id_sede: 2,
         id_usuario_estado: 1,
       },
+      {
+        id_usuario: 3,
+        dni: '10000003',
+        email: 'socia.norte@test.local',
+        password: 'x',
+        nombre: 'Carla',
+        apellido: 'Norte',
+        id_sede: 2,
+        id_usuario_estado: 1,
+      },
+      {
+        id_usuario: 4,
+        dni: '10000004',
+        email: 'socio.sur@test.local',
+        password: 'x',
+        nombre: 'Diego',
+        apellido: 'Sur',
+        id_sede: 3,
+        id_usuario_estado: 1,
+      },
     ],
   });
 
@@ -124,8 +183,11 @@ export async function sembrarEscenarioReportes(
       precio: decimal(1000),
     },
   });
-  await prisma.membresiaEstado.create({
-    data: { id_membresia_estado: 1, descripcion: 'Activa' },
+  await prisma.membresiaEstado.createMany({
+    data: [
+      { id_membresia_estado: 1, descripcion: 'Activa' },
+      { id_membresia_estado: 2, descripcion: 'Suspendida' },
+    ],
   });
   await prisma.membresia.createMany({
     data: [
@@ -144,6 +206,42 @@ export async function sembrarEscenarioReportes(
         id_membresia_estado: 1,
         fecha_inicio: fecha('2026-09-01'),
         fecha_fin: fecha('2026-09-30'),
+      },
+      // Segunda membresía activa de Ana: sigue contando como un solo socio
+      {
+        id_membresia: 3,
+        id_usuario: 1,
+        id_membresia_plan: 1,
+        id_membresia_estado: 1,
+        fecha_inicio: fecha('2026-10-01'),
+        fecha_fin: fecha('2026-12-31'),
+      },
+      // Bruno, suspendida: no cuenta
+      {
+        id_membresia: 4,
+        id_usuario: 2,
+        id_membresia_plan: 1,
+        id_membresia_estado: 2,
+        fecha_inicio: fecha('2026-10-01'),
+        fecha_fin: fecha('2026-10-31'),
+      },
+      // Carla, activa del 05/10 al 04/11
+      {
+        id_membresia: 5,
+        id_usuario: 3,
+        id_membresia_plan: 1,
+        id_membresia_estado: 1,
+        fecha_inicio: fecha('2026-10-05'),
+        fecha_fin: fecha('2026-11-04'),
+      },
+      // Diego, activa pero empieza el 20/10
+      {
+        id_membresia: 6,
+        id_usuario: 4,
+        id_membresia_plan: 1,
+        id_membresia_estado: 1,
+        fecha_inicio: fecha('2026-10-20'),
+        fecha_fin: fecha('2026-11-19'),
       },
     ],
   });
@@ -330,6 +428,21 @@ export async function sembrarEscenarioReportes(
         id_usuario: 2,
         id_sede: 2,
         fecha_ingreso: fecha('2026-10-10T18:00:00.000Z'),
+      },
+      // Con egreso y fuera del período: no cuenta en el aforo ni en la ocupación
+      {
+        id_registro_acceso: 5,
+        id_usuario: 3,
+        id_sede: 2,
+        fecha_ingreso: fecha('2026-09-20T10:00:00.000Z'),
+        fecha_egreso: fecha('2026-09-20T11:00:00.000Z'),
+      },
+      // Sede dada de baja: no aparece en el aforo
+      {
+        id_registro_acceso: 6,
+        id_usuario: 1,
+        id_sede: 4,
+        fecha_ingreso: fecha('2026-09-25T10:00:00.000Z'),
       },
     ],
   });
