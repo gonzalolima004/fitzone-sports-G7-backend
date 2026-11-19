@@ -1,7 +1,7 @@
 # ADR-019: Estrategia de contenerización con Docker y despliegue Canary con procedimiento de reversión
 
 - **Estado:** Aceptado
-- **Fecha:** 2026-09-10
+- **Fecha:** 2026-11-18
 - **Autor:** Marcos Ramón y Angelina María Vialle
 - **Sprint:** 3
 
