@@ -412,3 +412,19 @@
   - `ad42520` `docs(diagramas): Agregar archivos svg legibles`
 
 ---
+
+#### 18/11/2026
+
+#### Marcos Caraballo | Rol: TL - Desarrollador Full Stack
+
+- **Actividades:**
+  - Redacción e incorporación en conjunto (en la rama `docs/adr` junto a Angelina Vialle) de tres nuevos ADRs:
+    - Estrategia de pruebas y umbral de cobertura.
+    - Estrategia de dockerización y despliegue.
+    - Control de concurrencia para reservas de canchas.
+- **Decisiones:** Usar bloqueo pesimista en control de concurrencia.
+- **Dificultades:** Ninguna.
+- **Commits:**
+  - `c6dacd9` `docs(adr):  formato y creacion`
+
+---

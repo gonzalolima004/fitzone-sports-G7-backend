@@ -8,9 +8,11 @@ import {
   crearBaseDePruebas,
 } from '../../../../test/utils/prisma-pglite';
 import {
+  AFORO_ESPERADO,
   INGRESOS_ESPERADOS,
   OCUPACION_ESPERADA,
   PERIODO_REPORTES,
+  SOCIOS_ACTIVOS_ESPERADOS,
   sembrarEscenarioReportes,
 } from '../../../../test/utils/escenario-reportes';
 
@@ -155,6 +157,72 @@ describe('Reportes (integración con PostgreSQL temporal)', () => {
           new Date('2027-01-02T00:00:00.000Z'),
         ),
       ).resolves.toEqual([]);
+    });
+  });
+
+  describe('socios activos por sede', () => {
+    const contar = (fecha: string) => service.obtenerSociosActivos({ fecha });
+
+    it('cuenta una vez a cada socio con una membresía activa y vigente', async () => {
+      await expect(contar(SOCIOS_ACTIVOS_ESPERADOS.fecha)).resolves.toEqual({
+        fecha: SOCIOS_ACTIVOS_ESPERADOS.fecha,
+        total_socios_activos: SOCIOS_ACTIVOS_ESPERADOS.total,
+        sedes: SOCIOS_ACTIVOS_ESPERADOS.porSede,
+      });
+    });
+
+    it('incluye el día de vencimiento y suma las membresías cuando empiezan', async () => {
+      // 04/11: vence la de Carla y ya empezó la de Diego.
+      await expect(contar('2026-11-04')).resolves.toEqual({
+        fecha: '2026-11-04',
+        total_socios_activos: 3,
+        sedes: [
+          { id_sede: 1, nombre_sede: 'Centro', socios_activos: 1 },
+          { id_sede: 2, nombre_sede: 'Norte', socios_activos: 1 },
+          { id_sede: 3, nombre_sede: 'Sur', socios_activos: 1 },
+        ],
+      });
+      // 05/11: la de Carla ya venció.
+      await expect(contar('2026-11-05')).resolves.toEqual({
+        fecha: '2026-11-05',
+        total_socios_activos: 2,
+        sedes: [
+          { id_sede: 1, nombre_sede: 'Centro', socios_activos: 1 },
+          { id_sede: 3, nombre_sede: 'Sur', socios_activos: 1 },
+        ],
+      });
+    });
+
+    it('cuenta según la fecha consultada, aunque sea pasada', async () => {
+      // 15/09: solo Bruno, con la membresía del 01/09 al 30/09.
+      await expect(contar('2026-09-15')).resolves.toEqual({
+        fecha: '2026-09-15',
+        total_socios_activos: 1,
+        sedes: [{ id_sede: 2, nombre_sede: 'Norte', socios_activos: 1 }],
+      });
+    });
+
+    it('compara el estado de la membresía sin distinguir mayúsculas', async () => {
+      await expect(
+        repository.obtenerSociosActivosPorSede(
+          new Date(`${SOCIOS_ACTIVOS_ESPERADOS.fecha}T00:00:00.000Z`),
+          'ACTIVA',
+        ),
+      ).resolves.toEqual(SOCIOS_ACTIVOS_ESPERADOS.porSede);
+    });
+
+    it('devuelve cero socios sin sedes cuando ninguna membresía está vigente', async () => {
+      await expect(contar('2027-01-15')).resolves.toEqual({
+        fecha: '2027-01-15',
+        total_socios_activos: 0,
+        sedes: [],
+      });
+    });
+  });
+
+  describe('aforo por sede', () => {
+    it('cuenta en cada sede activa a quienes no registraron el egreso', async () => {
+      await expect(service.obtenerAforo()).resolves.toEqual(AFORO_ESPERADO);
     });
   });
 });
