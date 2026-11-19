@@ -88,4 +88,23 @@ describe('LimiteConsultasPublicasGuard', () => {
     }
     expect(estadoDe(guard, ctx)).toBe(HttpStatus.TOO_MANY_REQUESTS);
   });
+
+  it('limpia ventanas vencidas al superar el umbral de 500 entradas y maneja ruta/ip ausentes', () => {
+    const guard = new LimiteConsultasPublicasGuard();
+
+    // Llenar 500 claves distintas
+    for (let i = 0; i < 500; i++) {
+      guard.canActivate(contexto(`10.0.${Math.floor(i / 250)}.${i % 250}`));
+    }
+
+    // Avanzar más de 1 minuto para que venzan y provocar descartarVencidas()
+    ahora += 61_000;
+    const ctxSinRouteNiIp = {
+      switchToHttp: () => ({
+        getRequest: () => ({ method: 'GET', path: '/public' }),
+      }),
+    } as unknown as ExecutionContext;
+
+    expect(estadoDe(guard, ctxSinRouteNiIp)).toBeNull();
+  });
 });
