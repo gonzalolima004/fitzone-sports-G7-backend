@@ -424,7 +424,7 @@ describe('ListaEsperaService', () => {
         id_clase: 1,
         id_sede: 5,
         capacidad_maxima: 10,
-        dias_semana: [fechaInicio.getDay()],
+        dias_semana: [fechaInicio.getUTCDay()],
         fecha: null,
       });
       (
